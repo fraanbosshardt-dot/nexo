@@ -21,7 +21,7 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
         <ul>
           <li>Verificación en dos pasos</li>
           <li>Nunca te pedimos la clave de tu banco</li>
-          <li>Pesos y dólares, cada uno en su cuenta</li>
+          <li>Tu moneda y otras, cada una en su cuenta</li>
         </ul>
       </aside>
       <main className="auth-main">

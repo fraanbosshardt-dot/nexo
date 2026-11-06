@@ -10,6 +10,7 @@ import { ActionForm, Submit } from "@/components/forms";
 import { createAccountAction } from "@/app/actions/app";
 import { FREE_LIMITS } from "@/lib/modules";
 import { ACCOUNT_TYPE_LABEL } from "@/lib/labels";
+import { CURRENCIES, currencyName } from "@/lib/countries";
 
 export const metadata: Metadata = { title: "Cuentas" };
 
@@ -17,7 +18,7 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
   const { workspace, plan } = await requireWorkspace();
   const sp = await searchParams;
   const db = getDb();
-  const [accounts, balances] = await Promise.all([db.account.findMany({ where: { workspaceId: workspace.id }, orderBy: { createdAt: "asc" } }), accountBalances(db, workspace.id)]);
+  const [accounts, balances] = await Promise.all([db.account.findMany({ where: { workspaceId: workspace.id, type: { not: "CREDIT_CARD" } }, orderBy: { createdAt: "asc" } }), accountBalances(db, workspace.id)]);
   const act = accounts.filter((a) => a.active), ina = accounts.filter((a) => !a.active);
   const cur = workspace.baseCurrency;
   const total = (f: (a: (typeof accounts)[number]) => boolean, c = cur) => act.filter((a) => a.currency === c && f(a)).reduce((s, a) => s.plus(balances.get(a.id) ?? ZERO), ZERO);
@@ -34,8 +35,8 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
       <PageHead crumb="Mi dinero" title="Cuentas" desc="Tocá una cuenta para ver su detalle y sus movimientos." />
       {act.length > 0 && (
         <div className="card" style={{ display: "flex", gap: 28, flexWrap: "wrap" }}>
-          <Stat label={`En ${cur === "ARS" ? "pesos" : cur}`} value={formatMoney(total((a) => a.type !== "INVESTMENT"), cur)} />
-          {act.some((a) => a.currency === "USD" && cur !== "USD") && <Stat label="En dólares" value={formatMoney(total(() => true, "USD"), "USD")} />}
+          <Stat label={`En ${currencyName(cur).toLowerCase()}`} value={formatMoney(total((a) => a.type !== "INVESTMENT"), cur)} />
+          {[...new Set(act.filter((a) => a.currency !== cur).map((a) => a.currency))].map((c) => <Stat key={c} label={`En ${currencyName(c).toLowerCase()}`} value={formatMoney(total(() => true, c), c)} />)}
           {act.some((a) => a.type === "INVESTMENT") && <Stat label="En cuentas de inversión" value={formatMoney(total((a) => a.type === "INVESTMENT"), cur)} />}
         </div>
       )}
@@ -53,7 +54,7 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
               </div>
               <div className="frow">
                 <label className="field">Tipo<select name="type" defaultValue="SAVINGS">{Object.entries(ACCOUNT_TYPE_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></label>
-                <label className="field">Moneda<select name="currency" defaultValue={cur}><option value="ARS">Pesos (ARS)</option><option value="USD">Dólares (USD)</option><option value="EUR">Euros (EUR)</option></select></label>
+                <label className="field">Moneda<select name="currency" defaultValue={cur}>{[cur, ...workspace.extraCurrencies, ...CURRENCIES.map((c) => c.code).filter((c) => c !== cur && !workspace.extraCurrencies.includes(c))].map((c) => <option key={c} value={c}>{currencyName(c)} ({c})</option>)}</select></label>
               </div>
               <div className="frow">
                 <label className="field">Saldo inicial<input name="initialBalance" inputMode="decimal" placeholder="0,00" /></label>

@@ -14,7 +14,7 @@ export default async function NewMovement({ searchParams }: { searchParams: Prom
   const sp = await searchParams;
   const db = getDb();
   const [accounts, categories] = await Promise.all([
-    db.account.findMany({ where: { workspaceId: workspace.id, active: true }, orderBy: { createdAt: "asc" }, select: { id: true, name: true, currency: true } }),
+    db.account.findMany({ where: { workspaceId: workspace.id, active: true, type: { not: "CREDIT_CARD" } }, orderBy: { createdAt: "asc" }, select: { id: true, name: true, currency: true, type: true } }),
     db.category.findMany({ where: { workspaceId: workspace.id, archived: false }, orderBy: [{ parentId: "asc" }, { name: "asc" }], select: { id: true, name: true, kind: true, parentId: true } }),
   ]);
   if (!accounts.length) {

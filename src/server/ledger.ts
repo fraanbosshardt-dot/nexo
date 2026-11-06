@@ -195,23 +195,37 @@ export async function payObligation(
     const left = remaining(ob);
     if (!amount.gt(0)) throw new UserError("El importe tiene que ser mayor a cero.");
     if (amount.gt(left)) throw new UserError(`Es más de lo que falta (${left.toFixed(2)}).`);
+    if (account.type === "CREDIT_CARD") throw new UserError("Elegí una cuenta de dinero, no una tarjeta.");
+    // Resumen de tarjeta: el gasto ya se registró en cada compra, así que el pago es una transferencia.
+    const card = ob.sourceType === "card" && ob.sourceId ? await tx.creditCard.findFirst({ where: { id: ob.sourceId, workspaceId: ws } }) : null;
+    const group = card?.accountId ? randomUUID() : null;
     const t = await tx.transaction.create({
       data: {
         workspaceId: ws,
         accountId: account.id,
-        type: ob.direction === "RECEIVABLE" ? "INCOME" : "EXPENSE",
+        type: group ? "TRANSFER" : ob.direction === "RECEIVABLE" ? "INCOME" : ob.sourceType === "debt" ? "DEBT_PAYMENT" : "EXPENSE",
         direction: ob.direction === "RECEIVABLE" ? "IN" : "OUT",
         amount: money(amount),
         currency: ob.currency,
         description: ob.description,
-        categoryId: ob.categoryId,
+        categoryId: group ? null : ob.categoryId,
         effectiveDate: input.date,
         economicPeriod: ob.economicPeriod, // el mes al que corresponde no cambia aunque se pague después
         obligationId: ob.id,
+        transferGroupId: group,
         createdById: input.userId ?? null,
       },
     });
+    if (group && card?.accountId) {
+      await tx.transaction.create({
+        data: { workspaceId: ws, accountId: card.accountId, type: "TRANSFER", direction: "IN", amount: money(amount), currency: ob.currency, description: ob.description, effectiveDate: input.date, economicPeriod: ob.economicPeriod, transferGroupId: group, createdById: input.userId ?? null },
+      });
+    }
     const updated = await refreshStatus(tx, ob.id);
+    if (ob.sourceType === "debt" && ob.sourceId && updated.status === "SETTLED") {
+      const left = await tx.obligation.count({ where: { workspaceId: ws, sourceType: "debt", sourceId: ob.sourceId, status: { in: ["PENDING", "PARTIAL"] } } });
+      if (left === 0) await tx.debt.updateMany({ where: { id: ob.sourceId, workspaceId: ws, status: "ACTIVE" }, data: { status: "PAID" } });
+    }
     return { transactionId: t.id, status: updated.status, remaining: left.minus(amount) };
   });
 }
@@ -397,13 +411,15 @@ export async function dashboard(db: Db, ws: string, currency: string, today: Dat
     monthSummary(db, ws, period(today), currency, today),
   ]);
   const inBase = accounts.filter((a) => a.currency === currency);
-  // Lo invertido no es dinero disponible.
-  const cash = inBase.filter((a) => a.type !== "INVESTMENT").reduce((acc, a) => acc.plus(balances.get(a.id) ?? ZERO), ZERO);
+  // Lo invertido no es dinero disponible, y la tarjeta es una deuda, no dinero.
+  const cash = inBase.filter((a) => a.type !== "INVESTMENT" && a.type !== "CREDIT_CARD").reduce((acc, a) => acc.plus(balances.get(a.id) ?? ZERO), ZERO);
   const invested = inBase.filter((a) => a.type === "INVESTMENT").reduce((acc, a) => acc.plus(balances.get(a.id) ?? ZERO), ZERO);
-  const others = accounts.filter((a) => a.currency !== currency).map((a) => ({ id: a.id, name: a.name, currency: a.currency, balance: balances.get(a.id) ?? ZERO }));
+  const cardDebt = inBase.filter((a) => a.type === "CREDIT_CARD").reduce((acc, a) => acc.minus(balances.get(a.id) ?? ZERO), ZERO);
+  const others = accounts.filter((a) => a.currency !== currency && a.type !== "CREDIT_CARD").map((a) => ({ id: a.id, name: a.name, currency: a.currency, balance: balances.get(a.id) ?? ZERO }));
   return {
     cash,
     invested,
+    cardDebt,
     others,
     available: cash.minus(summary.pendingOut), // lo que tenés menos todo lo que falta pagar este mes
     projectedEndOfMonth: cash.plus(summary.pendingInConfirmed).minus(summary.pendingOut),

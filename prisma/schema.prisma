@@ -26,6 +26,8 @@ model User {
   emailVerified DateTime?
   totpSecretEnc String? // secreto TOTP cifrado (AES-256-GCM)
   totpEnabledAt DateTime?
+  isAdmin       Boolean   @default(false)
+  suspendedAt   DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   deletedAt     DateTime?
@@ -33,6 +35,7 @@ model User {
   sessions    Session[]
   memberships Membership[]
   auditLogs   AuditLog[]
+  tickets     SupportTicket[]
 }
 
 model Session {
@@ -57,33 +60,35 @@ enum Role {
 }
 
 model Workspace {
-  id        String   @id @default(cuid())
-  name      String
-  baseCurrency String @default("ARS")
-  timezone  String   @default("America/Argentina/Buenos_Aires")
-  locale    String   @default("es-AR")
-  modules   Json     @default("{}") // funciones activadas: { tarjetas: true, cereal: false, ... }
-  onboardedAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String    @id @default(cuid())
+  name            String
+  country         String    @default("AR")
+  baseCurrency    String    @default("ARS")
+  extraCurrencies String[]  @default([])
+  timezone        String    @default("America/Argentina/Buenos_Aires")
+  locale          String    @default("es-AR")
+  modules         Json      @default("{}") // funciones activadas: { tarjetas: true, cereal: false, ... }
+  onboardedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  members       Membership[]
-  subscription  Subscription?
-  accounts      Account[]
-  categories    Category[]
-  transactions  Transaction[]
-  obligations   Obligation[]
+  members        Membership[]
+  subscription   Subscription?
+  accounts       Account[]
+  categories     Category[]
+  transactions   Transaction[]
+  obligations    Obligation[]
   recurringRules RecurringRule[]
-  debts         Debt[]
-  creditCards   CreditCard[]
-  budgets       Budget[]
-  goals         Goal[]
-  investments   Investment[]
-  assets        Asset[]
-  grainSales    GrainSale[]
-  exchangeRates ExchangeRate[]
-  importBatches ImportBatch[]
-  auditLogs     AuditLog[]
+  debts          Debt[]
+  creditCards    CreditCard[]
+  budgets        Budget[]
+  goals          Goal[]
+  investments    Investment[]
+  assets         Asset[]
+  grainSales     GrainSale[]
+  exchangeRates  ExchangeRate[]
+  importBatches  ImportBatch[]
+  auditLogs      AuditLog[]
 }
 
 model Membership {
@@ -112,19 +117,19 @@ enum SubscriptionStatus {
 }
 
 model Subscription {
-  id                 String             @id @default(cuid())
-  workspaceId        String             @unique
-  workspace          Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  plan               PlanCode           @default(FREE)
-  status             SubscriptionStatus @default(ACTIVE)
-  billingCycle       String? // "monthly" | "yearly"
-  provider           String? // "mercadopago" | "stripe" (se conecta en la fase comercial)
-  providerRef        String?
-  currentPeriodEnd   DateTime?
-  trialEndsAt        DateTime?
-  canceledAt         DateTime?
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
+  id               String             @id @default(cuid())
+  workspaceId      String             @unique
+  workspace        Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  plan             PlanCode           @default(FREE)
+  status           SubscriptionStatus @default(ACTIVE)
+  billingCycle     String? // "monthly" | "yearly"
+  provider         String? // "mercadopago" | "stripe" (se conecta en la fase comercial)
+  providerRef      String?
+  currentPeriodEnd DateTime?
+  trialEndsAt      DateTime?
+  canceledAt       DateTime?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
 }
 
 // ---------- Cuentas, categorías y libro de movimientos ----------
@@ -136,24 +141,25 @@ enum AccountType {
   WALLET
   FOREIGN
   INVESTMENT
+  CREDIT_CARD
   OTHER
 }
 
 model Account {
-  id             String      @id @default(cuid())
-  workspaceId    String
-  workspace      Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  name           String
-  institution    String?
-  type           AccountType
-  currency       String
-  initialBalance Decimal     @db.Decimal(18, 2)
-  initialDate    DateTime    @db.Date
-  active         Boolean     @default(true)
-  notes          String?
+  id               String      @id @default(cuid())
+  workspaceId      String
+  workspace        Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name             String
+  institution      String?
+  type             AccountType
+  currency         String
+  initialBalance   Decimal     @db.Decimal(18, 2)
+  initialDate      DateTime    @db.Date
+  active           Boolean     @default(true)
+  notes            String?
   lastReconciledAt DateTime?
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
 
   transactions Transaction[]
 
@@ -192,6 +198,7 @@ enum TxType {
   DEBT_PAYMENT
   CARD_PAYMENT
   INVESTMENT
+  DEBT_DISBURSEMENT
 }
 
 enum Direction {
@@ -201,34 +208,34 @@ enum Direction {
 
 // Movimiento de dinero real en una cuenta. Siempre importe positivo + dirección.
 model Transaction {
-  id             String     @id @default(cuid())
-  workspaceId    String
-  workspace      Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  accountId      String
-  account        Account    @relation(fields: [accountId], references: [id])
-  type           TxType
-  direction      Direction
-  amount         Decimal    @db.Decimal(18, 2)
-  currency       String
-  description    String
-  categoryId     String?
-  category       Category?  @relation(fields: [categoryId], references: [id])
-  effectiveDate  DateTime   @db.Date // cuándo se movió el dinero
-  economicPeriod String // "AAAA-MM": a qué mes corresponde
-  obligationId   String?
-  obligation     Obligation? @relation(fields: [obligationId], references: [id])
+  id              String       @id @default(cuid())
+  workspaceId     String
+  workspace       Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  accountId       String
+  account         Account      @relation(fields: [accountId], references: [id])
+  type            TxType
+  direction       Direction
+  amount          Decimal      @db.Decimal(18, 2)
+  currency        String
+  description     String
+  categoryId      String?
+  category        Category?    @relation(fields: [categoryId], references: [id])
+  effectiveDate   DateTime     @db.Date // cuándo se movió el dinero
+  economicPeriod  String // "AAAA-MM": a qué mes corresponde
+  obligationId    String?
+  obligation      Obligation?  @relation(fields: [obligationId], references: [id])
   transferGroupId String? // une las dos patas de una transferencia
-  fxRate         Decimal?   @db.Decimal(18, 6) // cotización usada, si hubo conversión
-  fxDate         DateTime?
-  reversalOfId   String?    @unique // corrección trazable: movimiento opuesto
-  reversalOf     Transaction? @relation("Reversal", fields: [reversalOfId], references: [id])
-  reversedBy     Transaction? @relation("Reversal")
-  tags           String[]   @default([])
-  notes          String?
-  idempotencyKey String?
-  createdById    String?
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
+  fxRate          Decimal?     @db.Decimal(18, 6) // cotización usada, si hubo conversión
+  fxDate          DateTime?
+  reversalOfId    String?      @unique // corrección trazable: movimiento opuesto
+  reversalOf      Transaction? @relation("Reversal", fields: [reversalOfId], references: [id])
+  reversedBy      Transaction? @relation("Reversal")
+  tags            String[]     @default([])
+  notes           String?
+  idempotencyKey  String?
+  createdById     String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
   @@unique([workspaceId, idempotencyKey])
   @@index([workspaceId, effectiveDate])
@@ -307,28 +314,28 @@ enum WeekendRule {
 
 // Regla recurrente. Editar "esta y las futuras" cierra esta versión (validTo) y crea otra: el pasado no cambia.
 model RecurringRule {
-  id            String              @id @default(cuid())
-  workspaceId   String
-  workspace     Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  direction     ObligationDirection
-  description   String
-  amount        Decimal             @db.Decimal(18, 2)
-  variableAmount Boolean            @default(false)
-  currency      String
-  categoryId    String?
-  accountId     String?
-  frequency     Frequency
-  interval      Int                 @default(1)
-  dayOfMonth    Int?
-  startDate     DateTime            @db.Date
-  endDate       DateTime?           @db.Date
-  weekendRule   WeekendRule         @default(NONE)
-  increasePct   Decimal?            @db.Decimal(9, 4) // aumento programado
+  id                  String              @id @default(cuid())
+  workspaceId         String
+  workspace           Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  direction           ObligationDirection
+  description         String
+  amount              Decimal             @db.Decimal(18, 2)
+  variableAmount      Boolean             @default(false)
+  currency            String
+  categoryId          String?
+  accountId           String?
+  frequency           Frequency
+  interval            Int                 @default(1)
+  dayOfMonth          Int?
+  startDate           DateTime            @db.Date
+  endDate             DateTime?           @db.Date
+  weekendRule         WeekendRule         @default(NONE)
+  increasePct         Decimal?            @db.Decimal(9, 4) // aumento programado
   increaseEveryMonths Int?
-  pausedAt      DateTime?
-  previousVersionId String?
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
+  pausedAt            DateTime?
+  previousVersionId   String?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
 
   obligations Obligation[]
 
@@ -347,24 +354,26 @@ enum AmortizationSystem {
 }
 
 model Debt {
-  id           String             @id @default(cuid())
-  workspaceId  String
-  workspace    Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  creditor     String
-  kind         String
-  principal    Decimal            @db.Decimal(18, 2)
-  currency     String
-  system       AmortizationSystem
-  tna          Decimal?           @db.Decimal(9, 4)
-  tea          Decimal?           @db.Decimal(9, 4)
-  cft          Decimal?           @db.Decimal(9, 4)
-  startDate    DateTime           @db.Date
-  installments Int?
-  status       String             @default("ACTIVE") // ACTIVE | PAID | CANCELLED
-  cancelledAt  DateTime?
-  notes        String?
-  createdAt    DateTime           @default(now())
-  updatedAt    DateTime           @updatedAt
+  id                String             @id @default(cuid())
+  workspaceId       String
+  workspace         Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  creditor          String
+  kind              String
+  principal         Decimal            @db.Decimal(18, 2)
+  currency          String
+  system            AmortizationSystem
+  tna               Decimal?           @db.Decimal(9, 4)
+  tea               Decimal?           @db.Decimal(9, 4)
+  cft               Decimal?           @db.Decimal(9, 4)
+  startDate         DateTime           @db.Date
+  installments      Int?
+  installmentAmount Decimal?           @db.Decimal(18, 2) // cuota informada, si no hay tasa
+  accountId         String? // cuenta donde entró el dinero (opcional)
+  status            String             @default("ACTIVE") // ACTIVE | PAID | CANCELLED
+  cancelledAt       DateTime?
+  notes             String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
 
   schedule DebtInstallment[]
 
@@ -387,19 +396,20 @@ model DebtInstallment {
 }
 
 model CreditCard {
-  id          String    @id @default(cuid())
-  workspaceId String
-  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  issuer      String
-  name        String
-  last4       String?
-  limitAmount Decimal   @db.Decimal(18, 2)
-  currency    String
-  closingDay  Int
-  dueDay      Int
+  id           String    @id @default(cuid())
+  workspaceId  String
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  issuer       String
+  name         String
+  last4        String?
+  limitAmount  Decimal   @db.Decimal(18, 2)
+  currency     String
+  closingDay   Int
+  dueDay       Int
   payAccountId String?
-  active      Boolean   @default(true)
-  createdAt   DateTime  @default(now())
+  accountId    String?   @unique // cuenta de la tarjeta (pasivo): compras = gastos, pago = transferencia
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now())
 
   statements CardStatement[]
   plans      InstallmentPlan[]
@@ -408,43 +418,45 @@ model CreditCard {
 }
 
 model CardStatement {
-  id           String     @id @default(cuid())
-  cardId       String
-  card         CreditCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
-  closingDate  DateTime   @db.Date
-  dueDate      DateTime   @db.Date
-  totalAmount  Decimal    @db.Decimal(18, 2)
-  minimumAmount Decimal   @db.Decimal(18, 2)
-  obligationId String?    @unique
-  createdAt    DateTime   @default(now())
+  id            String     @id @default(cuid())
+  cardId        String
+  card          CreditCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  closingDate   DateTime   @db.Date
+  dueDate       DateTime   @db.Date
+  totalAmount   Decimal    @db.Decimal(18, 2)
+  minimumAmount Decimal    @db.Decimal(18, 2)
+  obligationId  String?    @unique
+  createdAt     DateTime   @default(now())
 
   @@unique([cardId, closingDate])
 }
 
 model InstallmentPlan {
-  id           String     @id @default(cuid())
-  cardId       String
-  card         CreditCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
-  description  String
-  purchaseDate DateTime   @db.Date
-  totalAmount  Decimal    @db.Decimal(18, 2)
-  installments Int
-  installmentAmount Decimal @db.Decimal(18, 2)
-  interestFree Boolean    @default(true)
-  categoryId   String?
-  createdAt    DateTime   @default(now())
+  id                 String     @id @default(cuid())
+  cardId             String
+  card               CreditCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  description        String
+  purchaseDate       DateTime   @db.Date
+  totalAmount        Decimal    @db.Decimal(18, 2)
+  installments       Int
+  installmentAmount  Decimal    @db.Decimal(18, 2)
+  interestFree       Boolean    @default(true)
+  categoryId         String?
+  transactionId      String?    @unique
+  firstStatementDate DateTime?  @db.Date
+  createdAt          DateTime   @default(now())
 }
 
 // ---------- Planificación ----------
 
 model Budget {
-  id          String       @id @default(cuid())
-  workspaceId String
-  workspace   Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  period      String // "AAAA-MM" o "AAAA"
-  currency    String
+  id             String    @id @default(cuid())
+  workspaceId    String
+  workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  period         String // "AAAA-MM" o "AAAA"
+  currency       String
   rolloverUnused Boolean   @default(false)
-  createdAt   DateTime     @default(now())
+  createdAt      DateTime  @default(now())
 
   lines BudgetLine[]
 
@@ -452,26 +464,26 @@ model Budget {
 }
 
 model BudgetLine {
-  id         String   @id @default(cuid())
-  budgetId   String
-  budget     Budget   @relation(fields: [budgetId], references: [id], onDelete: Cascade)
-  categoryId String
+  id          String  @id @default(cuid())
+  budgetId    String
+  budget      Budget  @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  categoryId  String
   limitAmount Decimal @db.Decimal(18, 2)
 
   @@unique([budgetId, categoryId])
 }
 
 model Goal {
-  id            String    @id @default(cuid())
-  workspaceId   String
-  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  name          String
-  targetAmount  Decimal   @db.Decimal(18, 2)
-  currency      String
-  targetDate    DateTime? @db.Date
-  monthlyContribution Decimal? @db.Decimal(18, 2)
-  accountIds    String[]  @default([])
-  createdAt     DateTime  @default(now())
+  id                  String    @id @default(cuid())
+  workspaceId         String
+  workspace           Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name                String
+  targetAmount        Decimal   @db.Decimal(18, 2)
+  currency            String
+  targetDate          DateTime? @db.Date
+  monthlyContribution Decimal?  @db.Decimal(18, 2)
+  accountIds          String[]  @default([])
+  createdAt           DateTime  @default(now())
 
   contributions GoalContribution[]
 
@@ -479,11 +491,11 @@ model Goal {
 }
 
 model GoalContribution {
-  id      String   @id @default(cuid())
-  goalId  String
-  goal    Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
-  amount  Decimal  @db.Decimal(18, 2)
-  date    DateTime @db.Date
+  id            String   @id @default(cuid())
+  goalId        String
+  goal          Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  amount        Decimal  @db.Decimal(18, 2)
+  date          DateTime @db.Date
   transactionId String?
 }
 
@@ -506,13 +518,13 @@ model Investment {
 }
 
 model InvestmentMovement {
-  id           String     @id @default(cuid())
-  investmentId String
-  investment   Investment @relation(fields: [investmentId], references: [id], onDelete: Cascade)
-  kind         String // CONTRIBUTION | WITHDRAWAL | BUY | SELL | FEE | YIELD
-  amount       Decimal    @db.Decimal(18, 2)
-  quantity     Decimal?   @db.Decimal(24, 8)
-  date         DateTime   @db.Date
+  id            String     @id @default(cuid())
+  investmentId  String
+  investment    Investment @relation(fields: [investmentId], references: [id], onDelete: Cascade)
+  kind          String // CONTRIBUTION | WITHDRAWAL | BUY | SELL | FEE | YIELD
+  amount        Decimal    @db.Decimal(18, 2)
+  quantity      Decimal?   @db.Decimal(24, 8)
+  date          DateTime   @db.Date
   transactionId String?
 }
 
@@ -537,6 +549,7 @@ model Asset {
   kind        String // inmueble, vehículo, negocio, otro
   currency    String
   notes       String?
+  archivedAt  DateTime?
   createdAt   DateTime  @default(now())
 
   valuations Valuation[]
@@ -545,20 +558,20 @@ model Asset {
 }
 
 model GrainSale {
-  id            String    @id @default(cuid())
-  workspaceId   String
-  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  saleDate      DateTime  @db.Date
-  grain         String
-  tonnes        Decimal   @db.Decimal(14, 3) // se guarda en toneladas; 1 t = 10 quintales
-  pricePerTonne Decimal   @db.Decimal(18, 2)
-  priceCurrency String    @default("ARS")
-  fxRate        Decimal?  @db.Decimal(18, 6)
-  taxPct        Decimal   @db.Decimal(6, 3) @default(1.2) // impuesto al cheque
-  otherDeductions Decimal @db.Decimal(18, 2) @default(0)
-  collectDate   DateTime  @db.Date
-  obligationId  String?   @unique
-  createdAt     DateTime  @default(now())
+  id              String    @id @default(cuid())
+  workspaceId     String
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  saleDate        DateTime  @db.Date
+  grain           String
+  tonnes          Decimal   @db.Decimal(14, 3) // se guarda en toneladas; 1 t = 10 quintales
+  pricePerTonne   Decimal   @db.Decimal(18, 2)
+  priceCurrency   String    @default("ARS")
+  fxRate          Decimal?  @db.Decimal(18, 6)
+  taxPct          Decimal   @default(1.2) @db.Decimal(6, 3) // impuesto al cheque
+  otherDeductions Decimal   @default(0) @db.Decimal(18, 2)
+  collectDate     DateTime  @db.Date
+  obligationId    String?   @unique
+  createdAt       DateTime  @default(now())
 
   @@index([workspaceId])
 }
@@ -566,14 +579,14 @@ model GrainSale {
 // ---------- Cotizaciones, importaciones y auditoría ----------
 
 model ExchangeRate {
-  id          String    @id @default(cuid())
+  id          String     @id @default(cuid())
   workspaceId String?
   workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   base        String // "USD"
   quote       String // "ARS"
   kind        String // "oficial" | "mep" | "blue" | "tarjeta" | "manual"
-  buy         Decimal?  @db.Decimal(18, 6)
-  sell        Decimal   @db.Decimal(18, 6)
+  buy         Decimal?   @db.Decimal(18, 6)
+  sell        Decimal    @db.Decimal(18, 6)
   source      String // "dolarapi" | "bcra" | "manual"
   fetchedAt   DateTime
 
@@ -606,4 +619,27 @@ model AuditLog {
 
   @@index([workspaceId, createdAt])
   @@index([action, createdAt])
+}
+
+// ---------- Plataforma: ajustes globales y soporte ----------
+
+// Ajustes del producto que maneja el dueño desde el panel interno (por ejemplo, qué incluye cada plan).
+model AppSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+model SupportTicket {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject   String
+  body      String
+  status    String   @default("OPEN") // OPEN | ANSWERED | CLOSED
+  reply     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, createdAt])
 }

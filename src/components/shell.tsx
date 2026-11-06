@@ -16,9 +16,10 @@ function groups(overdue: number): [string, Item[]][] {
       { href: "/app/cereal", label: "Ventas de cereal", icon: "grain", module: "cereal" },
     ]],
     ["Pagos y deudas", [
-      { href: "/app/proximos", label: "Próximos pagos", icon: "cal", badge: overdue },
+      { href: "/app/proximos", label: "Próximos pagos", icon: "list", badge: overdue },
       { href: "/app/tarjetas", label: "Tarjetas", icon: "card", module: "tarjetas" },
       { href: "/app/deudas", label: "Deudas y préstamos", icon: "bank", module: "deudas" },
+      { href: "/app/calendario", label: "Calendario", icon: "cal", module: "calendario" },
     ]],
     ["Planificar", [
       { href: "/app/flujo", label: "Flujo de caja", icon: "flow", module: "flujo" },
@@ -42,9 +43,10 @@ const SETTINGS: Item[] = [
   { href: "/app/categorias", label: "Categorías", icon: "tag" },
   { href: "/app/recurrentes", label: "Recurrentes", icon: "repeat", module: "reglas" },
   { href: "/app/importar", label: "Importar y exportar", icon: "db" },
+  { href: "/app/ayuda", label: "Ayuda", icon: "spark" },
 ];
 
-export function Shell({ children, modules, overdue, userName, plan, logout }: { children: React.ReactNode; modules: ModuleState; overdue: number; userName: string; plan: string; logout: () => Promise<void> }) {
+export function Shell({ children, modules, overdue, userName, plan, isAdmin, logout }: { children: React.ReactNode; modules: ModuleState; overdue: number; userName: string; plan: string; isAdmin: boolean; logout: () => Promise<void> }) {
   const path = usePathname();
   const [open, setOpen] = useState(false);
   const [menu, setMenu] = useState(false);
@@ -91,7 +93,7 @@ export function Shell({ children, modules, overdue, userName, plan, logout }: { 
               <div><h2 style={{ fontSize: 17 }}>{userName}</h2><p className="sub">Plan {plan === "PRO" ? "Pro" : "Gratis"}</p></div>
             </div>
             <div className="list">
-              {[["Configuración", "/app/configuracion"], ["Funciones", "/app/configuracion?tab=funciones"], ["Seguridad", "/app/configuracion?tab=seguridad"], ["Términos y condiciones", "/terminos"], ["Política de privacidad", "/privacidad"]].map(([l, h]) => (
+              {[...(isAdmin ? [["Panel interno (administración)", "/admin"]] : []), ["Tu plan", "/app/configuracion?tab=plan"], ["Configuración", "/app/configuracion"], ["Funciones", "/app/configuracion?tab=funciones"], ["Seguridad", "/app/configuracion?tab=seguridad"], ["Términos y condiciones", "/terminos"], ["Política de privacidad", "/privacidad"]].map(([l, h]) => (
                 <Link key={h} className="li" href={h} onClick={() => setMenu(false)} style={{ textDecoration: "none", color: "inherit" }}><div className="grow">{l}</div><span className="mut">›</span></Link>
               ))}
             </div>

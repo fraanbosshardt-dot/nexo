@@ -1,0 +1,53 @@
+import Link from "next/link";
+import type { Metadata } from "next";
+import { requireWorkspace } from "@/lib/auth/session";
+import { getDb } from "@/lib/db";
+import { formatMoney } from "@/lib/money";
+import { addMonths, fmtPeriod, period, periodEnd, periodStart, todayIn } from "@/lib/dates";
+import { PageHead } from "@/components/page";
+
+export const metadata: Metadata = { title: "Calendario" };
+
+export default async function Calendar({ searchParams }: { searchParams: Promise<{ mes?: string }> }) {
+  const { workspace } = await requireWorkspace();
+  const today = todayIn(workspace.timezone);
+  const sp = await searchParams;
+  const p = /^\d{4}-\d{2}$/.test(sp.mes ?? "") ? sp.mes! : period(today);
+  const from = periodStart(p), to = periodEnd(p);
+  const obs = await getDb().obligation.findMany({ where: { workspaceId: workspace.id, dueDate: { gte: from, lte: to }, status: { not: "CANCELLED" } }, orderBy: { dueDate: "asc" } });
+  // Grilla de lunes a domingo.
+  const lead = (from.getUTCDay() + 6) % 7;
+  const days = Array.from({ length: 42 }, (_, i) => new Date(from.getTime() + (i - lead) * 864e5));
+  const byDay = new Map<string, typeof obs>();
+  for (const o of obs) { const k = o.dueDate.toISOString().slice(0, 10); byDay.set(k, [...(byDay.get(k) ?? []), o]); }
+  const weeks = Math.ceil((lead + to.getUTCDate()) / 7);
+  return (
+    <>
+      <PageHead crumb="Pagos y deudas" title="Calendario" desc="Tocá un pendiente para registrar el pago o el cobro."
+        actions={<><Link className="btn" href={`/app/calendario?mes=${addMonths(p, -1)}`} aria-label="Mes anterior">‹</Link><span className="btn" style={{ minWidth: 150, justifyContent: "center" }}>{fmtPeriod(p)}</span><Link className="btn" href={`/app/calendario?mes=${addMonths(p, 1)}`} aria-label="Mes siguiente">›</Link></>} />
+      <div className="legend"><span><i style={{ background: "var(--green-soft)", border: "1px solid var(--green)" }} />Cobros</span><span><i style={{ background: "var(--slate-soft)" }} />Pagos</span><span><i style={{ background: "var(--red-soft)" }} />Atrasados</span><span><i style={{ background: "var(--surface-2)", opacity: 0.6 }} />Ya pagados</span></div>
+      <div className="tw" style={{ margin: 0, padding: 0 }}>
+        <div className="cal cal-real" style={{ minWidth: 640 }}>
+          {["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"].map((d) => <div className="hd" key={d}>{d}</div>)}
+          {days.slice(0, weeks * 7).map((d) => {
+            const k = d.toISOString().slice(0, 10), items = byDay.get(k) ?? [];
+            const out = d.getUTCMonth() !== from.getUTCMonth();
+            return (
+              <div key={k} className={`d ${out ? "out" : ""} ${k === today.toISOString().slice(0, 10) ? "today" : ""}`}>
+                <span className="dn">{d.getUTCDate()}</span>
+                {items.slice(0, 3).map((o) => {
+                  const settled = o.status === "SETTLED", late = !settled && o.dueDate < today;
+                  const cls = settled ? "ev done" : late ? "ev late" : o.direction === "RECEIVABLE" ? "ev in" : "ev out";
+                  const label = `${o.description} · ${formatMoney(o.amount, o.currency)}`;
+                  return settled ? <span key={o.id} className={cls} title={label}>✓ {o.description}</span> : <Link key={o.id} className={cls} href={`/app/proximos/${o.id}`} title={label}>{o.description}</Link>;
+                })}
+                {items.length > 3 && <small className="mut">+{items.length - 3} más</small>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      {!obs.length && <div className="empty">No hay pagos ni cobros este mes.</div>}
+    </>
+  );
+}

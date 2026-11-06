@@ -8,7 +8,7 @@ import { getSession } from "@/lib/auth/session";
 export const dynamic = "force-dynamic";
 
 const FEATS: [IconName, string, string][] = [
-  ["wallet", "Cuánto tenés", "Todas tus cuentas, billeteras y dólares, siempre al día."],
+  ["wallet", "Cuánto tenés", "Todas tus cuentas y billeteras, en la moneda de cada una, siempre al día."],
   ["cal", "Qué tenés que pagar", "Vencimientos y pendientes en una lista. Registrás el pago con un toque."],
   ["flow", "Cuánto vas a tener", "Lo que te queda a fin de mes, con lo que ya sabés que entra y sale."],
   ["bank", "Tus deudas, claras", "Cuotas, tasas y cuánto ahorrás si cancelás antes."],
@@ -18,7 +18,7 @@ const FEATS: [IconName, string, string][] = [
 const FAQ: [string, string][] = [
   ["¿Es gratis?", `Sí. El plan Gratis incluye casi todo y no vence. Pro suma funciones avanzadas por US$ ${PRICE_USD.monthly} por mes.`],
   ["¿Tengo que conectar mi banco?", "No. Cargás tus movimientos o importás un archivo. NEXO nunca te pide la contraseña de tu banco."],
-  ["¿Sirve con pesos y dólares?", "Sí. Cada cuenta tiene su moneda, no se mezclan, y cada conversión guarda la cotización que usó."],
+  ["¿Sirve en mi país y con mi moneda?", "Sí. Elegís tu país y tu moneda al registrarte, y podés usar varias monedas a la vez: cada cuenta tiene la suya y cada conversión guarda la cotización que usó."],
   ["¿Qué pasa si me arrepiento de Pro?", "Tenés 10 días corridos desde que lo contratás para pedir la devolución total, y podés darte de baja cuando quieras."],
   ["¿Mis datos están seguros?", "Tu contraseña se guarda cifrada, podés activar la verificación en dos pasos y pedir la eliminación de todo cuando quieras."],
 ];
@@ -36,12 +36,12 @@ export default async function Landing() {
   return (
     <div className="lp">
       <header className="lp-nav"><div className="lp-w lp-navin"><Brand />
-        <nav className="lp-links">{[["lp-func", "Funciones"], ["lp-ar", "Para Argentina"], ["lp-planes", "Planes"], ["lp-faq", "Preguntas"]].map(([id, l]) => <ScrollTo key={id} id={id}>{l}</ScrollTo>)}</nav>
+        <nav className="lp-links">{[["lp-func", "Funciones"], ["lp-planes", "Planes"], ["lp-faq", "Preguntas"]].map(([id, l]) => <ScrollTo key={id} id={id}>{l}</ScrollTo>)}</nav>
         <div className="lp-cta-top">{logged ? <Link className="btn pri" href="/app">Ir a la app</Link> : <><Link className="btn" href="/ingresar">Iniciar sesión</Link><Link className="btn pri" href="/registro">Crear cuenta</Link></>}</div></div></header>
 
       <section className="lp-w lp-hero">
         <div className="lp-copy">
-          <p className="lp-eyebrow">Finanzas personales, hechas en Argentina</p>
+          <p className="lp-eyebrow">Finanzas personales, en tu moneda</p>
           <h1>Sabé cuánto tenés, cuánto debés y cuánto vas a tener.</h1>
           <p className="lp-lead">NEXO junta tus cuentas, tarjetas, deudas y cobros, y te muestra qué podés gastar sin comprometer lo que viene.</p>
           <div className="acts"><Link className="btn pri lp-big" href={logged ? "/app" : "/registro"}>{logged ? "Ir a la app" : "Crear cuenta gratis"}</Link><Link className="btn lp-big" href="/prototipo.html">Ver la demo</Link></div>
@@ -60,9 +60,6 @@ export default async function Landing() {
 
       <section className="lp-band"><div className="lp-w lp-sec"><Reveal as="h2">Empezás en tres pasos</Reveal>
         <ol className="lp-steps">{[["Creá tu cuenta", "Con tu correo, en un minuto."], ["Elegí qué vas a usar", "NEXO se arma a tu medida: lo que no te sirve no aparece."], ["Cargá tus cuentas", "Desde ahí, todo se calcula solo."]].map(([t, d]) => <Reveal as="li" key={t}><b>{t}</b><span>{d}</span></Reveal>)}</ol></div></section>
-
-      <section className="lp-w lp-sec" id="lp-ar"><Reveal as="h2">Pensado para cómo se vive acá</Reveal>
-        <Reveal className="lp-chips">{["Pesos y dólares", "Dólar oficial, MEP, blue y tarjeta", "Cuotas con y sin interés", "TNA, TEA y CFT", "Aguinaldo", "Alquileres por ICL", "Impuesto al cheque", "Ventas de granos en quintales"].map((x) => <span key={x}>{x}</span>)}</Reveal></section>
 
       <section className="lp-w lp-sec lp-sec2"><Reveal><h2>Tus datos, cuidados</h2><p className="lp-lead">Nunca te pedimos la clave de tu banco. Activás la verificación en dos pasos con Google Authenticator, y podés pedir la eliminación de todo cuando quieras.</p></Reveal>
         <div className="lp-sgrid">{[["Verificación en dos pasos", "Un código de tu celular además de la contraseña."], ["Datos cifrados", "En tránsito y guardados."], ["Vos decidís", "Tus datos son tuyos."]].map(([t, d]) => <Reveal key={t} className="lp-feat"><h3>{t}</h3><p>{d}</p></Reveal>)}</div></section>

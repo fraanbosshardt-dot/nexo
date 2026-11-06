@@ -10,7 +10,8 @@ const dataDir = process.env.PGLITE_DIR ?? ".data/pglite";
 async function main() {
   mkdirSync(dataDir, { recursive: true });
   const db = await PGlite.create(dataDir);
-  const server = new PGLiteSocketServer({ db, port, host: "127.0.0.1" });
+  // PGlite es de una sola conexión; el servidor las multiplexa para que la app y las migraciones convivan.
+  const server = new PGLiteSocketServer({ db, port, host: "127.0.0.1", maxConnections: 10 });
   await server.start();
   console.log(`PostgreSQL local listo en postgresql://postgres:postgres@localhost:${port}/postgres (datos en ${dataDir})`);
   const stop = async () => {

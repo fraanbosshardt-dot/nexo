@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getDb } from "@/lib/db";
 import { randomToken, sha256 } from "@/lib/crypto";
 import { readModules } from "@/lib/modules";
+import { effectivePlan, hasFeature, type FeatureKey } from "@/server/plans";
 
 const COOKIE = "nexo_session";
 const LONG = 30 * 24 * 3600 * 1000;
@@ -36,7 +37,7 @@ export async function getSession() {
   const token = (await cookies()).get(COOKIE)?.value;
   if (!token) return null;
   const s = await getDb().session.findUnique({ where: { tokenHash: sha256(token) }, include: { user: true } });
-  if (!s || s.revokedAt || s.expiresAt < new Date() || s.user.deletedAt) return null;
+  if (!s || s.revokedAt || s.expiresAt < new Date() || s.user.deletedAt || s.user.suspendedAt) return null;
   return s;
 }
 
@@ -66,7 +67,7 @@ export async function requireWorkspace(opts: { allowNotOnboarded?: boolean } = {
   if (!membership) redirect("/ingresar");
   const workspace = membership.workspace;
   if (!workspace.onboardedAt && !opts.allowNotOnboarded) redirect("/bienvenida");
-  return { session, user, membership, workspace, modules: readModules(workspace.modules), plan: workspace.subscription?.plan ?? "FREE" };
+  return { session, user, membership, workspace, modules: readModules(workspace.modules), plan: effectivePlan(workspace.subscription) };
 }
 
 export async function audit(action: string, data: { userId?: string | null; workspaceId?: string | null; entity?: string; entityId?: string; meta?: object } = {}) {
@@ -82,4 +83,18 @@ export async function audit(action: string, data: { userId?: string | null; work
       ip: h.get("x-forwarded-for")?.split(",")[0].trim() ?? null,
     },
   });
+}
+
+// Dueños de la plataforma: los correos de ADMIN_EMAILS (separados por coma) o usuarios marcados como administradores.
+export const isAdminEmail = (email: string) => (process.env.ADMIN_EMAILS ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean).includes(email.toLowerCase());
+
+export async function requireAdmin() {
+  const { user, session } = await requireUser();
+  if (!user.isAdmin && !isAdminEmail(user.email)) redirect("/app");
+  if (!user.isAdmin) await getDb().user.update({ where: { id: user.id }, data: { isAdmin: true } });
+  return { user, session };
+}
+
+export async function canUse(plan: "FREE" | "PRO", key: FeatureKey) {
+  return hasFeature(getDb(), plan, key);
 }

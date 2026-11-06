@@ -18,7 +18,7 @@ export default async function PayPage({ params }: { params: Promise<{ id: string
   const db = getDb();
   const ob = await db.obligation.findFirst({ where: { id, workspaceId: workspace.id }, include: { payments: true } });
   if (!ob || ob.status === "SETTLED" || ob.status === "CANCELLED") notFound();
-  const accounts = await db.account.findMany({ where: { workspaceId: workspace.id, active: true, currency: ob.currency }, orderBy: { createdAt: "asc" } });
+  const accounts = await db.account.findMany({ where: { workspaceId: workspace.id, active: true, currency: ob.currency, type: { notIn: ["CREDIT_CARD", "INVESTMENT"] } }, orderBy: { createdAt: "asc" } });
   const left = remaining(ob);
   const inc = ob.direction === "RECEIVABLE";
   const today = todayIn(workspace.timezone);

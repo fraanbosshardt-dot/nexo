@@ -4,7 +4,7 @@ import { ActionForm, Submit } from "@/components/forms";
 import { createMovementAction } from "@/app/actions/app";
 import { formatMoney, parseAmount } from "@/lib/money";
 
-type Account = { id: string; name: string; currency: string };
+type Account = { id: string; name: string; currency: string; type?: string };
 type Category = { id: string; name: string; kind: "INCOME" | "EXPENSE"; parentId: string | null };
 type Kind = "EXPENSE" | "INCOME" | "TRANSFER";
 type Status = "PAID" | "PARTIAL" | "PENDING";
@@ -25,7 +25,9 @@ export function MovementForm({ accounts, categories, today, initialKind, initial
   const [amount, setAmount] = useState("");
   const [paid, setPaid] = useState("");
   const [cat, setCat] = useState("");
-  const [account, setAccount] = useState(accounts.find((a) => a.id === initialAccount)?.id ?? accounts[0].id);
+  const [account, setAccount] = useState(accounts.find((a) => a.id === initialAccount)?.id ?? accounts.find((a) => a.type !== "CREDIT_CARD")?.id ?? accounts[0].id);
+  const [repeat, setRepeat] = useState(false);
+  const [freq, setFreq] = useState("MONTHLY");
   const [toAccount, setToAccount] = useState(accounts.find((a) => a.id !== account)?.id ?? "");
   const g = kind === "EXPENSE";
   const cur = accounts.find((a) => a.id === account)?.currency ?? baseCurrency;
@@ -101,6 +103,33 @@ export function MovementForm({ accounts, categories, today, initialKind, initial
       <div className="calc" aria-live="polite">{hint}</div>
 
       {kind !== "TRANSFER" && (
+        <div className="field">¿Se repite?
+          <div className="seg" style={{ display: "flex" }}>
+            {[["no", "Una sola vez"], ["MONTHLY", "Todos los meses"], ["other", "Otra frecuencia"]].map(([k, l]) => (
+              <button type="button" key={k} className={(k === "no" ? !repeat : k === "MONTHLY" ? repeat && freq === "MONTHLY" : repeat && freq !== "MONTHLY") ? "on" : ""} style={{ flex: 1 }}
+                onClick={() => { setRepeat(k !== "no"); setFreq(k === "other" ? (freq === "MONTHLY" ? "WEEKLY" : freq) : "MONTHLY"); }}>{l}</button>
+            ))}
+          </div>
+        </div>
+      )}
+      {kind !== "TRANSFER" && repeat && (
+        <>
+          <input type="hidden" name="repeat" value="on" />
+          <input type="hidden" name="frequency" value={freq} />
+          <div className="frow">
+            {freq !== "MONTHLY" && (
+              <label className="field">Frecuencia<select value={freq} onChange={(e) => setFreq(e.target.value)}>
+                {[["WEEKLY", "Cada semana"], ["BIWEEKLY", "Cada 2 semanas"], ["BIMONTHLY", "Cada 2 meses"], ["QUARTERLY", "Cada 3 meses"], ["SEMIANNUAL", "Cada 6 meses"], ["ANNUAL", "Una vez por año"]].map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+              </select></label>
+            )}
+            <label className="field">Hasta (opcional)<input name="until" type="date" /></label>
+          </div>
+          <label className="simtg"><input type="checkbox" name="variable" /><span>El importe cambia cada vez (por ejemplo, luz o gas)</span></label>
+          <p className="sub">Se repite el mismo día del mes. Lo vas a ver en Próximos pagos y en Recurrentes.</p>
+        </>
+      )}
+
+      {kind !== "TRANSFER" && (
         <details className="more">
           <summary>Más opciones</summary>
           <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 8 }}>
@@ -108,7 +137,6 @@ export function MovementForm({ accounts, categories, today, initialKind, initial
             {kind === "INCOME" && status !== "PAID" && <label className="simtg"><input type="checkbox" name="probable" /><span>No está confirmado (se muestra como probable)</span></label>}
             <label className="field">Etiquetas<input name="tags" placeholder="Ej.: vacaciones, auto" /></label>
             <label className="field">Notas<input name="notes" /></label>
-            <p className="sub">Repetir todos los meses llega con las reglas recurrentes (Fase 3).</p>
           </div>
         </details>
       )}

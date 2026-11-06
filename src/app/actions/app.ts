@@ -12,9 +12,14 @@ import { generateTotpSecret, otpauthUrl, verifyTotp } from "@/lib/auth/totp";
 import { decryptSecret, encryptSecret } from "@/lib/crypto";
 import { adjustBalance, cancelObligation, createAccount, payObligation, recordMovement, recordTransfer, reverseTransaction, UserError } from "@/server/ledger";
 import type { FormState } from "./auth";
+import { createRule, materialize } from "@/server/recurring";
+import { MATERIALIZE_DAYS } from "@/server/forecast";
+import { COUNTRIES, countryByCode, isCurrency } from "@/lib/countries";
+
+const currencyOf = (v: FormDataEntryValue | null, fallback: string) => (isCurrency(String(v ?? "")) ? String(v) : fallback);
+const countryOf = (v: FormDataEntryValue | null, fallback: string) => (COUNTRIES.some((c) => c.code === String(v)) ? String(v) : fallback);
 
 const ACCOUNT_TYPES = ["CASH", "SAVINGS", "CHECKING", "WALLET", "FOREIGN", "INVESTMENT", "OTHER"] as const;
-const CURRENCIES = ["ARS", "USD", "EUR", "BRL", "UYU"] as const;
 
 function fail(e: unknown): FormState {
   if (e instanceof UserError) return { error: e.message };
@@ -40,10 +45,12 @@ export async function finishOnboardingAction(_: FormState, fd: FormData): Promis
     const uses = fd.getAll("uses").map(String);
     const chosen = fd.getAll("modules").map(String);
     const mods = chosen.length ? Object.fromEntries(MODULES.map((m) => [m.key, chosen.includes(m.key)])) : modulesForUses(uses);
-    const currency = z.enum(CURRENCIES).parse(fd.get("currency") ?? "ARS");
-    const timezone = String(fd.get("timezone") || "America/Argentina/Buenos_Aires");
+    const country = countryOf(fd.get("country"), "AR");
+    const currency = currencyOf(fd.get("currency"), countryByCode(country).currency);
+    const timezone = countryByCode(country).timezone; // la zona sale del país, no se pregunta
+    const extraCurrencies = [...new Set(fd.getAll("extraCurrencies").map(String).filter((c) => isCurrency(c) && c !== currency))];
     const db = getDb();
-    await db.workspace.update({ where: { id: workspace.id }, data: { modules: mods, baseCurrency: currency, timezone, onboardedAt: new Date() } });
+    await db.workspace.update({ where: { id: workspace.id }, data: { modules: mods, country, baseCurrency: currency, extraCurrencies, timezone, onboardedAt: new Date() } });
     const accName = String(fd.get("accountName") ?? "").trim();
     if (accName) {
       const type = z.enum(ACCOUNT_TYPES).catch("SAVINGS").parse(fd.get("accountType"));
@@ -51,7 +58,7 @@ export async function finishOnboardingAction(_: FormState, fd: FormData): Promis
       await createAccount(db, workspace.id, {
         name: accName,
         type,
-        currency: type === "FOREIGN" ? "USD" : currency,
+        currency: currencyOf(fd.get("accountCurrency"), currency),
         initialBalance: initial ? money(initial, "el saldo de la cuenta") : "0",
         initialDate: todayIn(timezone),
       });
@@ -74,7 +81,7 @@ export async function createAccountAction(_: FormState, fd: FormData): Promise<F
       throw new UserError(`El plan Gratis incluye ${FREE_LIMITS.accounts} cuentas activas. Desactivá una o pasá a Pro.`);
     }
     const type = z.enum(ACCOUNT_TYPES).parse(fd.get("type"));
-    const currency = type === "FOREIGN" ? "USD" : z.enum(CURRENCIES).parse(fd.get("currency") ?? workspace.baseCurrency);
+    const currency = currencyOf(fd.get("currency"), workspace.baseCurrency);
     const a = await createAccount(db, workspace.id, {
       name: String(fd.get("name") ?? ""),
       institution: String(fd.get("institution") ?? ""),
@@ -157,7 +164,7 @@ export async function createMovementAction(_: FormState, fd: FormData): Promise<
         categoryId = (existing ?? (await db.category.create({ data: { workspaceId: workspace.id, kind: k, name: newCat } }))).id;
       }
       const economicPeriod = String(fd.get("economicPeriod") ?? "") || undefined;
-      await recordMovement(db, workspace.id, {
+      const res = await recordMovement(db, workspace.id, {
         kind,
         description: String(fd.get("description") ?? ""),
         amount: money(fd.get("amount"), "el importe"),
@@ -174,6 +181,22 @@ export async function createMovementAction(_: FormState, fd: FormData): Promise<
         idempotencyKey,
         userId: user.id,
       });
+      // ¿Se repite? Desde la próxima vez, lo genera la regla recurrente (esta vez ya quedó cargada).
+      if (fd.get("repeat") === "on" && !res.duplicate) {
+        const freq = z.enum(["WEEKLY", "BIWEEKLY", "MONTHLY", "BIMONTHLY", "QUARTERLY", "SEMIANNUAL", "ANNUAL"]).catch("MONTHLY").parse(fd.get("frequency"));
+        const ref = status === "PENDING" ? date(fd.get("dueDate"), "el vencimiento") : date(fd.get("effectiveDate"), "la fecha de pago");
+        const step: Record<string, number> = { MONTHLY: 1, BIMONTHLY: 2, QUARTERLY: 3, SEMIANNUAL: 6, ANNUAL: 12 };
+        const next = step[freq] ? new Date(Date.UTC(ref.getUTCFullYear(), ref.getUTCMonth() + step[freq], 1)) : new Date(ref.getTime() + (freq === "WEEKLY" ? 7 : 14) * 864e5);
+        const day = ref.getUTCDate();
+        const start = step[freq] ? new Date(Date.UTC(next.getUTCFullYear(), next.getUTCMonth(), Math.min(day, new Date(Date.UTC(next.getUTCFullYear(), next.getUTCMonth() + 1, 0)).getUTCDate()))) : next;
+        const acc = await db.account.findFirstOrThrow({ where: { id: String(fd.get("accountId")), workspaceId: workspace.id } });
+        await createRule(db, workspace.id, {
+          direction: kind === "INCOME" ? "RECEIVABLE" : "PAYABLE", description: String(fd.get("description") ?? ""), amount: money(fd.get("amount"), "el importe"), currency: acc.currency,
+          categoryId, accountId: acc.id, frequency: freq, dayOfMonth: step[freq] ? day : null, startDate: start,
+          endDate: String(fd.get("until") ?? "").trim() ? date(fd.get("until"), "la fecha hasta") : null, variableAmount: fd.get("variable") === "on",
+        });
+        await materialize(db, workspace.id, new Date(todayIn(workspace.timezone).getTime() + MATERIALIZE_DAYS * 864e5));
+      }
     }
   } catch (e) {
     return fail(e);
@@ -232,7 +255,11 @@ export async function updateProfileAction(_: FormState, fd: FormData): Promise<F
   await db.user.update({ where: { id: user.id }, data: { name } });
   await db.workspace.update({
     where: { id: workspace.id },
-    data: { baseCurrency: z.enum(CURRENCIES).parse(fd.get("currency") ?? workspace.baseCurrency), timezone: String(fd.get("timezone") || workspace.timezone) },
+    data: (() => {
+      const country = countryOf(fd.get("country"), workspace.country);
+      const baseCurrency = currencyOf(fd.get("currency"), workspace.baseCurrency);
+      return { country, baseCurrency, timezone: countryByCode(country).timezone, extraCurrencies: fd.getAll("extraCurrencies").map(String).filter((c) => isCurrency(c) && c !== baseCurrency) };
+    })(),
   });
   revalidatePath("/app", "layout");
   return { ok: "Guardado." };

@@ -3,6 +3,7 @@ import { requireWorkspace } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
 import { MODULES, PLAN_FEATURES, PRICE_USD } from "@/lib/modules";
 import { fmtDate } from "@/lib/dates";
+import { COUNTRIES, CURRENCIES } from "@/lib/countries";
 import { PageHead, Tabs } from "@/components/page";
 import { ActionForm, OtpInput, Submit } from "@/components/forms";
 import { confirm2faAction, disable2faAction, revokeOtherSessionsAction, saveModulesAction, start2faAction, twoFactorQr, updateProfileAction } from "@/app/actions/app";
@@ -10,12 +11,6 @@ import { confirm2faAction, disable2faAction, revokeOtherSessionsAction, saveModu
 export const metadata: Metadata = { title: "Configuración" };
 
 const TABS = [["general", "General"], ["funciones", "Funciones"], ["seguridad", "Seguridad"], ["plan", "Plan"], ["datos", "Tus datos"]] as const;
-const TIMEZONES = [
-  ["America/Argentina/Buenos_Aires", "Buenos Aires, Argentina (GMT−3)"],
-  ["America/Argentina/Cordoba", "Córdoba, Argentina (GMT−3)"],
-  ["America/Montevideo", "Montevideo, Uruguay (GMT−3)"],
-  ["America/Santiago", "Santiago, Chile (GMT−4)"],
-];
 
 export default async function Settings({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const { user, workspace, modules, plan, session } = await requireWorkspace();
@@ -31,10 +26,15 @@ export default async function Settings({ searchParams }: { searchParams: Promise
         <ActionForm action={updateProfileAction} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div className="frow"><label className="field">Nombre<input name="name" defaultValue={user.name} /></label><label className="field">Correo<input defaultValue={user.email} disabled /></label></div>
           <div className="frow">
-            <label className="field">Moneda principal<select name="currency" defaultValue={workspace.baseCurrency}><option value="ARS">Peso argentino (ARS)</option><option value="USD">Dólar (USD)</option></select></label>
-            <label className="field">Zona horaria<select name="timezone" defaultValue={workspace.timezone}>{TIMEZONES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></label>
+            <label className="field">País<select name="country" defaultValue={workspace.country}>{COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}</select></label>
+            <label className="field">Moneda principal<select name="currency" defaultValue={workspace.baseCurrency}>{CURRENCIES.map((c) => <option key={c.code} value={c.code}>{c.name} ({c.code})</option>)}</select></label>
           </div>
-          <p className="sub">Hora actual en tu zona: {now}.</p>
+          <div className="field">Otras monedas que usás
+            <div className="chips">{CURRENCIES.filter((c) => c.code !== workspace.baseCurrency).map((c) => (
+              <label key={c.code} className="chipck"><input type="checkbox" name="extraCurrencies" value={c.code} defaultChecked={workspace.extraCurrencies.includes(c.code)} /><span>{c.code}</span></label>
+            ))}</div>
+          </div>
+          <p className="sub">La zona horaria se ajusta sola según el país. Hora actual: {now}.</p>
           <div><Submit>Guardar</Submit></div>
         </ActionForm>
       </div>

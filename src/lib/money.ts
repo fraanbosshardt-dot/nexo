@@ -1,6 +1,7 @@
 // Dinero exacto: nunca se usan números de punto flotante para importes.
 // Redondeo explícito: half-even ("del banquero") a 2 decimales.
 import Decimal from "decimal.js";
+import { symbolOf } from "./countries";
 
 export const Money = Decimal.clone({ precision: 40, rounding: Decimal.ROUND_HALF_EVEN });
 export type Money = Decimal;
@@ -28,9 +29,7 @@ export function parseAmount(input: string | null | undefined): Decimal | null {
   return d.isFinite() ? d : null;
 }
 
-const SYMBOL: Record<string, string> = { ARS: "$", USD: "US$", EUR: "€", BRL: "R$", UYU: "$U" };
-
-// Formato argentino: "$ 1.234,56". Muestra centavos solo si existen, salvo que se pidan siempre.
+// Formato en español: "$ 1.234,56", con el símbolo de cada moneda. Muestra centavos solo si existen, salvo que se pidan siempre.
 export function formatMoney(v: MoneyValue, currency = "ARS", opts: { cents?: "auto" | "always"; sign?: boolean } = {}): string {
   const d = round2(v);
   const abs = d.abs();
@@ -39,7 +38,7 @@ export function formatMoney(v: MoneyValue, currency = "ARS", opts: { cents?: "au
   // Intl acepta el número como texto: formatea sin pasar por float.
   const body = nf.format(abs.toFixed(showCents ? 2 : 0) as unknown as number);
   const sign = d.isNegative() && !d.isZero() ? "−" : opts.sign && d.gt(0) ? "+" : "";
-  return `${sign}${SYMBOL[currency] ?? currency} ${body}`;
+  return `${sign}${symbolOf(currency)} ${body}`;
 }
 
 // Reparte un total en n partes que suman exacto: los centavos sobrantes van a las primeras cuotas.

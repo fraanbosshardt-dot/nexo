@@ -7,7 +7,7 @@ const interTight = Inter_Tight({ subsets: ["latin"], weight: ["600", "700"], var
 
 export const metadata: Metadata = {
   title: { default: "NEXO Finanzas", template: "%s · NEXO" },
-  description: "Sabé cuánto tenés, cuánto debés y cuánto vas a tener. Finanzas personales hechas en Argentina.",
+  description: "Sabé cuánto tenés, cuánto debés y cuánto vas a tener. Finanzas personales en tu moneda.",
 };
 
 export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover" };

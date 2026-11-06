@@ -1,0 +1,196 @@
+// Reglas recurrentes: generan pendientes (Obligation) sin duplicar y sin tocar el pasado.
+import type { Frequency, ObligationDirection, WeekendRule } from "@/generated/prisma/enums";
+import type { Db } from "./ledger";
+import { UserError } from "./ledger";
+import { dec, round2, type MoneyValue } from "@/lib/money";
+import { period } from "@/lib/dates";
+
+type RuleLike = {
+  frequency: Frequency;
+  interval: number;
+  dayOfMonth: number | null;
+  startDate: Date;
+  endDate: Date | null;
+  weekendRule: WeekendRule;
+  pausedAt?: Date | null;
+};
+
+const MONTHS: Partial<Record<Frequency, number>> = { MONTHLY: 1, BIMONTHLY: 2, QUARTERLY: 3, SEMIANNUAL: 6, ANNUAL: 12, CUSTOM: 1 };
+const DAYS: Partial<Record<Frequency, number>> = { DAILY: 1, WEEKLY: 7, BIWEEKLY: 14 };
+
+const utc = (y: number, m: number, d: number) => new Date(Date.UTC(y, m, d));
+const lastDay = (y: number, m: number) => new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+
+// Sábado o domingo → día hábil anterior o siguiente, según la regla.
+export function applyWeekend(d: Date, rule: WeekendRule): Date {
+  const w = d.getUTCDay();
+  if (rule === "NONE" || (w !== 0 && w !== 6)) return d;
+  const shift = rule === "PREVIOUS_BUSINESS_DAY" ? (w === 6 ? -1 : -2) : w === 6 ? 2 : 1;
+  return new Date(d.getTime() + shift * 864e5);
+}
+
+// Fechas "teóricas" de la regla entre from y to (sin mover por fin de semana).
+export function occurrences(rule: RuleLike, from: Date, to: Date): Date[] {
+  const out: Date[] = [];
+  const end = rule.endDate && rule.endDate < to ? rule.endDate : to;
+  if (rule.startDate > end) return out;
+  const months = MONTHS[rule.frequency];
+  if (months) {
+    const step = months * Math.max(1, rule.interval);
+    const day = rule.dayOfMonth ?? rule.startDate.getUTCDate();
+    for (let k = 0; k < 1200; k++) {
+      const y = rule.startDate.getUTCFullYear(), m = rule.startDate.getUTCMonth() + k * step;
+      const yy = y + Math.floor(m / 12), mm = ((m % 12) + 12) % 12;
+      // Fecha inexistente (31 en un mes de 30): se usa el último día del mes.
+      const d = utc(yy, mm, Math.min(day, lastDay(yy, mm)));
+      if (d > end) break;
+      if (d >= rule.startDate && d >= from) out.push(d);
+    }
+  } else {
+    const step = (DAYS[rule.frequency] ?? 30) * Math.max(1, rule.interval) * 864e5;
+    for (let t = rule.startDate.getTime(); t <= end.getTime() && out.length < 2000; t += step) if (t >= from.getTime()) out.push(new Date(t));
+  }
+  return out;
+}
+
+// Importe de una ocurrencia con aumento programado (por ejemplo, +6% cada 3 meses).
+export function amountFor(rule: { amount: MoneyValue; increasePct?: MoneyValue | null; increaseEveryMonths?: number | null; startDate: Date }, occ: Date) {
+  const base = dec(rule.amount);
+  if (!rule.increasePct || !rule.increaseEveryMonths) return round2(base);
+  const months = (occ.getUTCFullYear() - rule.startDate.getUTCFullYear()) * 12 + occ.getUTCMonth() - rule.startDate.getUTCMonth();
+  const steps = Math.max(0, Math.floor(months / rule.increaseEveryMonths));
+  return round2(base.times(dec(1).plus(dec(rule.increasePct).dividedBy(100)).pow(steps)));
+}
+
+// Crea los pendientes de las reglas hasta "until". Es idempotente: la clave (regla, fecha) es única.
+export async function materialize(db: Db, ws: string, until: Date) {
+  const rules = await db.recurringRule.findMany({ where: { workspaceId: ws, pausedAt: null, startDate: { lte: until } } });
+  let created = 0;
+  for (const r of rules) {
+    const dates = occurrences(r, r.startDate, until);
+    if (!dates.length) continue;
+    const res = await db.obligation.createMany({
+      skipDuplicates: true,
+      data: dates.map((d) => ({
+        workspaceId: ws,
+        direction: r.direction,
+        description: r.description,
+        amount: amountFor(r, d).toFixed(2),
+        currency: r.currency,
+        categoryId: r.categoryId,
+        dueDate: applyWeekend(d, r.weekendRule),
+        occurrenceDate: d,
+        economicPeriod: period(d),
+        recurringRuleId: r.id,
+      })),
+    });
+    created += res.count;
+  }
+  return created;
+}
+
+export type RuleInput = {
+  direction: ObligationDirection;
+  description: string;
+  amount: MoneyValue;
+  currency: string;
+  categoryId?: string | null;
+  accountId?: string | null;
+  frequency: Frequency;
+  interval?: number;
+  dayOfMonth?: number | null;
+  startDate: Date;
+  endDate?: Date | null;
+  weekendRule?: WeekendRule;
+  variableAmount?: boolean;
+  increasePct?: MoneyValue | null;
+  increaseEveryMonths?: number | null;
+};
+
+export async function createRule(db: Db, ws: string, input: RuleInput) {
+  if (!input.description.trim()) throw new UserError("Falta el concepto.");
+  if (!round2(input.amount).gt(0)) throw new UserError("El importe tiene que ser mayor a cero.");
+  if (input.endDate && input.endDate < input.startDate) throw new UserError("La fecha de fin es anterior al inicio.");
+  if (input.dayOfMonth != null && (input.dayOfMonth < 1 || input.dayOfMonth > 31)) throw new UserError("El día del mes tiene que estar entre 1 y 31.");
+  if (input.categoryId && !(await db.category.findFirst({ where: { id: input.categoryId, workspaceId: ws } }))) throw new UserError("No encontramos esa categoría.");
+  return db.recurringRule.create({
+    data: {
+      workspaceId: ws,
+      direction: input.direction,
+      description: input.description.trim(),
+      amount: round2(input.amount).toFixed(2),
+      currency: input.currency,
+      categoryId: input.categoryId ?? null,
+      accountId: input.accountId ?? null,
+      frequency: input.frequency,
+      interval: input.interval ?? 1,
+      dayOfMonth: input.dayOfMonth ?? null,
+      startDate: input.startDate,
+      endDate: input.endDate ?? null,
+      weekendRule: input.weekendRule ?? "NONE",
+      variableAmount: input.variableAmount ?? false,
+      increasePct: input.increasePct != null ? dec(input.increasePct).toFixed(4) : null,
+      increaseEveryMonths: input.increaseEveryMonths ?? null,
+    },
+  });
+}
+
+// Borra los pendientes futuros de una regla que no tengan pagos (los pagados quedan como historial).
+async function dropFuture(db: Db, ruleId: string, from: Date) {
+  const future = await db.obligation.findMany({ where: { recurringRuleId: ruleId, occurrenceDate: { gte: from }, status: "PENDING" }, include: { payments: true } });
+  const ids = future.filter((o) => o.payments.length === 0).map((o) => o.id);
+  if (ids.length) await db.obligation.deleteMany({ where: { id: { in: ids } } });
+  return ids.length;
+}
+
+// "Esta y las futuras": cierra la versión actual el día anterior y crea una nueva. El pasado no cambia.
+export async function changeRuleFrom(db: Db, ws: string, ruleId: string, from: Date, changes: Partial<RuleInput>) {
+  const r = await db.recurringRule.findFirst({ where: { id: ruleId, workspaceId: ws } });
+  if (!r) throw new UserError("No encontramos esa regla.");
+  return db.$transaction(async (tx) => {
+    await tx.recurringRule.update({ where: { id: r.id }, data: { endDate: new Date(from.getTime() - 864e5) } });
+    await dropFuture(tx as unknown as Db, r.id, from);
+    return tx.recurringRule.create({
+      data: {
+        workspaceId: ws,
+        direction: r.direction,
+        description: changes.description?.trim() || r.description,
+        amount: changes.amount != null ? round2(changes.amount).toFixed(2) : r.amount,
+        currency: r.currency,
+        categoryId: changes.categoryId !== undefined ? changes.categoryId : r.categoryId,
+        accountId: r.accountId,
+        frequency: changes.frequency ?? r.frequency,
+        interval: changes.interval ?? r.interval,
+        dayOfMonth: changes.dayOfMonth !== undefined ? changes.dayOfMonth : r.dayOfMonth,
+        startDate: from,
+        endDate: changes.endDate !== undefined ? changes.endDate : null,
+        weekendRule: changes.weekendRule ?? r.weekendRule,
+        variableAmount: changes.variableAmount ?? r.variableAmount,
+        increasePct: r.increasePct,
+        increaseEveryMonths: r.increaseEveryMonths,
+        previousVersionId: r.id,
+      },
+    });
+  });
+}
+
+export async function pauseRule(db: Db, ws: string, ruleId: string, paused: boolean, today: Date) {
+  const r = await db.recurringRule.findFirst({ where: { id: ruleId, workspaceId: ws } });
+  if (!r) throw new UserError("No encontramos esa regla.");
+  if (paused) await dropFuture(db, r.id, today);
+  return db.recurringRule.update({ where: { id: r.id }, data: { pausedAt: paused ? new Date() : null } });
+}
+
+export async function endRule(db: Db, ws: string, ruleId: string, today: Date) {
+  const r = await db.recurringRule.findFirst({ where: { id: ruleId, workspaceId: ws } });
+  if (!r) throw new UserError("No encontramos esa regla.");
+  await dropFuture(db, r.id, today);
+  return db.recurringRule.update({ where: { id: r.id }, data: { endDate: today } });
+}
+
+export function nextOccurrence(rule: RuleLike, today: Date): Date | null {
+  if (rule.pausedAt) return null;
+  const horizon = new Date(today.getTime() + 800 * 864e5);
+  const d = occurrences(rule, today, horizon)[0];
+  return d ? applyWeekend(d, rule.weekendRule) : null;
+}

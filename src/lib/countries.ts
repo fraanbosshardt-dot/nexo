@@ -1,0 +1,68 @@
+// Países con su moneda y zona horaria principal. La zona se toma sola del país elegido.
+export const COUNTRIES: { code: string; name: string; currency: string; timezone: string }[] = [
+  { code: "AR", name: "Argentina", currency: "ARS", timezone: "America/Argentina/Buenos_Aires" },
+  { code: "BO", name: "Bolivia", currency: "BOB", timezone: "America/La_Paz" },
+  { code: "BR", name: "Brasil", currency: "BRL", timezone: "America/Sao_Paulo" },
+  { code: "CL", name: "Chile", currency: "CLP", timezone: "America/Santiago" },
+  { code: "CO", name: "Colombia", currency: "COP", timezone: "America/Bogota" },
+  { code: "CR", name: "Costa Rica", currency: "CRC", timezone: "America/Costa_Rica" },
+  { code: "CU", name: "Cuba", currency: "CUP", timezone: "America/Havana" },
+  { code: "EC", name: "Ecuador", currency: "USD", timezone: "America/Guayaquil" },
+  { code: "SV", name: "El Salvador", currency: "USD", timezone: "America/El_Salvador" },
+  { code: "ES", name: "España", currency: "EUR", timezone: "Europe/Madrid" },
+  { code: "US", name: "Estados Unidos", currency: "USD", timezone: "America/New_York" },
+  { code: "GT", name: "Guatemala", currency: "GTQ", timezone: "America/Guatemala" },
+  { code: "HN", name: "Honduras", currency: "HNL", timezone: "America/Tegucigalpa" },
+  { code: "MX", name: "México", currency: "MXN", timezone: "America/Mexico_City" },
+  { code: "NI", name: "Nicaragua", currency: "NIO", timezone: "America/Managua" },
+  { code: "PA", name: "Panamá", currency: "USD", timezone: "America/Panama" },
+  { code: "PY", name: "Paraguay", currency: "PYG", timezone: "America/Asuncion" },
+  { code: "PE", name: "Perú", currency: "PEN", timezone: "America/Lima" },
+  { code: "PR", name: "Puerto Rico", currency: "USD", timezone: "America/Puerto_Rico" },
+  { code: "DO", name: "República Dominicana", currency: "DOP", timezone: "America/Santo_Domingo" },
+  { code: "UY", name: "Uruguay", currency: "UYU", timezone: "America/Montevideo" },
+  { code: "VE", name: "Venezuela", currency: "VES", timezone: "America/Caracas" },
+  { code: "CA", name: "Canadá", currency: "CAD", timezone: "America/Toronto" },
+  { code: "GB", name: "Reino Unido", currency: "GBP", timezone: "Europe/London" },
+  { code: "IT", name: "Italia", currency: "EUR", timezone: "Europe/Rome" },
+  { code: "FR", name: "Francia", currency: "EUR", timezone: "Europe/Paris" },
+  { code: "DE", name: "Alemania", currency: "EUR", timezone: "Europe/Berlin" },
+  { code: "PT", name: "Portugal", currency: "EUR", timezone: "Europe/Lisbon" },
+  { code: "CH", name: "Suiza", currency: "CHF", timezone: "Europe/Zurich" },
+  { code: "AU", name: "Australia", currency: "AUD", timezone: "Australia/Sydney" },
+];
+
+export const CURRENCIES: { code: string; name: string; symbol: string }[] = [
+  { code: "ARS", name: "Peso argentino", symbol: "$" },
+  { code: "USD", name: "Dólar estadounidense", symbol: "US$" },
+  { code: "EUR", name: "Euro", symbol: "€" },
+  { code: "BRL", name: "Real brasileño", symbol: "R$" },
+  { code: "CLP", name: "Peso chileno", symbol: "CLP$" },
+  { code: "UYU", name: "Peso uruguayo", symbol: "$U" },
+  { code: "PYG", name: "Guaraní paraguayo", symbol: "₲" },
+  { code: "BOB", name: "Boliviano", symbol: "Bs" },
+  { code: "PEN", name: "Sol peruano", symbol: "S/" },
+  { code: "COP", name: "Peso colombiano", symbol: "COL$" },
+  { code: "MXN", name: "Peso mexicano", symbol: "MX$" },
+  { code: "VES", name: "Bolívar venezolano", symbol: "Bs." },
+  { code: "CRC", name: "Colón costarricense", symbol: "₡" },
+  { code: "GTQ", name: "Quetzal guatemalteco", symbol: "Q" },
+  { code: "HNL", name: "Lempira hondureño", symbol: "L" },
+  { code: "NIO", name: "Córdoba nicaragüense", symbol: "C$" },
+  { code: "DOP", name: "Peso dominicano", symbol: "RD$" },
+  { code: "CUP", name: "Peso cubano", symbol: "CUP$" },
+  { code: "CAD", name: "Dólar canadiense", symbol: "CA$" },
+  { code: "GBP", name: "Libra esterlina", symbol: "£" },
+  { code: "CHF", name: "Franco suizo", symbol: "CHF" },
+  { code: "AUD", name: "Dólar australiano", symbol: "AU$" },
+  { code: "JPY", name: "Yen japonés", symbol: "¥" },
+  { code: "CNY", name: "Yuan chino", symbol: "CN¥" },
+  { code: "BTC", name: "Bitcoin", symbol: "₿" },
+  { code: "USDT", name: "Tether (USDT)", symbol: "USDT" },
+];
+
+export const CURRENCY_CODES = CURRENCIES.map((c) => c.code);
+export const isCurrency = (c: unknown): c is string => typeof c === "string" && CURRENCY_CODES.includes(c);
+export const countryByCode = (code: string | null | undefined) => COUNTRIES.find((c) => c.code === code) ?? COUNTRIES[0];
+export const symbolOf = (code: string) => CURRENCIES.find((c) => c.code === code)?.symbol ?? code;
+export const currencyName = (code: string) => CURRENCIES.find((c) => c.code === code)?.name ?? code;
