@@ -9,6 +9,7 @@ import { cancelPlanAction, checkoutAction, startTrialAction } from "@/app/action
 import { fmtDate } from "@/lib/dates";
 import { COUNTRIES, CURRENCIES } from "@/lib/countries";
 import { PageHead, SettingsTabs } from "@/components/page";
+import { InstallApp } from "@/components/pwa";
 import { ActionForm, OtpInput, Submit } from "@/components/forms";
 import { emailRemindersAction, confirm2faAction, disable2faAction, revokeOtherSessionsAction, saveModulesAction, start2faAction, twoFactorQr, updateProfileAction } from "@/app/actions/app";
 
@@ -148,5 +149,5 @@ export default async function Settings({ searchParams }: { searchParams: Promise
       </div></div>
     );
   }
-  return (<div className="narrow wide"><PageHead crumb="Ajustes" title="Configuración" />{tabs}{body}</div>);
+  return (<div className="narrow wide"><PageHead crumb="Ajustes" title="Configuración" />{tabs}{t === "general" && <InstallApp />}{body}</div>);
 }

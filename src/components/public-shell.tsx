@@ -1,16 +1,12 @@
 import Link from "next/link";
 import { Brand } from "./brand";
+import { PublicNav } from "./public-nav";
 
 // Encabezado y pie de las páginas públicas (landing, herramientas, glosario).
 export function PublicShell({ children, logged = false }: { children: React.ReactNode; logged?: boolean }) {
   return (
     <div className="lp">
-      <header className="lp-nav"><div className="lp-w lp-navin"><Brand />
-        <nav className="lp-links" aria-label="Secciones">
-          <Link href="/#funciones">Funciones</Link><Link href="/herramientas">Herramientas gratis</Link><Link href="/#planes">Planes</Link><Link href="/#preguntas">Preguntas</Link>
-        </nav>
-        <div className="lp-cta-top">{logged ? <Link className="btn pri" href="/app">Ir a la app</Link> : <><Link className="btn ghost" href="/ingresar">Ingresar</Link><Link className="btn pri" href="/registro">Crear cuenta</Link></>}</div>
-      </div></header>
+      <PublicNav logged={logged} />
       <main>{children}</main>
       <footer className="lp-foot"><div className="lp-w lp-footin">
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}><Brand /><span className="sub" style={{ margin: 0 }}>Finanzas personales en tu moneda.</span></div>

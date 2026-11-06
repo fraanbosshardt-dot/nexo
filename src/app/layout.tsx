@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Roboto } from "next/font/google";
 import { SITE } from "@/lib/seo";
+import { PwaRegister } from "@/components/pwa";
 import "./globals.css";
 import "./nx.css";
 
@@ -24,7 +25,7 @@ export const viewport: Viewport = { width: "device-width", initialScale: 1, view
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" className={roboto.variable}>
-      <body>{children}</body>
+      <body>{children}<PwaRegister /></body>
     </html>
   );
 }

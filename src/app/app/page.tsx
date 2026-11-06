@@ -7,6 +7,7 @@ import { insights } from "@/server/insights";
 import { formatMoney, ZERO } from "@/lib/money";
 import { fmtDayMonth, periodEnd, period, todayIn } from "@/lib/dates";
 import { PageHead } from "@/components/page";
+import { InstallApp } from "@/components/pwa";
 
 export const metadata: Metadata = { title: "Inicio" };
 const MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
@@ -74,6 +75,7 @@ export default async function Home() {
           {d.others.map((o) => <div className="hrow" key={o.id}><span>{o.name}</span><b>{formatMoney(o.balance, o.currency)}</b></div>)}
         </div>
       </div>
+      <InstallApp />
       {tip && (
         <Link href={tip.href} className={`notice ${tip.level === "urgent" ? "r" : tip.level === "good" ? "g" : ""}`} style={{ color: "inherit" }}>
           <span><b>{tip.title}</b>{tip.detail ? ` · ${tip.detail}` : ""}</span>

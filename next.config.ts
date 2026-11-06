@@ -30,7 +30,11 @@ const nextConfig: NextConfig = {
   // Para subir el CSV de importación y el PDF del resumen (cada uno se valida hasta 5 MB).
   experimental: { serverActions: { bodySizeLimit: "6mb" } },
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
+    return [
+      { source: "/:path*", headers: securityHeaders },
+      // El service worker se revisa siempre, para que las actualizaciones lleguen enseguida.
+      { source: "/sw.js", headers: [{ key: "Cache-Control", value: "no-cache, no-store, must-revalidate" }, { key: "Content-Type", value: "application/javascript; charset=utf-8" }] },
+    ];
   },
   async redirects() {
     return [{ source: "/prototipo", destination: "/prototipo.html", permanent: false }];

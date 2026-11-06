@@ -586,3 +586,15 @@ details.more summary:hover{color:var(--ink-h)}
   .lp .lp-feat:hover,.lp .lp-plan:hover{transform:none}
 }
 @media (max-width:900px){.lp .lp-hero{padding-block:40px 64px;gap:40px}.lp .lp-sec{padding-block:64px}}
+
+/* Planes centrados: título, selector mensual/anual y las dos tarjetas. */
+.lp #planes{text-align:center}
+.lp #planes>h2{margin-inline:auto;max-width:none}
+.lp #planes .lp-yr{display:flex;width:fit-content;margin:20px auto 0}
+.lp #planes .lp-plans{margin:28px auto 0;max-width:880px;text-align:left}
+
+/* Barra pública: acompaña al bajar y se vuelve semitransparente con desenfoque. */
+.lp .lp-nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;background:var(--bg);box-shadow:none;transition:background-color .3s ease,box-shadow .3s ease,backdrop-filter .3s ease!important}
+.lp .lp-nav.scrolled{background:color-mix(in srgb,var(--bg) 72%,transparent);backdrop-filter:saturate(180%) blur(14px);-webkit-backdrop-filter:saturate(180%) blur(14px);box-shadow:0 1px 0 color-mix(in srgb,var(--line) 70%,transparent),0 6px 20px rgba(60,64,67,.06)}
+/* Las secciones quedan visibles debajo de la barra al llegar con el enlace. */
+.lp section[id]{scroll-margin-top:72px}

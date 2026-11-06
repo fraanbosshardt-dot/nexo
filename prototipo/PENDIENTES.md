@@ -12,6 +12,8 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 - [ ] Z3. Decidir el precio de Pro en pesos (u otra moneda) para Mercado Pago.
 
 ### Para la próxima vuelta
+- [ ] P7. Publicar en Play Store y App Store (con Capacitor, la misma app empaquetada). Necesita tus cuentas de desarrollador: Google US$25 una vez, Apple US$99 por año.
+- [ ] P8. Notificaciones en el celular (además del email) para los vencimientos.
 - [ ] P6. Probar la lectura de PDF con resúmenes reales de varios bancos (Galicia, Santander, BBVA, Nación, Macro, Mercado Pago) y ajustar los formatos que no reconozca.
 - [ ] P4. Cuando esté publicado: dar de alta el sitio en Google Search Console y enviar el sitemap (/sitemap.xml).
 - [ ] P5. Más herramientas gratis que atraen búsquedas: plazo fijo, conversor de monedas, fondo de emergencia, presupuesto 50/30/20.
@@ -53,3 +55,5 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 - [x] 07/11/2026 — Seguridad: máximo 5 códigos de dos pasos fallidos (después se cierra la sesión), máximo 10 cuentas por hora desde la misma conexión, política de contenido del navegador, archivos de hasta 6 MB.
 - [x] 07/11/2026 — Arreglado: la tarjeta decía "Al día" aunque hubiera un resumen anterior sin pagar.
 - [x] 07/11/2026 — Landing rehecha sin líneas: tarjetas suaves con íconos en círculo, pasos numerados, preguntas en tarjetas, más espacio entre secciones. Animación al bajar que siempre funciona (si Windows tiene las animaciones apagadas, es un fundido sin movimiento) y con respaldo para que nada quede oculto.
+- [x] 07/11/2026 — App instalable en el celular: íconos para Android y iPhone, pantalla completa, accesos directos (cargar un gasto, próximos pagos), botón "Instalar app" en Inicio y Configuración (en iPhone muestra cómo hacerlo) y página "Sin conexión". El service worker solo guarda diseño e íconos, nunca datos financieros.
+- [x] 07/11/2026 — Landing: barra semitransparente al bajar y desplazamiento suave al tocar las secciones; planes centrados.

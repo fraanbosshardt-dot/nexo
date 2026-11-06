@@ -1,19 +1,29 @@
 import type { MetadataRoute } from "next";
 
-// Permite instalar NEXO en el celular como una app (ícono en la pantalla de inicio).
+// Permite instalar NEXO en el celular como una app (ícono en la pantalla de inicio, pantalla completa).
 export default function manifest(): MetadataRoute.Manifest {
   return {
+    id: "/app",
     name: "NEXO Finanzas",
     short_name: "NEXO",
-    description: "Sabé cuánto tenés, cuánto debés y cuánto podés gastar.",
-    start_url: "/app",
+    description: "Sabé cuánto tenés, cuánto debés y cuánto podés gastar hasta tu próximo cobro.",
+    start_url: "/app?origen=app",
+    scope: "/",
     display: "standalone",
+    display_override: ["standalone", "minimal-ui"],
+    orientation: "portrait",
     background_color: "#FFFFFF",
     theme_color: "#1A5FD0",
     lang: "es",
+    categories: ["finance", "productivity"],
     icons: [
-      { src: "/icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any" },
-      { src: "/icon-maskable.svg", sizes: "any", type: "image/svg+xml", purpose: "maskable" },
+      { src: "/icons/192", sizes: "192x192", type: "image/png", purpose: "any" },
+      { src: "/icons/512", sizes: "512x512", type: "image/png", purpose: "any" },
+      { src: "/icons/maskable-512", sizes: "512x512", type: "image/png", purpose: "maskable" },
+    ],
+    shortcuts: [
+      { name: "Cargar un gasto", short_name: "Gasto", url: "/app/movimientos/nuevo", icons: [{ src: "/icons/192", sizes: "192x192", type: "image/png" }] },
+      { name: "Próximos pagos", short_name: "Próximos", url: "/app/proximos", icons: [{ src: "/icons/192", sizes: "192x192", type: "image/png" }] },
     ],
   };
 }
