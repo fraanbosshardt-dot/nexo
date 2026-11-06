@@ -20,3 +20,13 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+
+# NEXO
+.data/
+src/generated/
+.vercel/
+next-env.d.ts
+*.tsbuildinfo
+
+# Configuración local de Claude Code
+.claude/

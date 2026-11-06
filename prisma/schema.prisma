@@ -1,0 +1,609 @@
+// NEXO — modelo de datos.
+// Reglas:
+// - Todo dato financiero pertenece a un espacio (workspaceId) y se filtra siempre por él.
+// - Importes con Decimal exacto (18,2); cotizaciones con Decimal(18,6). Nunca float.
+// - Obligaciones (lo que hay que pagar o cobrar) y movimientos de dinero son tablas separadas:
+//   un pago es un Transaction vinculado a su Obligation, sin duplicar el importe.
+// - Fecha económica (economicPeriod), fecha prevista (dueDate) y fecha efectiva (effectiveDate)
+//   son campos distintos.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------- Identidad, espacios y planes ----------
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  passwordHash  String
+  emailVerified DateTime?
+  totpSecretEnc String? // secreto TOTP cifrado (AES-256-GCM)
+  totpEnabledAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  sessions    Session[]
+  memberships Membership[]
+  auditLogs   AuditLog[]
+}
+
+model Session {
+  id                String    @id @default(cuid())
+  tokenHash         String    @unique // sha256 del token de la cookie; el token nunca se guarda
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  twoFactorVerified Boolean   @default(false)
+  userAgent         String?
+  ip                String?
+  createdAt         DateTime  @default(now())
+  expiresAt         DateTime
+  revokedAt         DateTime?
+
+  @@index([userId])
+}
+
+enum Role {
+  OWNER
+  EDITOR
+  VIEWER
+}
+
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  baseCurrency String @default("ARS")
+  timezone  String   @default("America/Argentina/Buenos_Aires")
+  locale    String   @default("es-AR")
+  modules   Json     @default("{}") // funciones activadas: { tarjetas: true, cereal: false, ... }
+  onboardedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members       Membership[]
+  subscription  Subscription?
+  accounts      Account[]
+  categories    Category[]
+  transactions  Transaction[]
+  obligations   Obligation[]
+  recurringRules RecurringRule[]
+  debts         Debt[]
+  creditCards   CreditCard[]
+  budgets       Budget[]
+  goals         Goal[]
+  investments   Investment[]
+  assets        Asset[]
+  grainSales    GrainSale[]
+  exchangeRates ExchangeRate[]
+  importBatches ImportBatch[]
+  auditLogs     AuditLog[]
+}
+
+model Membership {
+  id          String    @id @default(cuid())
+  userId      String
+  workspaceId String
+  role        Role      @default(OWNER)
+  createdAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId])
+  @@index([workspaceId])
+}
+
+enum PlanCode {
+  FREE
+  PRO
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  TRIALING
+  PAST_DUE
+  CANCELED
+}
+
+model Subscription {
+  id                 String             @id @default(cuid())
+  workspaceId        String             @unique
+  workspace          Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  plan               PlanCode           @default(FREE)
+  status             SubscriptionStatus @default(ACTIVE)
+  billingCycle       String? // "monthly" | "yearly"
+  provider           String? // "mercadopago" | "stripe" (se conecta en la fase comercial)
+  providerRef        String?
+  currentPeriodEnd   DateTime?
+  trialEndsAt        DateTime?
+  canceledAt         DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+}
+
+// ---------- Cuentas, categorías y libro de movimientos ----------
+
+enum AccountType {
+  CASH
+  SAVINGS
+  CHECKING
+  WALLET
+  FOREIGN
+  INVESTMENT
+  OTHER
+}
+
+model Account {
+  id             String      @id @default(cuid())
+  workspaceId    String
+  workspace      Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name           String
+  institution    String?
+  type           AccountType
+  currency       String
+  initialBalance Decimal     @db.Decimal(18, 2)
+  initialDate    DateTime    @db.Date
+  active         Boolean     @default(true)
+  notes          String?
+  lastReconciledAt DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  transactions Transaction[]
+
+  @@index([workspaceId])
+}
+
+enum CategoryKind {
+  INCOME
+  EXPENSE
+}
+
+model Category {
+  id          String       @id @default(cuid())
+  workspaceId String
+  workspace   Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name        String
+  kind        CategoryKind
+  parentId    String?
+  parent      Category?    @relation("Sub", fields: [parentId], references: [id])
+  children    Category[]   @relation("Sub")
+  archived    Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+
+  transactions Transaction[]
+  obligations  Obligation[]
+
+  @@unique([workspaceId, kind, parentId, name])
+  @@index([workspaceId])
+}
+
+enum TxType {
+  INCOME
+  EXPENSE
+  TRANSFER
+  ADJUSTMENT
+  DEBT_PAYMENT
+  CARD_PAYMENT
+  INVESTMENT
+}
+
+enum Direction {
+  IN
+  OUT
+}
+
+// Movimiento de dinero real en una cuenta. Siempre importe positivo + dirección.
+model Transaction {
+  id             String     @id @default(cuid())
+  workspaceId    String
+  workspace      Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  accountId      String
+  account        Account    @relation(fields: [accountId], references: [id])
+  type           TxType
+  direction      Direction
+  amount         Decimal    @db.Decimal(18, 2)
+  currency       String
+  description    String
+  categoryId     String?
+  category       Category?  @relation(fields: [categoryId], references: [id])
+  effectiveDate  DateTime   @db.Date // cuándo se movió el dinero
+  economicPeriod String // "AAAA-MM": a qué mes corresponde
+  obligationId   String?
+  obligation     Obligation? @relation(fields: [obligationId], references: [id])
+  transferGroupId String? // une las dos patas de una transferencia
+  fxRate         Decimal?   @db.Decimal(18, 6) // cotización usada, si hubo conversión
+  fxDate         DateTime?
+  reversalOfId   String?    @unique // corrección trazable: movimiento opuesto
+  reversalOf     Transaction? @relation("Reversal", fields: [reversalOfId], references: [id])
+  reversedBy     Transaction? @relation("Reversal")
+  tags           String[]   @default([])
+  notes          String?
+  idempotencyKey String?
+  createdById    String?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  @@unique([workspaceId, idempotencyKey])
+  @@index([workspaceId, effectiveDate])
+  @@index([accountId])
+  @@index([obligationId])
+  @@index([transferGroupId])
+}
+
+enum ObligationDirection {
+  RECEIVABLE
+  PAYABLE
+}
+
+enum ObligationStatus {
+  PENDING
+  PARTIAL
+  SETTLED
+  CANCELLED
+}
+
+enum Certainty {
+  CONFIRMED
+  PROBABLE
+  HYPOTHETICAL
+}
+
+// Lo que hay que pagar o cobrar. No se borra al cambiar de mes: queda pendiente hasta saldarse.
+model Obligation {
+  id              String              @id @default(cuid())
+  workspaceId     String
+  workspace       Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  direction       ObligationDirection
+  description     String
+  amount          Decimal             @db.Decimal(18, 2)
+  currency        String
+  categoryId      String?
+  category        Category?           @relation(fields: [categoryId], references: [id])
+  dueDate         DateTime            @db.Date
+  economicPeriod  String
+  status          ObligationStatus    @default(PENDING)
+  certainty       Certainty           @default(CONFIRMED)
+  counterparty    String?
+  recurringRuleId String?
+  recurringRule   RecurringRule?      @relation(fields: [recurringRuleId], references: [id])
+  occurrenceDate  DateTime?           @db.Date
+  sourceType      String? // "debt" | "card" | "grain" | null
+  sourceId        String?
+  notes           String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  payments Transaction[]
+
+  @@unique([recurringRuleId, occurrenceDate]) // regenerar el calendario no duplica
+  @@index([workspaceId, dueDate])
+  @@index([workspaceId, status])
+}
+
+enum Frequency {
+  DAILY
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  BIMONTHLY
+  QUARTERLY
+  SEMIANNUAL
+  ANNUAL
+  CUSTOM
+}
+
+enum WeekendRule {
+  NONE
+  PREVIOUS_BUSINESS_DAY
+  NEXT_BUSINESS_DAY
+}
+
+// Regla recurrente. Editar "esta y las futuras" cierra esta versión (validTo) y crea otra: el pasado no cambia.
+model RecurringRule {
+  id            String              @id @default(cuid())
+  workspaceId   String
+  workspace     Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  direction     ObligationDirection
+  description   String
+  amount        Decimal             @db.Decimal(18, 2)
+  variableAmount Boolean            @default(false)
+  currency      String
+  categoryId    String?
+  accountId     String?
+  frequency     Frequency
+  interval      Int                 @default(1)
+  dayOfMonth    Int?
+  startDate     DateTime            @db.Date
+  endDate       DateTime?           @db.Date
+  weekendRule   WeekendRule         @default(NONE)
+  increasePct   Decimal?            @db.Decimal(9, 4) // aumento programado
+  increaseEveryMonths Int?
+  pausedAt      DateTime?
+  previousVersionId String?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  obligations Obligation[]
+
+  @@index([workspaceId])
+}
+
+// ---------- Deudas y tarjetas ----------
+
+enum AmortizationSystem {
+  FRENCH
+  GERMAN
+  AMERICAN
+  NO_INTEREST
+  MANUAL
+  NONE
+}
+
+model Debt {
+  id           String             @id @default(cuid())
+  workspaceId  String
+  workspace    Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  creditor     String
+  kind         String
+  principal    Decimal            @db.Decimal(18, 2)
+  currency     String
+  system       AmortizationSystem
+  tna          Decimal?           @db.Decimal(9, 4)
+  tea          Decimal?           @db.Decimal(9, 4)
+  cft          Decimal?           @db.Decimal(9, 4)
+  startDate    DateTime           @db.Date
+  installments Int?
+  status       String             @default("ACTIVE") // ACTIVE | PAID | CANCELLED
+  cancelledAt  DateTime?
+  notes        String?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  schedule DebtInstallment[]
+
+  @@index([workspaceId])
+}
+
+model DebtInstallment {
+  id           String   @id @default(cuid())
+  debtId       String
+  debt         Debt     @relation(fields: [debtId], references: [id], onDelete: Cascade)
+  number       Int
+  dueDate      DateTime @db.Date
+  capital      Decimal  @db.Decimal(18, 2)
+  interest     Decimal  @db.Decimal(18, 2)
+  total        Decimal  @db.Decimal(18, 2)
+  balanceAfter Decimal  @db.Decimal(18, 2)
+  obligationId String?  @unique
+
+  @@unique([debtId, number])
+}
+
+model CreditCard {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  issuer      String
+  name        String
+  last4       String?
+  limitAmount Decimal   @db.Decimal(18, 2)
+  currency    String
+  closingDay  Int
+  dueDay      Int
+  payAccountId String?
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+
+  statements CardStatement[]
+  plans      InstallmentPlan[]
+
+  @@index([workspaceId])
+}
+
+model CardStatement {
+  id           String     @id @default(cuid())
+  cardId       String
+  card         CreditCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  closingDate  DateTime   @db.Date
+  dueDate      DateTime   @db.Date
+  totalAmount  Decimal    @db.Decimal(18, 2)
+  minimumAmount Decimal   @db.Decimal(18, 2)
+  obligationId String?    @unique
+  createdAt    DateTime   @default(now())
+
+  @@unique([cardId, closingDate])
+}
+
+model InstallmentPlan {
+  id           String     @id @default(cuid())
+  cardId       String
+  card         CreditCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  description  String
+  purchaseDate DateTime   @db.Date
+  totalAmount  Decimal    @db.Decimal(18, 2)
+  installments Int
+  installmentAmount Decimal @db.Decimal(18, 2)
+  interestFree Boolean    @default(true)
+  categoryId   String?
+  createdAt    DateTime   @default(now())
+}
+
+// ---------- Planificación ----------
+
+model Budget {
+  id          String       @id @default(cuid())
+  workspaceId String
+  workspace   Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  period      String // "AAAA-MM" o "AAAA"
+  currency    String
+  rolloverUnused Boolean   @default(false)
+  createdAt   DateTime     @default(now())
+
+  lines BudgetLine[]
+
+  @@unique([workspaceId, period])
+}
+
+model BudgetLine {
+  id         String   @id @default(cuid())
+  budgetId   String
+  budget     Budget   @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  categoryId String
+  limitAmount Decimal @db.Decimal(18, 2)
+
+  @@unique([budgetId, categoryId])
+}
+
+model Goal {
+  id            String    @id @default(cuid())
+  workspaceId   String
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name          String
+  targetAmount  Decimal   @db.Decimal(18, 2)
+  currency      String
+  targetDate    DateTime? @db.Date
+  monthlyContribution Decimal? @db.Decimal(18, 2)
+  accountIds    String[]  @default([])
+  createdAt     DateTime  @default(now())
+
+  contributions GoalContribution[]
+
+  @@index([workspaceId])
+}
+
+model GoalContribution {
+  id      String   @id @default(cuid())
+  goalId  String
+  goal    Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  amount  Decimal  @db.Decimal(18, 2)
+  date    DateTime @db.Date
+  transactionId String?
+}
+
+// ---------- Inversiones, activos y agro ----------
+
+model Investment {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name        String
+  kind        String // plazo fijo, FCI, CEDEAR, bono, cripto...
+  currency    String
+  accountId   String?
+  createdAt   DateTime  @default(now())
+
+  movements  InvestmentMovement[]
+  valuations Valuation[]
+
+  @@index([workspaceId])
+}
+
+model InvestmentMovement {
+  id           String     @id @default(cuid())
+  investmentId String
+  investment   Investment @relation(fields: [investmentId], references: [id], onDelete: Cascade)
+  kind         String // CONTRIBUTION | WITHDRAWAL | BUY | SELL | FEE | YIELD
+  amount       Decimal    @db.Decimal(18, 2)
+  quantity     Decimal?   @db.Decimal(24, 8)
+  date         DateTime   @db.Date
+  transactionId String?
+}
+
+// Valuación: cambia el patrimonio, nunca la caja.
+model Valuation {
+  id           String      @id @default(cuid())
+  investmentId String?
+  investment   Investment? @relation(fields: [investmentId], references: [id], onDelete: Cascade)
+  assetId      String?
+  asset        Asset?      @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  value        Decimal     @db.Decimal(18, 2)
+  currency     String
+  date         DateTime    @db.Date
+  source       String      @default("manual")
+}
+
+model Asset {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name        String
+  kind        String // inmueble, vehículo, negocio, otro
+  currency    String
+  notes       String?
+  createdAt   DateTime  @default(now())
+
+  valuations Valuation[]
+
+  @@index([workspaceId])
+}
+
+model GrainSale {
+  id            String    @id @default(cuid())
+  workspaceId   String
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  saleDate      DateTime  @db.Date
+  grain         String
+  tonnes        Decimal   @db.Decimal(14, 3) // se guarda en toneladas; 1 t = 10 quintales
+  pricePerTonne Decimal   @db.Decimal(18, 2)
+  priceCurrency String    @default("ARS")
+  fxRate        Decimal?  @db.Decimal(18, 6)
+  taxPct        Decimal   @db.Decimal(6, 3) @default(1.2) // impuesto al cheque
+  otherDeductions Decimal @db.Decimal(18, 2) @default(0)
+  collectDate   DateTime  @db.Date
+  obligationId  String?   @unique
+  createdAt     DateTime  @default(now())
+
+  @@index([workspaceId])
+}
+
+// ---------- Cotizaciones, importaciones y auditoría ----------
+
+model ExchangeRate {
+  id          String    @id @default(cuid())
+  workspaceId String?
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  base        String // "USD"
+  quote       String // "ARS"
+  kind        String // "oficial" | "mep" | "blue" | "tarjeta" | "manual"
+  buy         Decimal?  @db.Decimal(18, 6)
+  sell        Decimal   @db.Decimal(18, 6)
+  source      String // "dolarapi" | "bcra" | "manual"
+  fetchedAt   DateTime
+
+  @@index([base, quote, kind, fetchedAt])
+}
+
+model ImportBatch {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  source      String
+  fileName    String
+  rows        Int
+  status      String    @default("APPLIED") // APPLIED | REVERTED
+  createdAt   DateTime  @default(now())
+}
+
+model AuditLog {
+  id          String     @id @default(cuid())
+  workspaceId String?
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      String?
+  user        User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action      String
+  entity      String?
+  entityId    String?
+  meta        Json?
+  ip          String?
+  createdAt   DateTime   @default(now())
+
+  @@index([workspaceId, createdAt])
+  @@index([action, createdAt])
+}

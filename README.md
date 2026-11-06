@@ -2,28 +2,61 @@
 
 Plataforma de finanzas personales y planificación patrimonial, pensada para Argentina: pesos y dólares, cuotas, tarjetas, deudas, flujo de caja, presupuestos, objetivos, inversiones y ventas de granos.
 
-## Estado
+La arquitectura, las reglas del motor financiero y el plan por fases están en [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md).
 
-Por ahora el repositorio tiene el **prototipo navegable** y el registro de cambios pedidos. La aplicación real (Fase 1 en adelante) se va a construir con Next.js, TypeScript, PostgreSQL y Prisma.
+## Qué funciona hoy
 
-## Contenido
+- Registro, inicio de sesión y verificación en dos pasos con Google Authenticator.
+- Introducción que arma el menú según para qué vas a usar la app.
+- Cuentas, ingresos, gastos y transferencias (también entre pesos y dólares).
+- Pendientes, pagos parciales, atrasados que no se borran, conciliación y reversas.
+- Inicio con el disponible del mes, lo que falta cobrar y pagar, y los últimos movimientos.
+- Categorías, configuración, funciones activables, landing y legales.
+- El prototipo completo de todas las pantallas, en `/prototipo.html`.
 
-| Archivo | Qué es |
+## Correr en tu computadora (Windows, sin Docker)
+
+Necesitás Node.js 20.19 o más nuevo.
+
+```bash
+npm install
+```
+
+Copiá `.env.example` como `.env` y completá `AUTH_SECRET` (el archivo explica cómo generarla).
+
+En una terminal, levantá la base local (queda corriendo):
+
+```bash
+npm run db:local
+```
+
+En otra terminal, aplicá las migraciones y arrancá la app:
+
+```bash
+npm run db:migrate
+```
+
+```bash
+npm run dev
+```
+
+Abrí http://localhost:3000.
+
+## Pruebas
+
+```bash
+npm test
+```
+
+Corren contra un PostgreSQL real en memoria, con la misma migración que producción.
+
+## Comandos
+
+| Comando | Qué hace |
 |---|---|
-| `prototipo/nexo-prototipo.html` | Prototipo completo en un solo archivo: landing, registro con verificación en dos pasos, introducción personalizada, la app y el panel interno. Usa datos de ejemplo y no guarda nada en un servidor. |
-| `prototipo/PENDIENTES.md` | Pedidos pendientes y completados del prototipo. |
-
-## Cómo verlo
-
-Abrí `prototipo/nexo-prototipo.html` con cualquier navegador. Desde la landing, tocá **Ver la demo** para entrar directo con datos de ejemplo, o **Crear cuenta** para recorrer el registro y la introducción.
-
-## Plan por fases
-
-1. Base técnica, autenticación, modelo de datos y diseño general.
-2. Cuentas, ingresos, gastos, transferencias y movimientos.
-3. Recurrencias, obligaciones, calendario y flujo de caja.
-4. Préstamos, tarjetas, cuotas y cancelaciones.
-5. Presupuestos, objetivos y simulaciones.
-6. Inversiones, activos y patrimonio.
-7. Reportes, exportaciones e inteligencia financiera.
-8. Funciones comerciales: planes, cobros y panel interno.
+| `npm run dev` | App en modo desarrollo |
+| `npm run build` | Compila para producción |
+| `npm test` | Pruebas automáticas |
+| `npm run typecheck` | Revisa los tipos |
+| `npm run db:local` | PostgreSQL local con PGlite (puerto 5434) |
+| `npm run db:migrate` | Aplica las migraciones a la base de `DATABASE_URL` |

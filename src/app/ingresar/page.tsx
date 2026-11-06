@@ -1,0 +1,29 @@
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import type { Metadata } from "next";
+import { AuthShell } from "@/components/brand";
+import { ActionForm, Submit } from "@/components/forms";
+import { loginAction } from "@/app/actions/auth";
+import { getSession } from "@/lib/auth/session";
+
+export const metadata: Metadata = { title: "Iniciar sesión" };
+
+export default async function LoginPage() {
+  const s = await getSession();
+  if (s && (!s.user.totpEnabledAt || s.twoFactorVerified)) redirect("/app");
+  return (
+    <AuthShell>
+      <h1>Iniciar sesión</h1>
+      <p className="sub">¿No tenés cuenta? <Link className="lnk" href="/registro">Creala gratis</Link></p>
+      <ActionForm action={loginAction} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <label className="field">Correo<input name="email" type="email" autoComplete="username" placeholder="nombre@correo.com" required autoFocus /></label>
+        <label className="field">Contraseña<input name="password" type="password" autoComplete="current-password" placeholder="Tu contraseña" required /></label>
+        <div className="auth-row">
+          <label className="simtg"><input type="checkbox" name="remember" defaultChecked /><span>Mantener la sesión iniciada</span></label>
+        </div>
+        <Submit className="btn pri auth-btn" pending="Entrando…">Continuar</Submit>
+      </ActionForm>
+      <p className="pub-note">¿Te olvidaste la contraseña? Escribinos a soporte@nexo.app desde el correo de tu cuenta.</p>
+    </AuthShell>
+  );
+}

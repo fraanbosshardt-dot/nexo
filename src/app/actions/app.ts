@@ -1,0 +1,291 @@
+"use server";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { z } from "zod";
+import QRCode from "qrcode";
+import { getDb } from "@/lib/db";
+import { audit, requireUser, requireWorkspace } from "@/lib/auth/session";
+import { parseAmount } from "@/lib/money";
+import { parseDate, todayIn } from "@/lib/dates";
+import { MODULES, modulesForUses, readModules, FREE_LIMITS } from "@/lib/modules";
+import { generateTotpSecret, otpauthUrl, verifyTotp } from "@/lib/auth/totp";
+import { decryptSecret, encryptSecret } from "@/lib/crypto";
+import { adjustBalance, cancelObligation, createAccount, payObligation, recordMovement, recordTransfer, reverseTransaction, UserError } from "@/server/ledger";
+import type { FormState } from "./auth";
+
+const ACCOUNT_TYPES = ["CASH", "SAVINGS", "CHECKING", "WALLET", "FOREIGN", "INVESTMENT", "OTHER"] as const;
+const CURRENCIES = ["ARS", "USD", "EUR", "BRL", "UYU"] as const;
+
+function fail(e: unknown): FormState {
+  if (e instanceof UserError) return { error: e.message };
+  console.error(e);
+  return { error: "No pudimos guardar. Probá de nuevo en un momento." };
+}
+const money = (v: FormDataEntryValue | null, label: string) => {
+  const d = parseAmount(String(v ?? ""));
+  if (!d) throw new UserError(`Revisá ${label}: tiene que ser un número.`);
+  return d;
+};
+const date = (v: FormDataEntryValue | null, label: string) => {
+  const d = parseDate(String(v ?? ""));
+  if (!d) throw new UserError(`Revisá ${label} (dd/mm/aaaa).`);
+  return d;
+};
+
+// ---------- Introducción ----------
+
+export async function finishOnboardingAction(_: FormState, fd: FormData): Promise<FormState> {
+  const { user, workspace } = await requireWorkspace({ allowNotOnboarded: true });
+  try {
+    const uses = fd.getAll("uses").map(String);
+    const chosen = fd.getAll("modules").map(String);
+    const mods = chosen.length ? Object.fromEntries(MODULES.map((m) => [m.key, chosen.includes(m.key)])) : modulesForUses(uses);
+    const currency = z.enum(CURRENCIES).parse(fd.get("currency") ?? "ARS");
+    const timezone = String(fd.get("timezone") || "America/Argentina/Buenos_Aires");
+    const db = getDb();
+    await db.workspace.update({ where: { id: workspace.id }, data: { modules: mods, baseCurrency: currency, timezone, onboardedAt: new Date() } });
+    const accName = String(fd.get("accountName") ?? "").trim();
+    if (accName) {
+      const type = z.enum(ACCOUNT_TYPES).catch("SAVINGS").parse(fd.get("accountType"));
+      const initial = String(fd.get("accountBalance") ?? "").trim();
+      await createAccount(db, workspace.id, {
+        name: accName,
+        type,
+        currency: type === "FOREIGN" ? "USD" : currency,
+        initialBalance: initial ? money(initial, "el saldo de la cuenta") : "0",
+        initialDate: todayIn(timezone),
+      });
+    }
+    await audit("workspace.onboarded", { userId: user.id, workspaceId: workspace.id, meta: { uses } });
+  } catch (e) {
+    return fail(e);
+  }
+  redirect("/app");
+}
+
+// ---------- Cuentas ----------
+
+export async function createAccountAction(_: FormState, fd: FormData): Promise<FormState> {
+  const { workspace, plan } = await requireWorkspace();
+  let id: string;
+  try {
+    const db = getDb();
+    if (plan === "FREE" && (await db.account.count({ where: { workspaceId: workspace.id, active: true } })) >= FREE_LIMITS.accounts) {
+      throw new UserError(`El plan Gratis incluye ${FREE_LIMITS.accounts} cuentas activas. Desactivá una o pasá a Pro.`);
+    }
+    const type = z.enum(ACCOUNT_TYPES).parse(fd.get("type"));
+    const currency = type === "FOREIGN" ? "USD" : z.enum(CURRENCIES).parse(fd.get("currency") ?? workspace.baseCurrency);
+    const a = await createAccount(db, workspace.id, {
+      name: String(fd.get("name") ?? ""),
+      institution: String(fd.get("institution") ?? ""),
+      type,
+      currency,
+      initialBalance: String(fd.get("initialBalance") ?? "").trim() ? money(fd.get("initialBalance"), "el saldo inicial") : "0",
+      initialDate: fd.get("initialDate") ? date(fd.get("initialDate"), "la fecha del saldo inicial") : todayIn(workspace.timezone),
+      notes: String(fd.get("notes") ?? ""),
+    });
+    id = a.id;
+  } catch (e) {
+    return fail(e);
+  }
+  revalidatePath("/app", "layout");
+  redirect(`/app/cuentas/${id}`);
+}
+
+export async function updateAccountAction(_: FormState, fd: FormData): Promise<FormState> {
+  const { workspace } = await requireWorkspace();
+  const id = String(fd.get("id"));
+  const db = getDb();
+  const a = await db.account.findFirst({ where: { id, workspaceId: workspace.id } });
+  if (!a) return { error: "No encontramos esa cuenta." };
+  const name = String(fd.get("name") ?? "").trim();
+  if (!name) return { error: "Poné un nombre para la cuenta." };
+  await db.account.update({ where: { id }, data: { name, institution: String(fd.get("institution") ?? "").trim() || null, notes: String(fd.get("notes") ?? "").trim() || null } });
+  revalidatePath(`/app/cuentas/${id}`);
+  return { ok: "Cuenta actualizada." };
+}
+
+export async function toggleAccountAction(fd: FormData) {
+  const { workspace } = await requireWorkspace();
+  const id = String(fd.get("id"));
+  const db = getDb();
+  const a = await db.account.findFirst({ where: { id, workspaceId: workspace.id } });
+  if (a) await db.account.update({ where: { id }, data: { active: !a.active } });
+  revalidatePath("/app", "layout");
+}
+
+export async function reconcileAction(_: FormState, fd: FormData): Promise<FormState> {
+  const { user, workspace } = await requireWorkspace();
+  try {
+    const r = await adjustBalance(getDb(), workspace.id, { accountId: String(fd.get("accountId")), targetBalance: money(fd.get("target"), "el saldo del banco"), date: todayIn(workspace.timezone), userId: user.id });
+    revalidatePath("/app", "layout");
+    return { ok: r.diff.isZero() ? "Coincide con tu banco: no hay diferencias." : `Listo: se registró un ajuste de ${r.diff.toFixed(2)}.` };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+// ---------- Movimientos ----------
+
+export async function createMovementAction(_: FormState, fd: FormData): Promise<FormState> {
+  const { user, workspace } = await requireWorkspace();
+  try {
+    const db = getDb();
+    const kind = z.enum(["INCOME", "EXPENSE", "TRANSFER"]).parse(fd.get("kind"));
+    const idempotencyKey = String(fd.get("idem") ?? "") || null;
+    if (kind === "TRANSFER") {
+      const amount = money(fd.get("amount"), "el importe");
+      const rate = String(fd.get("fxRate") ?? "").trim() ? money(fd.get("fxRate"), "la cotización") : null;
+      const [from, to] = await Promise.all([
+        db.account.findFirst({ where: { id: String(fd.get("fromAccountId")), workspaceId: workspace.id } }),
+        db.account.findFirst({ where: { id: String(fd.get("toAccountId")), workspaceId: workspace.id } }),
+      ]);
+      let toAmount;
+      if (from && to && from.currency !== to.currency) {
+        if (!rate) throw new UserError("Entre monedas distintas, indicá la cotización usada.");
+        toAmount = from.currency === workspace.baseCurrency ? amount.dividedBy(rate) : amount.times(rate);
+      }
+      await recordTransfer(db, workspace.id, { fromAccountId: String(fd.get("fromAccountId")), toAccountId: String(fd.get("toAccountId")), amount, toAmount, fxRate: rate ?? undefined, date: date(fd.get("date"), "la fecha"), description: String(fd.get("description") ?? ""), userId: user.id });
+    } else {
+      const status = z.enum(["PAID", "PARTIAL", "PENDING"]).parse(fd.get("status"));
+      let categoryId = String(fd.get("categoryId") ?? "") || null;
+      const newCat = String(fd.get("newCategory") ?? "").trim();
+      if (categoryId === "__new") {
+        if (!newCat) throw new UserError("Escribí el nombre de la categoría nueva.");
+        const k = kind === "INCOME" ? "INCOME" : "EXPENSE";
+        const existing = await db.category.findFirst({ where: { workspaceId: workspace.id, kind: k, parentId: null, name: { equals: newCat, mode: "insensitive" } } });
+        categoryId = (existing ?? (await db.category.create({ data: { workspaceId: workspace.id, kind: k, name: newCat } }))).id;
+      }
+      const economicPeriod = String(fd.get("economicPeriod") ?? "") || undefined;
+      await recordMovement(db, workspace.id, {
+        kind,
+        description: String(fd.get("description") ?? ""),
+        amount: money(fd.get("amount"), "el importe"),
+        accountId: String(fd.get("accountId")),
+        categoryId,
+        status,
+        paidAmount: status === "PENDING" ? undefined : String(fd.get("paidAmount") ?? "").trim() ? money(fd.get("paidAmount"), "el importe pagado") : undefined,
+        effectiveDate: status === "PENDING" ? undefined : date(fd.get("effectiveDate"), "la fecha de pago"),
+        dueDate: status === "PAID" ? undefined : date(fd.get("dueDate"), "el vencimiento"),
+        economicPeriod,
+        certainty: fd.get("probable") === "on" ? "PROBABLE" : "CONFIRMED",
+        notes: String(fd.get("notes") ?? ""),
+        tags: String(fd.get("tags") ?? "").split(",").map((t) => t.trim()).filter(Boolean),
+        idempotencyKey,
+        userId: user.id,
+      });
+    }
+  } catch (e) {
+    return fail(e);
+  }
+  revalidatePath("/app", "layout");
+  redirect(String(fd.get("back") || "/app/movimientos"));
+}
+
+export async function payObligationAction(_: FormState, fd: FormData): Promise<FormState> {
+  const { user, workspace } = await requireWorkspace();
+  try {
+    await payObligation(getDb(), workspace.id, { obligationId: String(fd.get("obligationId")), accountId: String(fd.get("accountId")), amount: money(fd.get("amount"), "el importe"), date: date(fd.get("date"), "la fecha"), userId: user.id });
+  } catch (e) {
+    return fail(e);
+  }
+  revalidatePath("/app", "layout");
+  redirect("/app/proximos");
+}
+
+export async function cancelObligationAction(fd: FormData) {
+  const { workspace } = await requireWorkspace();
+  await cancelObligation(getDb(), workspace.id, String(fd.get("id")));
+  revalidatePath("/app", "layout");
+}
+
+export async function reverseAction(fd: FormData) {
+  const { user, workspace } = await requireWorkspace();
+  await reverseTransaction(getDb(), workspace.id, String(fd.get("id")), user.id);
+  await audit("tx.reversed", { userId: user.id, workspaceId: workspace.id, entity: "transaction", entityId: String(fd.get("id")) });
+  revalidatePath("/app", "layout");
+}
+
+// ---------- Categorías ----------
+
+export async function createCategoryAction(_: FormState, fd: FormData): Promise<FormState> {
+  const { workspace } = await requireWorkspace();
+  const name = String(fd.get("name") ?? "").trim();
+  const kind = z.enum(["INCOME", "EXPENSE"]).parse(fd.get("kind"));
+  const parentId = String(fd.get("parentId") ?? "") || null;
+  if (!name) return { error: "Escribí el nombre de la categoría." };
+  const db = getDb();
+  if (parentId && !(await db.category.findFirst({ where: { id: parentId, workspaceId: workspace.id, kind } }))) return { error: "No encontramos la categoría principal." };
+  if (await db.category.findFirst({ where: { workspaceId: workspace.id, kind, parentId, name: { equals: name, mode: "insensitive" } } })) return { error: "Ya existe una categoría con ese nombre." };
+  await db.category.create({ data: { workspaceId: workspace.id, kind, name, parentId } });
+  revalidatePath("/app/categorias");
+  return { ok: `Categoría "${name}" creada.` };
+}
+
+// ---------- Configuración ----------
+
+export async function updateProfileAction(_: FormState, fd: FormData): Promise<FormState> {
+  const { user, workspace } = await requireWorkspace();
+  const name = String(fd.get("name") ?? "").trim();
+  if (!name) return { error: "Decinos cómo te llamamos." };
+  const db = getDb();
+  await db.user.update({ where: { id: user.id }, data: { name } });
+  await db.workspace.update({
+    where: { id: workspace.id },
+    data: { baseCurrency: z.enum(CURRENCIES).parse(fd.get("currency") ?? workspace.baseCurrency), timezone: String(fd.get("timezone") || workspace.timezone) },
+  });
+  revalidatePath("/app", "layout");
+  return { ok: "Guardado." };
+}
+
+export async function saveModulesAction(_: FormState, fd: FormData): Promise<FormState> {
+  const { workspace } = await requireWorkspace();
+  const on = fd.getAll("modules").map(String);
+  const current = readModules(workspace.modules);
+  for (const m of MODULES) current[m.key] = on.includes(m.key);
+  await getDb().workspace.update({ where: { id: workspace.id }, data: { modules: current } });
+  revalidatePath("/app", "layout");
+  return { ok: "Funciones actualizadas." };
+}
+
+export async function start2faAction() {
+  const { user } = await requireUser();
+  if (user.totpEnabledAt) return;
+  await getDb().user.update({ where: { id: user.id }, data: { totpSecretEnc: encryptSecret(generateTotpSecret()) } });
+  revalidatePath("/app/configuracion");
+}
+
+export async function twoFactorQr(): Promise<{ qr: string; secret: string } | null> {
+  const { user } = await requireUser();
+  if (!user.totpSecretEnc || user.totpEnabledAt) return null;
+  const secret = decryptSecret(user.totpSecretEnc);
+  return { qr: await QRCode.toDataURL(otpauthUrl(secret, user.email), { margin: 1, width: 200 }), secret };
+}
+
+export async function confirm2faAction(_: FormState, fd: FormData): Promise<FormState> {
+  const { user, session } = await requireUser();
+  if (!user.totpSecretEnc) return { error: "Primero tocá Activar." };
+  if (!verifyTotp(decryptSecret(user.totpSecretEnc), String(fd.get("code") ?? ""))) return { error: "El código no es correcto. Probá con el que se ve ahora en la app." };
+  const db = getDb();
+  await db.user.update({ where: { id: user.id }, data: { totpEnabledAt: new Date() } });
+  await db.session.update({ where: { id: session.id }, data: { twoFactorVerified: true } });
+  await audit("auth.2fa_enabled", { userId: user.id });
+  revalidatePath("/app/configuracion");
+  return { ok: "Verificación en dos pasos activada." };
+}
+
+export async function disable2faAction(_: FormState, fd: FormData): Promise<FormState> {
+  const { user } = await requireUser();
+  if (!user.totpSecretEnc || !user.totpEnabledAt) return { error: "No está activada." };
+  if (!verifyTotp(decryptSecret(user.totpSecretEnc), String(fd.get("code") ?? ""))) return { error: "Para desactivarla, escribí un código válido." };
+  await getDb().user.update({ where: { id: user.id }, data: { totpEnabledAt: null, totpSecretEnc: null } });
+  await audit("auth.2fa_disabled", { userId: user.id });
+  revalidatePath("/app/configuracion");
+  return { ok: "Verificación en dos pasos desactivada." };
+}
+
+export async function revokeOtherSessionsAction() {
+  const { user, session } = await requireUser();
+  await getDb().session.updateMany({ where: { userId: user.id, id: { not: session.id }, revokedAt: null }, data: { revokedAt: new Date() } });
+  revalidatePath("/app/configuracion");
+}
