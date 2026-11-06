@@ -9,7 +9,7 @@ import { PageHead, Tabs } from "@/components/page";
 import { ActionForm, Submit } from "@/components/forms";
 import { adminCloseTicketAction, adminReplyTicketAction, adminReset2faAction, adminSavePlansAction, adminSetPlanAction, adminSuspendAction } from "@/app/actions/admin";
 
-export const metadata: Metadata = { title: "Panel interno" };
+export const metadata: Metadata = { title: "Panel interno", robots: { index: false, follow: false } };
 type SP = { tab?: string; q?: string };
 
 export default async function Admin({ searchParams }: { searchParams: Promise<SP> }) {

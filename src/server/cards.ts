@@ -3,7 +3,7 @@
 // - pagar el resumen es una TRANSFERENCIA desde el banco a la tarjeta (no es otro gasto).
 // Así nunca se duplica el gasto entre la compra y el pago.
 import type { Db } from "./ledger";
-import { accountBalances, UserError } from "./ledger";
+import { accountBalances, paidSoFar, remaining, UserError } from "./ledger";
 import { allocate, dec, round2, ZERO, type MoneyValue } from "@/lib/money";
 import { period } from "@/lib/dates";
 import type Decimal from "decimal.js";
@@ -207,4 +207,61 @@ export async function cardOverview(db: Db, ws: string, today: Date) {
     });
   }
   return result;
+}
+
+// ---------- Estado de la tarjeta y carga de resúmenes ----------
+
+// Resúmenes sin pagar (todos, no solo el último): así sabemos si estás al día o atrasado.
+export async function cardStatus(db: Db, ws: string, cardId: string, today: Date) {
+  const obs = await db.obligation.findMany({ where: { workspaceId: ws, sourceType: "card", sourceId: cardId, status: { in: ["PENDING", "PARTIAL"] } }, include: { payments: true }, orderBy: { dueDate: "asc" } });
+  const open = obs.map((o) => ({ id: o.id, dueDate: o.dueDate, description: o.description, remaining: remaining(o), overdue: o.dueDate < today })).filter((o) => o.remaining.gt(0));
+  return { open, owed: open.reduce((s, o) => s.plus(o.remaining), ZERO), overdue: open.some((o) => o.overdue) };
+}
+
+export type CarryInstallment = { description: string; amount: MoneyValue; remaining: number };
+
+// Carga a mano (o desde el PDF, siempre confirmado por la persona) un resumen de la tarjeta.
+// La deuda que trae se registra como AJUSTE en la cuenta de la tarjeta: no es un gasto nuevo
+// (las compras fueron antes de usar NEXO), así no se cuenta dos veces.
+export async function loadStatement(db: Db, ws: string, input: { cardId: string; closingDate: Date; dueDate: Date; total: MoneyValue; minimum?: MoneyValue | null; carry?: CarryInstallment[]; userId?: string | null }) {
+  const card = await loadCard(db, ws, input.cardId);
+  const total = round2(input.total);
+  if (total.lt(0)) throw new UserError("El total no puede ser negativo.");
+  if (input.dueDate < input.closingDate) throw new UserError("El vencimiento tiene que ser después del cierre.");
+  const minimum = input.minimum != null ? round2(input.minimum) : round2(total.times("0.1"));
+  if (minimum.gt(total)) throw new UserError("El pago mínimo no puede ser mayor que el total.");
+  const carry = (input.carry ?? []).filter((c) => c.description.trim() || dec(c.amount).gt(0));
+  for (const c of carry) {
+    if (!c.description.trim()) throw new UserError("Poné qué compraste en cada cuota que sigue.");
+    if (!round2(c.amount).gt(0)) throw new UserError(`El importe de la cuota de "${c.description}" tiene que ser mayor a cero.`);
+    if (!Number.isInteger(c.remaining) || c.remaining < 1 || c.remaining > 60) throw new UserError(`Las cuotas que faltan de "${c.description}" van de 1 a 60.`);
+  }
+  const existing = card.statements.find((s) => s.closingDate.getTime() === input.closingDate.getTime()) ?? null;
+  // Lo que NEXO ya tenía para ese resumen (compras cargadas acá), para ajustar solo la diferencia.
+  const base = existing ? dec(existing.totalAmount) : (await statementAmount(db, card, input.closingDate)).total;
+  const delta = total.minus(base);
+  const p = period(input.closingDate);
+  return db.$transaction(async (tx) => {
+    let obligationId = existing?.obligationId ?? null;
+    if (existing) {
+      const ob = obligationId ? await tx.obligation.findUnique({ where: { id: obligationId }, include: { payments: true } }) : null;
+      if (ob && paidSoFar(ob).gt(total)) throw new UserError("Ya pagaste más que ese total. Revisá el importe.");
+      if (ob) await tx.obligation.update({ where: { id: ob.id }, data: { amount: total.toFixed(2), dueDate: input.dueDate, status: paidSoFar(ob).gte(total) ? "SETTLED" : paidSoFar(ob).gt(0) ? "PARTIAL" : "PENDING" } });
+      await tx.cardStatement.update({ where: { id: existing.id }, data: { totalAmount: total.toFixed(2), minimumAmount: minimum.toFixed(2), dueDate: input.dueDate } });
+    } else {
+      const ob = total.gt(0) ? await tx.obligation.create({ data: { workspaceId: ws, direction: "PAYABLE", description: `${card.name} — resumen ${p}`, amount: total.toFixed(2), currency: card.currency, dueDate: input.dueDate, economicPeriod: p, sourceType: "card", sourceId: card.id } }) : null;
+      obligationId = ob?.id ?? null;
+      await tx.cardStatement.create({ data: { cardId: card.id, closingDate: input.closingDate, dueDate: input.dueDate, totalAmount: total.toFixed(2), minimumAmount: minimum.toFixed(2), obligationId } });
+    }
+    if (!delta.isZero()) {
+      await tx.transaction.create({ data: { workspaceId: ws, accountId: card.accountId!, type: "ADJUSTMENT", direction: delta.gt(0) ? "OUT" : "IN", amount: delta.abs().toFixed(2), currency: card.currency, description: `Resumen ${p} cargado (deuda anterior a NEXO)`, effectiveDate: input.closingDate, economicPeriod: p, createdById: input.userId ?? null } });
+    }
+    const next = nextClosing(input.closingDate, card.closingDay);
+    for (const c of carry) {
+      const per = round2(c.amount), all = per.times(c.remaining);
+      await tx.installmentPlan.create({ data: { cardId: card.id, description: c.description.trim().slice(0, 120), purchaseDate: input.closingDate, totalAmount: all.toFixed(2), installments: c.remaining, installmentAmount: per.toFixed(2), interestFree: true, firstStatementDate: next } });
+      await tx.transaction.create({ data: { workspaceId: ws, accountId: card.accountId!, type: "ADJUSTMENT", direction: "OUT", amount: all.toFixed(2), currency: card.currency, description: `Cuotas que siguen: ${c.description.trim().slice(0, 80)}`, effectiveDate: input.closingDate, economicPeriod: p, createdById: input.userId ?? null } });
+    }
+    return { obligationId };
+  });
 }

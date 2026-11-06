@@ -20,6 +20,9 @@ export async function signupAction(_: FormState, fd: FormData): Promise<FormStat
   const problem = passwordProblem(parsed.data.password);
   if (problem) return { error: problem };
   const db = getDb();
+  const { headers } = await import("next/headers");
+  const ip = (await headers()).get("x-forwarded-for")?.split(",")[0].trim();
+  if (ip && (await db.auditLog.count({ where: { action: "auth.signup", ip, createdAt: { gte: new Date(Date.now() - 60 * 60 * 1000) } } })) >= 10) return { error: "Se crearon muchas cuentas desde esta conexión. Probá de nuevo en una hora." };
   if (await db.user.findUnique({ where: { email: parsed.data.email } })) return { error: "Ya hay una cuenta con ese correo. Iniciá sesión." };
   const user = await db.user.create({ data: { email: parsed.data.email, name: parsed.data.name, passwordHash: await hashPassword(parsed.data.password) } });
   const ws = await createWorkspaceForUser(db, user.id, "Personal");
@@ -51,10 +54,16 @@ export async function verifyLoginCodeAction(_: FormState, fd: FormData): Promise
   const s = await getSession();
   if (!s) redirect("/ingresar");
   if (!s.user.totpSecretEnc || !s.user.totpEnabledAt) redirect("/app");
-  const code = String(fd.get("code") ?? "");
+  const code = String(fd.get("code") ?? "").replace(/\D/g, "");
+  const db = getDb();
+  const fails = await db.auditLog.count({ where: { action: "auth.2fa_failed", userId: s.userId, createdAt: { gte: new Date(Date.now() - 15 * 60 * 1000) } } });
+  if (fails >= 5) {
+    await destroySession();
+    return { error: "Demasiados códigos incorrectos. Ingresá de nuevo en 15 minutos." };
+  }
   if (!verifyTotp(decryptSecret(s.user.totpSecretEnc), code)) {
     await audit("auth.2fa_failed", { userId: s.userId });
-    return { error: "El código no es correcto o ya venció. Probá con el que se ve ahora." };
+    return { error: fails >= 3 ? "El código no es correcto. Te queda un intento antes de que cerremos la sesión." : "El código no es correcto o ya venció. Probá con el que se ve ahora." };
   }
   await markTwoFactorVerified(s.id);
   await audit("auth.2fa_ok", { userId: s.userId });

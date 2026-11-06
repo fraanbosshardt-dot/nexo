@@ -372,3 +372,49 @@ export async function cancelPlanAction() {
   await audit("billing.canceled", { userId: user.id, workspaceId: workspace.id });
   redirect(done("/app/configuracion?tab=plan&cancelado=1"));
 }
+
+// ---------- Resumen de la tarjeta ----------
+
+export async function loadStatementAction(_: FormState, fd: FormData): Promise<FormState> {
+  const { user, workspace } = await requireWorkspace();
+  const cardId = str(fd, "cardId");
+  try {
+    const names = fd.getAll("carryDescription").map(String), amounts = fd.getAll("carryAmount").map(String), lefts = fd.getAll("carryRemaining").map(String);
+    const carry = names.map((d, i) => {
+      const raw = (amounts[i] ?? "").trim();
+      if (!d.trim() && !raw) return null; // fila vacía
+      const amount = parseAmount(raw);
+      if (!amount) throw new UserError(`Revisá el importe de la cuota de "${d || "una compra"}": tiene que ser un número.`);
+      return { description: d, amount, remaining: Number(lefts[i]) };
+    }).filter((c): c is NonNullable<typeof c> => !!c);
+    const { loadStatement } = await import("@/server/cards");
+    await loadStatement(getDb(), workspace.id, {
+      cardId, closingDate: date(fd, "closingDate", "la fecha de cierre"), dueDate: date(fd, "dueDate", "el vencimiento"),
+      total: money(fd, "total", "el total a pagar"), minimum: optMoney(fd, "minimum", "el pago mínimo"), carry, userId: user.id,
+    });
+    await audit("card.statement_loaded", { userId: user.id, workspaceId: workspace.id, entity: "card", entityId: cardId, meta: { source: str(fd, "source") || "manual" } });
+  } catch (e) { return fail(e); }
+  redirect(done(`/app/tarjetas/${cardId}?guardado=1`));
+}
+
+// Lee el PDF del resumen (solo Pro, hasta PDF_MONTHLY_LIMIT por mes). No guarda el archivo ni el resultado:
+// devuelve los datos para completar el formulario, que la persona revisa antes de guardar.
+export async function readStatementPdfAction(fd: FormData): Promise<{ error?: string; data?: import("@/server/statement-pdf").ParsedStatement; left?: number }> {
+  const { user, workspace, plan } = await requireWorkspace();
+  if (!(await canUse(plan, "pdf"))) return { error: "Leer el PDF es una función Pro. Podés cargar el resumen a mano." };
+  const limit = Number(process.env.PDF_MONTHLY_LIMIT || 5);
+  const now = new Date();
+  const used = await getDb().auditLog.count({ where: { workspaceId: workspace.id, action: "card.pdf_read", createdAt: { gte: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)) } } });
+  if (used >= limit) return { error: `Ya leíste ${limit} resúmenes este mes. Cargá este a mano o esperá al mes que viene.` };
+  const file = fd.get("file");
+  if (!(file instanceof File) || !file.size) return { error: "Elegí el PDF del resumen." };
+  try {
+    const { readStatementPdf } = await import("@/server/statement-pdf");
+    const data = await readStatementPdf(new Uint8Array(await file.arrayBuffer()));
+    await audit("card.pdf_read", { userId: user.id, workspaceId: workspace.id, meta: { found: data.found } });
+    return { data, left: limit - used - 1 };
+  } catch (e) {
+    const r = fail(e);
+    return { error: r?.error ?? "No pudimos leer ese PDF." };
+  }
+}

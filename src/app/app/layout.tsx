@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Shell } from "@/components/shell";
 import { requireWorkspace } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
@@ -6,6 +7,9 @@ import { logoutAction } from "@/app/actions/auth";
 import { materialize } from "@/server/recurring";
 import { closeStatements } from "@/server/cards";
 import { MATERIALIZE_DAYS } from "@/server/forecast";
+
+// La app es privada: nunca se indexa.
+export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 export const dynamic = "force-dynamic";
 

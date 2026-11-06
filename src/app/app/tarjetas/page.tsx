@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { requireWorkspace } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
-import { cardOverview } from "@/server/cards";
+import { cardOverview, cardStatus } from "@/server/cards";
 import { formatMoney } from "@/lib/money";
 import { fmtDate, todayIn } from "@/lib/dates";
 import { PageHead } from "@/components/page";
@@ -17,20 +17,23 @@ export default async function Cards() {
   const db = getDb();
   const today = todayIn(workspace.timezone);
   const [cards, accounts] = await Promise.all([cardOverview(db, workspace.id, today), db.account.findMany({ where: { workspaceId: workspace.id, active: true, type: { notIn: ["CREDIT_CARD", "INVESTMENT"] } } })]);
+  const statuses = await Promise.all(cards.map((c) => cardStatus(db, workspace.id, c.card.id, today)));
   return (
     <>
       <PageHead crumb="Pagos y deudas" title="Tarjetas de crédito" desc="Cada compra se cuenta una sola vez, en su categoría y su mes. Pagar el resumen no es otro gasto." />
       {cards.length > 0 && (
-        <div className="grid g2">{cards.map((c) => (
+        <div className="grid g2">{cards.map((c, i) => { const st = statuses[i]; const next = st.open[0]; return (
           <Link key={c.card.id} href={`/app/tarjetas/${c.card.id}`} className="card dcard tcard-mini" style={{ textDecoration: "none", color: "inherit" }}>
             <div className="ccard" style={{ maxWidth: 240 }}><div className="row"><span>{c.card.issuer || "Tarjeta"}</span></div><div className="nm">•••• {c.card.last4 ?? "····"}</div><div className="row"><span>{c.card.name}</span></div></div>
             <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
-              <div className="sub" style={{ margin: 0 }}>{c.lastObligation && c.lastObligation.status !== "SETTLED" ? `A pagar · vence ${fmtDate(c.lastObligation.dueDate)}` : "Próximo resumen"}</div>
-              <b className="num" style={{ fontFamily: "var(--f-display)", fontSize: 22 }}>{formatMoney(c.lastObligation && c.lastObligation.status !== "SETTLED" ? c.lastObligation.amount : c.nextAmount, c.card.currency)}</b>
+              <div className="sub" style={{ margin: 0 }}>{!next ? "Al día" : st.overdue ? `Atrasado · venció el ${fmtDate(next.dueDate)}` : `A pagar · vence el ${fmtDate(next.dueDate)}`}</div>
+              <b className={`num ${st.overdue ? "neg" : !next ? "pos" : ""}`} style={{ fontSize: 22, fontWeight: 400 }}>{next ? formatMoney(st.owed, c.card.currency) : "Sin resúmenes sin pagar"}</b>
+              <div className="sub">Debés en total {formatMoney(c.debt, c.card.currency)} · próximo resumen {formatMoney(c.nextAmount, c.card.currency)}</div>
               <div className="sub">Disponible {formatMoney(c.available, c.card.currency)}</div>
+              {!c.card.statements.length && !next && <div className="sub" style={{ color: "var(--blue)" }}>¿Ya debías algo? Cargá tu último resumen →</div>}
             </div>
           </Link>
-        ))}</div>
+        ); })}</div>
       )}
       <div className="card">
         <details className="more" open={cards.length === 0}>

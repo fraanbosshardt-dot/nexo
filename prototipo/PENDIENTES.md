@@ -12,6 +12,9 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 - [ ] Z3. Decidir el precio de Pro en pesos (u otra moneda) para Mercado Pago.
 
 ### Para la próxima vuelta
+- [ ] P6. Probar la lectura de PDF con resúmenes reales de varios bancos (Galicia, Santander, BBVA, Nación, Macro, Mercado Pago) y ajustar los formatos que no reconozca.
+- [ ] P4. Cuando esté publicado: dar de alta el sitio en Google Search Console y enviar el sitemap (/sitemap.xml).
+- [ ] P5. Más herramientas gratis que atraen búsquedas: plazo fijo, conversor de monedas, fondo de emergencia, presupuesto 50/30/20.
 - [ ] P1. Asistente con IA (Pro): hoy figura como "próximamente".
 - [ ] P2. Espacio compartido (Pro): invitar hasta 3 personas.
 - [ ] P3. Revisión con capturas pantalla por pantalla en celular (se revisó que nada se corra de costado; falta mirar cada una con calma).
@@ -42,3 +45,11 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 - [x] 07/11/2026 — Filtros de Movimientos siempre visibles; flujo de caja sin "Hipotéticos"; panel del avatar simple; menú más corto (Calendario dentro de Próximos, Inversiones y Patrimonio juntos, Categorías, Pagos que se repiten e Importar dentro de Configuración).
 - [x] 07/11/2026 — Fechas cortas ("10 nov") en toda la app; estados vacíos con una acción; funciones Pro con una tarjeta chica y "Probar gratis 14 días".
 - [x] 07/11/2026 — 42 pruebas automáticas (se sumaron firma de Mercado Pago, cotizaciones cruzadas y fechas).
+- [x] 07/11/2026 — Landing para buscadores: título y descripción, imagen para compartir en redes, sitemap, robots, datos estructurados (organización, aplicación y preguntas frecuentes), idioma español general, la app y el panel interno fuera de Google, una fuente menos para cargar más rápido.
+- [x] 07/11/2026 — Herramientas gratis y públicas: ¿Puedo comprarlo en cuotas?, calculadora de préstamos (francés, alemán, americano, con TEA) y glosario. La calculadora de cuotas está en la landing, en lugar del ejemplo con números inventados.
+- [x] 07/11/2026 — Movimiento suave solo en la landing (aparición al bajar y cambios al pasar el mouse), sin esconder nada y apagable con "reducir movimiento".
+- [x] 07/11/2026 — Tarjetas: estado real (al día, a pagar o atrasado, mirando todos los resúmenes sin pagar), lo que debés en total, y "Cargar un resumen" a mano con cierre, vencimiento, total, mínimo y las cuotas que siguen. La deuda anterior se carga como saldo de la tarjeta, no como gasto nuevo.
+- [x] 07/11/2026 — Leer el resumen desde el PDF (Pro, hasta 5 por mes): se lee en el servidor, sin IA ni costo, no se guarda el archivo y nada se guarda sin que lo revises y confirmes.
+- [x] 07/11/2026 — Seguridad: máximo 5 códigos de dos pasos fallidos (después se cierra la sesión), máximo 10 cuentas por hora desde la misma conexión, política de contenido del navegador, archivos de hasta 6 MB.
+- [x] 07/11/2026 — Arreglado: la tarjeta decía "Al día" aunque hubiera un resumen anterior sin pagar.
+- [x] 07/11/2026 — Landing rehecha sin líneas: tarjetas suaves con íconos en círculo, pasos numerados, preguntas en tarjetas, más espacio entre secciones. Animación al bajar que siempre funciona (si Windows tiene las animaciones apagadas, es un fundido sin movimiento) y con respaldo para que nada quede oculto.

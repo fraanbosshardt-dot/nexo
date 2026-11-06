@@ -1,7 +1,7 @@
 // Planes: qué incluye Gratis y qué incluye Pro. El dueño lo cambia desde el panel interno.
 import type { Db } from "./ledger";
 
-export type FeatureKey = "flujo5" | "simulador" | "asistente" | "cereal" | "informes" | "compartido" | "ilimitado" | "soporte";
+export type FeatureKey = "flujo5" | "simulador" | "asistente" | "cereal" | "informes" | "compartido" | "ilimitado" | "soporte" | "pdf";
 
 // Por defecto, casi todo es gratis. Pro suma lo avanzado.
 export const PRO_FEATURES: { key: FeatureKey; name: string }[] = [
@@ -13,6 +13,7 @@ export const PRO_FEATURES: { key: FeatureKey; name: string }[] = [
   { key: "compartido", name: "Espacio compartido (hasta 3 personas)" },
   { key: "ilimitado", name: "Cuentas y objetivos sin límite" },
   { key: "soporte", name: "Soporte prioritario" },
+  { key: "pdf", name: "Leer el resumen de la tarjeta desde el PDF (hasta 5 por mes)" },
 ];
 export const FREE_INCLUDES = [
   "Cuentas, movimientos, ingresos, gastos y transferencias",
