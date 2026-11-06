@@ -1,0 +1,22 @@
+# Dependencias y builds (para cuando arranque la app real)
+node_modules/
+.next/
+dist/
+build/
+coverage/
+
+# Variables de entorno y credenciales: nunca se suben
+.env
+.env.*
+!.env.example
+
+# Sistema y editores
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
