@@ -13,7 +13,20 @@ import type Decimal from "decimal.js";
 export async function latestRates(db: Db, ws: string, base: string) {
   const rows = await db.exchangeRate.findMany({ where: { OR: [{ workspaceId: ws }, { workspaceId: null }], quote: base }, orderBy: { fetchedAt: "desc" } });
   const map = new Map<string, { rate: Decimal; at: Date; source: string; kind: string }>();
-  for (const r of rows) if (!map.has(r.base)) map.set(r.base, { rate: dec(r.sell), at: r.fetchedAt, source: r.source, kind: r.kind });
+  // Primero las manuales del espacio (ganan siempre), después las automáticas.
+  const sorted = [...rows].sort((x, y) => Number(y.workspaceId === ws) - Number(x.workspaceId === ws) || y.fetchedAt.getTime() - x.fetchedAt.getTime());
+  for (const r of sorted) if (!map.has(r.base)) map.set(r.base, { rate: dec(r.sell), at: r.fetchedAt, source: r.source, kind: r.kind });
+  // Cruzadas desde el dólar: 1 C = (USD→base) / (USD→C).
+  const usd = await db.exchangeRate.findMany({ where: { workspaceId: null, base: "USD", kind: "api" }, orderBy: { fetchedAt: "desc" }, take: 60 });
+  const latest = new Map<string, (typeof usd)[number]>();
+  for (const r of usd) if (!latest.has(r.quote)) latest.set(r.quote, r);
+  const toBase = base === "USD" ? null : latest.get(base);
+  if (toBase && !map.has("USD")) map.set("USD", { rate: dec(toBase.sell), at: toBase.fetchedAt, source: toBase.source, kind: "api" });
+  for (const [code, r] of latest) {
+    if (code === base || map.has(code)) continue;
+    if (base === "USD") map.set(code, { rate: dec(1).dividedBy(dec(r.sell)), at: r.fetchedAt, source: r.source, kind: "api" });
+    else if (toBase) map.set(code, { rate: dec(toBase.sell).dividedBy(dec(r.sell)), at: r.fetchedAt, source: r.source, kind: "api" });
+  }
   return map;
 }
 

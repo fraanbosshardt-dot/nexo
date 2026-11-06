@@ -1,23 +1,21 @@
 import { PageHead } from "./page";
+import { Icon } from "./icons";
 import { startTrialAction } from "@/app/actions/modules";
 import { PRO_FEATURES } from "@/server/plans";
 
-// Pantalla para funciones Pro cuando el plan es Gratis: explica qué es y ofrece la prueba gratis.
+// Para una función Pro en plan Gratis: una tarjeta chica que explica qué es y ofrece la prueba gratis.
 export function ProGate({ title, crumb, text, trialUsed }: { title: string; crumb: string; text: string; trialUsed: boolean }) {
   return (
     <>
       <PageHead crumb={crumb} title={title} />
-      <div className="card hero">
-        <div>
-          <div className="lbl">Función Pro</div>
-          <p style={{ fontSize: 16, maxWidth: "52ch", margin: "8px 0 14px" }}>{text}</p>
-          {trialUsed ? (
-            <p className="sub">Tu prueba gratis ya terminó. Los cobros de Pro se habilitan pronto; mientras tanto, escribinos desde Ayuda.</p>
-          ) : (
-            <form action={startTrialAction}><button className="btn pri" type="submit">Probar Pro gratis por 14 días</button></form>
-          )}
+      <div className="card" style={{ maxWidth: 640 }}>
+        <div className="chead"><span className="pill b"><Icon name="lock" />Pro</span></div>
+        <p style={{ fontSize: 15, margin: "0 0 14px", maxWidth: "56ch" }}>{text}</p>
+        <div className="acts" style={{ alignItems: "center" }}>
+          {!trialUsed && <form action={startTrialAction}><button className="btn pri" type="submit">Probar gratis 14 días</button></form>}
+          <a className="btn" href="/app/configuracion?tab=plan">Ver planes</a>
         </div>
-        <div className="hero-side">{PRO_FEATURES.slice(0, 6).map((f) => <div className="hrow" key={f.key}><span>{f.name}</span><b className="pos">✓</b></div>)}</div>
+        <p className="sub" style={{ marginTop: 14 }}>Pro también suma: {PRO_FEATURES.slice(0, 4).map((f) => f.name.toLowerCase()).join(", ")}.</p>
       </div>
     </>
   );

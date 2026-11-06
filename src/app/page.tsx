@@ -48,7 +48,7 @@ export default async function Landing() {
           <p className="sub">Gratis para siempre · Sin tarjeta · Verificación en dos pasos</p>
         </div>
         <div className="lp-mock" aria-hidden="true">
-          <div className="lpm-card"><div className="lpm-lbl">Disponible para usar</div><div className="lpm-big num"><CountUp to={874081} /></div>
+          <div className="lpm-card"><span className="lpm-ex">Ejemplo</span><div className="lpm-lbl">Disponible para usar</div><div className="lpm-big num"><CountUp to={874081} /></div>
             <svg viewBox="0 0 300 80" className="lpm-chart"><path d="M0 60 L30 55 L60 58 L90 40 L120 44 L150 30 L180 36 L210 22 L240 26 L270 14 L300 18" /></svg>
             <div className="lpm-rows"><div><span>Alquiler depto.</span><b className="pos">+$ 650.000</b></div><div><span>Visa · resumen</span><b>−$ 684.320</b></div><div><span>Venta de soja · 300 qq</span><b className="pos">+$ 12.389.520</b></div></div></div>
           <div className="lpm-toast">Pago registrado · quedan $ 0 pendientes</div>

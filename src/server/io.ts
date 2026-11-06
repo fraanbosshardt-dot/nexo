@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import type { Db } from "./ledger";
 import { recordMovement, UserError } from "./ledger";
 import { dec, parseAmount, ZERO } from "@/lib/money";
-import { addMonths, fmtDate, parseDate, period } from "@/lib/dates";
+import { addMonths, fmtDateNum, parseDate, period } from "@/lib/dates";
 import type Decimal from "decimal.js";
 
 // ---------- Informes ----------
@@ -39,7 +39,7 @@ const csvCell = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
 export async function exportMovementsCsv(db: Db, ws: string) {
   const tx = await db.transaction.findMany({ where: { workspaceId: ws }, include: { account: true, category: true }, orderBy: { effectiveDate: "asc" } });
   const head = ["Fecha", "Concepto", "Tipo", "Corresponde a", "Cuenta", "Categoría", "Moneda", "Importe"];
-  const lines = tx.map((t) => [fmtDate(t.effectiveDate), t.description, t.type, t.economicPeriod, t.account.name, t.category?.name ?? "", t.currency, (t.direction === "IN" ? "" : "-") + dec(t.amount).toFixed(2).replace(".", ",")].map(csvCell).join(";"));
+  const lines = tx.map((t) => [fmtDateNum(t.effectiveDate), t.description, t.type, t.economicPeriod, t.account.name, t.category?.name ?? "", t.currency, (t.direction === "IN" ? "" : "-") + dec(t.amount).toFixed(2).replace(".", ",")].map(csvCell).join(";"));
   return "﻿" + [head.map(csvCell).join(";"), ...lines].join("\r\n");
 }
 

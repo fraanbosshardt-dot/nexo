@@ -352,3 +352,23 @@ export async function supportTicketAction(_: FormState, fd: FormData): Promise<F
   revalidatePath("/app/ayuda");
   return { ok: "Recibimos tu consulta. Te respondemos acá mismo." };
 }
+
+// ---------- Cobro de Pro ----------
+
+export async function checkoutAction(fd: FormData) {
+  const { user, workspace } = await requireWorkspace();
+  const { startCheckout } = await import("@/server/billing");
+  const { appUrl } = await import("@/lib/email");
+  const cycle = fd.get("cycle") === "yearly" ? "yearly" : "monthly";
+  const link = await startCheckout(workspace.id, user.email, cycle, `${appUrl()}/app/configuracion?tab=plan&pago=1`);
+  await audit("billing.checkout_started", { userId: user.id, workspaceId: workspace.id, meta: { cycle } });
+  redirect(link);
+}
+
+export async function cancelPlanAction() {
+  const { user, workspace } = await requireWorkspace();
+  const { cancelSubscription } = await import("@/server/billing");
+  await cancelSubscription(getDb(), workspace.id);
+  await audit("billing.canceled", { userId: user.id, workspaceId: workspace.id });
+  redirect(done("/app/configuracion?tab=plan&cancelado=1"));
+}

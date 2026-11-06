@@ -14,6 +14,8 @@ export function ActionForm({ action, children, className, style }: { action: Act
     <form
       className={className}
       style={style}
+      // Si se envía antes de que cargue la página, que nunca mande los datos en la dirección (ni la contraseña).
+      method="post"
       noValidate
       onSubmit={(e) => {
         e.preventDefault();

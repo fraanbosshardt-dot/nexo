@@ -34,7 +34,7 @@ export default async function Flow({ searchParams }: { searchParams: Promise<{ h
       <div className="card">
         <div className="chead"><h3>Mes a mes</h3>
           <div className="acts">
-            <div className="seg">{[["conf", "Solo confirmados"], ["prob", "+ Probables"], ["hipo", "+ Hipotéticos"]].map(([k, l]) => <Link key={k} className={`segl ${c === k ? "on" : ""}`} href={q({ c: k })}>{l}</Link>)}</div>
+            <div className="seg">{[["conf", "Solo lo confirmado"], ["prob", "Con lo que se repite"]].map(([k, l]) => <Link key={k} className={`segl ${c === k ? "on" : ""}`} href={q({ c: k })}>{l}</Link>)}</div>
             <Link className="btn sm" href={sp.detalle ? `/app/flujo?h=${h}&c=${c}` : q({ detalle: "1" })}>{sp.detalle ? "Ver resumido" : "Ver desglose"}</Link>
           </div>
         </div>

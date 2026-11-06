@@ -8,22 +8,24 @@ import { getSession } from "@/lib/auth/session";
 
 export const metadata: Metadata = { title: "Iniciar sesión" };
 
-export default async function LoginPage() {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ nueva?: string }> }) {
+  const nueva = (await searchParams).nueva;
   const s = await getSession();
   if (s && (!s.user.totpEnabledAt || s.twoFactorVerified)) redirect("/app");
   return (
     <AuthShell>
-      <h1>Iniciar sesión</h1>
+      <h1>Ingresá a tu cuenta</h1>
       <p className="sub">¿No tenés cuenta? <Link className="lnk" href="/registro">Creala gratis</Link></p>
-      <ActionForm action={loginAction} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      {nueva && <p className="notice">Listo, ya podés ingresar con tu contraseña nueva.</p>}
+      <ActionForm action={loginAction} >
         <label className="field">Correo<input name="email" type="email" autoComplete="username" placeholder="nombre@correo.com" required autoFocus /></label>
         <label className="field">Contraseña<input name="password" type="password" autoComplete="current-password" placeholder="Tu contraseña" required /></label>
         <div className="auth-row">
           <label className="simtg"><input type="checkbox" name="remember" defaultChecked /><span>Mantener la sesión iniciada</span></label>
         </div>
-        <Submit className="btn pri auth-btn" pending="Entrando…">Continuar</Submit>
+        <Submit className="btn pri auth-btn" pending="Entrando…">Ingresar</Submit>
       </ActionForm>
-      <p className="pub-note">¿Te olvidaste la contraseña? Escribinos a soporte@nexo.app desde el correo de tu cuenta.</p>
+      <p className="sub"><Link className="lnk" href="/recuperar">Olvidé mi contraseña</Link></p>
     </AuthShell>
   );
 }

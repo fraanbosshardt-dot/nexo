@@ -1,28 +1,33 @@
 import type { Metadata } from "next";
 import { requireWorkspace } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
-import { MODULES, PLAN_FEATURES, PRICE_USD } from "@/lib/modules";
+import { MODULES, PLAN_FEATURES } from "@/lib/modules";
+import { formatMoney } from "@/lib/money";
+import { billingConfig } from "@/server/billing";
+import { planSettings } from "@/server/plans";
+import { cancelPlanAction, checkoutAction, startTrialAction } from "@/app/actions/modules";
 import { fmtDate } from "@/lib/dates";
 import { COUNTRIES, CURRENCIES } from "@/lib/countries";
-import { PageHead, Tabs } from "@/components/page";
+import { PageHead, SettingsTabs } from "@/components/page";
 import { ActionForm, OtpInput, Submit } from "@/components/forms";
-import { confirm2faAction, disable2faAction, revokeOtherSessionsAction, saveModulesAction, start2faAction, twoFactorQr, updateProfileAction } from "@/app/actions/app";
+import { emailRemindersAction, confirm2faAction, disable2faAction, revokeOtherSessionsAction, saveModulesAction, start2faAction, twoFactorQr, updateProfileAction } from "@/app/actions/app";
 
 export const metadata: Metadata = { title: "Configuración" };
 
 const TABS = [["general", "General"], ["funciones", "Funciones"], ["seguridad", "Seguridad"], ["plan", "Plan"], ["datos", "Tus datos"]] as const;
 
-export default async function Settings({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
+export default async function Settings({ searchParams }: { searchParams: Promise<{ tab?: string; pago?: string; cancelado?: string }> }) {
   const { user, workspace, modules, plan, session } = await requireWorkspace();
-  const asked = (await searchParams).tab;
+  const sp = await searchParams;
+  const asked = sp.tab;
   const t = TABS.some(([k]) => k === asked) ? asked! : "general";
-  const tabs = <Tabs current={t} items={TABS.map(([k, l]) => ({ key: k, label: l, href: `/app/configuracion?tab=${k}` }))} />;
+  const tabs = <SettingsTabs current={t} rules={modules.reglas} />;
   const now = new Intl.DateTimeFormat("es-AR", { timeZone: workspace.timezone, dateStyle: "full", timeStyle: "short" }).format(new Date());
 
   let body: React.ReactNode = null;
   if (t === "general") {
     body = (
-      <div className="card" style={{ maxWidth: 720 }}>
+      <div className="card">
         <ActionForm action={updateProfileAction} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div className="frow"><label className="field">Nombre<input name="name" defaultValue={user.name} /></label><label className="field">Correo<input defaultValue={user.email} disabled /></label></div>
           <div className="frow">
@@ -42,7 +47,7 @@ export default async function Settings({ searchParams }: { searchParams: Promise
   }
   if (t === "funciones") {
     body = (
-      <div className="card" style={{ maxWidth: 820 }}>
+      <div className="card">
         <p className="sub" style={{ marginBottom: 8 }}>Activá solo lo que usás. Lo que apagues desaparece del menú; tus datos no se borran.</p>
         <ActionForm action={saveModulesAction}>
           <div className="list">{MODULES.map((m) => (
@@ -60,7 +65,7 @@ export default async function Settings({ searchParams }: { searchParams: Promise
     const sessions = await getDb().session.findMany({ where: { userId: user.id, revokedAt: null, expiresAt: { gt: new Date() } }, orderBy: { createdAt: "desc" } });
     body = (
       <>
-        <div className="card" style={{ maxWidth: 720 }}>
+        <div className="card">
           <div className="chead"><div><h3>Verificación en dos pasos</h3><p className="sub">Además de la contraseña, te pide un código de Google Authenticator al entrar.</p></div>{user.totpEnabledAt && <span className="pill g">Activa</span>}</div>
           {user.totpEnabledAt ? (
             <ActionForm action={disable2faAction} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -83,7 +88,12 @@ export default async function Settings({ searchParams }: { searchParams: Promise
             <form action={start2faAction}><button className="btn pri" type="submit">Configurar</button></form>
           )}
         </div>
-        <div className="card" style={{ maxWidth: 720 }}>
+        <div className="card">
+          <div className="chead"><div><h3>Avisos por email</h3><p className="sub">Un día antes de cada vencimiento te mandamos lo que tenés que pagar o cobrar.</p></div>
+            <form action={emailRemindersAction}><input type="hidden" name="on" value={user.emailReminders ? "0" : "1"} /><button className={`btn sm ${user.emailReminders ? "" : "pri"}`} type="submit">{user.emailReminders ? "Apagar" : "Prender"}</button></form></div>
+          <p className="sub" style={{ margin: 0 }}>{user.emailReminders ? `Prendidos. Llegan a ${user.email}.` : "Apagados."}</p>
+        </div>
+        <div className="card">
           <div className="chead"><h3>Sesiones abiertas</h3>{sessions.length > 1 && <form action={revokeOtherSessionsAction}><button className="btn sm" type="submit">Cerrar las demás</button></form>}</div>
           <div className="list">{sessions.map((s) => (
             <div className="li" key={s.id}><div className="grow"><div className="t">{s.userAgent?.match(/(Windows|Mac OS X|Android|iPhone|Linux)/)?.[1] ?? "Dispositivo"}{s.id === session.id ? " · esta sesión" : ""}</div><div className="s">Desde el {fmtDate(s.createdAt)} · vence el {fmtDate(s.expiresAt)}</div></div></div>
@@ -94,23 +104,49 @@ export default async function Settings({ searchParams }: { searchParams: Promise
     );
   }
   if (t === "plan") {
+    const sub = workspace.subscription;
+    const bill = billingConfig();
+    const prices = (await planSettings(getDb())).prices;
+    const invoices = await getDb().invoice.findMany({ where: { workspaceId: workspace.id }, orderBy: { createdAt: "desc" }, take: 24 });
+    const paidPro = sub?.plan === "PRO" && sub.status === "ACTIVE" && sub.provider === "mercadopago";
+    const trial = sub?.status === "TRIALING" && sub.trialEndsAt && sub.trialEndsAt > new Date();
     body = (
-      <div className="grid g2">
+      <>
+        {sp.pago && <div className="notice g">Gracias. En cuanto Mercado Pago confirme el pago, tu plan pasa a Pro.</div>}
+        {sp.cancelado && <div className="notice">Cancelaste Pro. Seguís con todo lo de Gratis y tus datos quedan.</div>}
         <div className="card">
-          <div className="chead"><div><h3>Tu plan: {plan === "PRO" ? "Pro" : "Gratis"}</h3><p className="sub">{plan === "PRO" ? `US$ ${PRICE_USD.monthly} por mes` : "Tenés casi todo incluido, sin costo."}</p></div></div>
-          <p className="sub">Pro cuesta US$ {PRICE_USD.monthly} por mes o US$ {PRICE_USD.yearly} por año. Los cobros (Mercado Pago o Stripe) se conectan en la fase comercial; hasta entonces no se cobra nada.</p>
+          <div className="chead"><div><h3>Tu plan: {plan === "PRO" ? "Pro" : "Gratis"}</h3><p className="sub">{trial ? `Prueba gratis hasta el ${fmtDate(sub!.trialEndsAt!)}.` : paidPro ? `Pagás con Mercado Pago, ${sub!.billingCycle === "yearly" ? "por año" : "por mes"}.` : plan === "PRO" ? "Pro activado por NEXO." : "Tenés casi todo incluido, sin costo."}</p></div></div>
+          {paidPro ? (
+            <form action={cancelPlanAction}><button className="btn" type="submit">Cancelar Pro</button></form>
+          ) : bill.enabled ? (
+            <div className="acts">
+              <form action={checkoutAction}><input type="hidden" name="cycle" value="monthly" /><button className="btn pri" type="submit">Pasar a Pro · {formatMoney(String(bill.monthly), bill.currency)} por mes</button></form>
+              <form action={checkoutAction}><input type="hidden" name="cycle" value="yearly" /><button className="btn" type="submit">Pagar por año · {formatMoney(String(bill.yearly), bill.currency)}</button></form>
+            </div>
+          ) : (
+            <p className="sub">Pro cuesta US$ {prices.monthly} por mes o US$ {prices.yearly} por año. El cobro con Mercado Pago se activa pronto; mientras tanto podés usar la prueba gratis.</p>
+          )}
+          {!paidPro && !sub?.trialEndsAt && plan !== "PRO" && <form action={startTrialAction} style={{ marginTop: 12 }}><button className="btn ghost" type="submit">Probar Pro gratis 14 días</button></form>}
         </div>
-        <div className="card"><div className="chead"><h3>Qué suma Pro</h3></div><div className="list">{PLAN_FEATURES.filter((f) => f.plan === "pro").map((f) => <div className="li" key={f.name}><span className="pill">Pro</span><div className="grow">{f.name}</div></div>)}</div></div>
-      </div>
+        <div className="card"><div className="chead"><h3>Qué suma Pro</h3></div><div className="list">{PLAN_FEATURES.filter((f) => f.plan === "pro").map((f) => <div className="li" key={f.name}><span className="pill b">Pro</span><div className="grow">{f.name}</div></div>)}</div></div>
+        {invoices.length > 0 && (
+          <div className="card"><div className="chead"><h3>Facturas</h3></div><div className="tw"><table>
+            <thead><tr><th>Fecha</th><th>Detalle</th><th>Estado</th><th className="n">Importe</th></tr></thead>
+            <tbody>{invoices.map((i) => <tr key={i.id}><td>{fmtDate(i.paidAt ?? i.createdAt)}</td><td>NEXO Pro</td><td>{i.status === "approved" ? <span className="pill g">Pagada</span> : i.status === "rejected" ? <span className="pill r">Rechazada</span> : <span className="pill">{i.status}</span>}</td><td className="n">{formatMoney(i.amount, i.currency)}</td></tr>)}</tbody>
+          </table></div></div>
+        )}
+      </>
     );
   }
   if (t === "datos") {
     body = (
-      <div className="card" style={{ maxWidth: 720 }}><div className="list">
-        <div className="li"><div className="grow"><div className="t">Descargar todos mis datos</div><div className="s">Respaldo completo en un archivo. Llega con Importar y exportar (Fase 7).</div></div></div>
-        <div className="li"><div className="grow"><div className="t neg">Eliminar cuenta y datos</div><div className="s">Escribinos a soporte@nexo.app desde tu correo y la eliminamos en hasta 30 días.</div></div></div>
+      <div className="card"><div className="list">
+        <div className="li"><div className="grow"><div className="t">Descargar mis movimientos</div><div className="s">Un archivo CSV que abre en Excel o Google Sheets.</div></div><a className="btn sm" href="/app/exportar/movimientos" download>Descargar</a></div>
+        <div className="li"><div className="grow"><div className="t">Descargar todos mis datos</div><div className="s">Respaldo completo de tu espacio en un archivo.</div></div><a className="btn sm" href="/app/exportar/respaldo" download>Descargar</a></div>
+        <div className="li"><div className="grow"><div className="t">Importar movimientos</div><div className="s">Desde la planilla o el extracto de tu banco.</div></div><a className="btn sm" href="/app/importar">Importar</a></div>
+        <div className="li"><div className="grow"><div className="t neg">Eliminar cuenta y datos</div><div className="s">Escribinos desde Ayuda y la eliminamos en hasta 30 días.</div></div><a className="btn sm" href="/app/ayuda">Escribir</a></div>
       </div></div>
     );
   }
-  return (<><PageHead crumb="Ajustes" title="Configuración" />{tabs}{body}</>);
+  return (<div className="narrow wide"><PageHead crumb="Ajustes" title="Configuración" />{tabs}{body}</div>);
 }

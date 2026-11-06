@@ -4,7 +4,7 @@ import { requireWorkspace } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
 import { formatMoney } from "@/lib/money";
 import { addMonths, fmtPeriod, period, periodEnd, periodStart, todayIn } from "@/lib/dates";
-import { PageHead } from "@/components/page";
+import { PageHead, Tabs } from "@/components/page";
 
 export const metadata: Metadata = { title: "Calendario" };
 
@@ -25,6 +25,7 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
     <>
       <PageHead crumb="Pagos y deudas" title="Calendario" desc="Tocá un pendiente para registrar el pago o el cobro."
         actions={<><Link className="btn" href={`/app/calendario?mes=${addMonths(p, -1)}`} aria-label="Mes anterior">‹</Link><span className="btn" style={{ minWidth: 150, justifyContent: "center" }}>{fmtPeriod(p)}</span><Link className="btn" href={`/app/calendario?mes=${addMonths(p, 1)}`} aria-label="Mes siguiente">›</Link></>} />
+      <Tabs current="cal" items={[{ key: "lista", label: "Lista", href: "/app/proximos" }, { key: "cal", label: "Calendario", href: "/app/calendario" }]} />
       <div className="legend"><span><i style={{ background: "var(--green-soft)", border: "1px solid var(--green)" }} />Cobros</span><span><i style={{ background: "var(--slate-soft)" }} />Pagos</span><span><i style={{ background: "var(--red-soft)" }} />Atrasados</span><span><i style={{ background: "var(--surface-2)", opacity: 0.6 }} />Ya pagados</span></div>
       <div className="tw" style={{ margin: 0, padding: 0 }}>
         <div className="cal cal-real" style={{ minWidth: 640 }}>

@@ -23,10 +23,10 @@ export default async function PayPage({ params }: { params: Promise<{ id: string
   const inc = ob.direction === "RECEIVABLE";
   const today = todayIn(workspace.timezone);
   return (
-    <>
+    <div className="narrow">
       <Link className="lk" href="/app/proximos">← Próximos pagos</Link>
       <PageHead crumb="Pagos y deudas" title={inc ? "Registrar cobro" : "Registrar pago"} desc={`${ob.description} · ${ob.dueDate < today ? "venció" : "vence"} el ${fmtDate(ob.dueDate)}`} />
-      <div className="card" style={{ maxWidth: 560 }}>
+      <div className="card">
         <dl className="kv" style={{ marginBottom: 14 }}>
           <dt>Total</dt><dd>{formatMoney(ob.amount, ob.currency)}</dd>
           <dt>{inc ? "Falta cobrar" : "Falta pagar"}</dt><dd><b>{formatMoney(left, ob.currency)}</b></dd>
@@ -44,6 +44,6 @@ export default async function PayPage({ params }: { params: Promise<{ id: string
           </ActionForm>
         ) : <div className="empty">Necesitás una cuenta activa en {ob.currency}. <Link className="lk" href="/app/cuentas?nueva=1">Crear cuenta</Link></div>}
       </div>
-    </>
+    </div>
   );
 }

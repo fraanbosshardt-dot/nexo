@@ -3,53 +3,84 @@ import type { Metadata } from "next";
 import { requireWorkspace } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
 import { listMovements } from "@/server/ledger";
-import { formatMoney } from "@/lib/money";
-import { addMonths, fmtDate, fmtPeriod, period, todayIn } from "@/lib/dates";
-import { Empty, PageHead, Tabs } from "@/components/page";
-import { reverseAction } from "@/app/actions/app";
+import { formatMoney, ZERO } from "@/lib/money";
+import { addMonths, fmtPeriod, period, todayIn } from "@/lib/dates";
+import { PageHead } from "@/components/page";
 
 export const metadata: Metadata = { title: "Movimientos" };
+const DIAS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+const TYPE_LABEL: Record<string, string> = { TRANSFER: "Transferencia", ADJUSTMENT: "Ajuste", DEBT_PAYMENT: "Cuota de deuda", CARD_PAYMENT: "Pago de tarjeta", INVESTMENT: "Inversión", DEBT_DISBURSEMENT: "Préstamo recibido" };
 
-const TYPE_LABEL: Record<string, string> = { INCOME: "Ingreso", EXPENSE: "Gasto", TRANSFER: "Transferencia", ADJUSTMENT: "Ajuste", DEBT_PAYMENT: "Cuota", CARD_PAYMENT: "Tarjeta", INVESTMENT: "Inversión" };
-
-export default async function Movements({ searchParams }: { searchParams: Promise<{ mes?: string; tipo?: string }> }) {
-  const { workspace, modules } = await requireWorkspace();
+export default async function Movements({ searchParams }: { searchParams: Promise<{ mes?: string; tipo?: string; q?: string }> }) {
+  const { workspace } = await requireWorkspace();
   const sp = await searchParams;
   const p = /^\d{4}-\d{2}$/.test(sp.mes ?? "") ? sp.mes! : period(todayIn(workspace.timezone));
   const tipo = ["INCOME", "EXPENSE", "TRANSFER"].includes(sp.tipo ?? "") ? sp.tipo! : "ALL";
+  const q = (sp.q ?? "").trim().toLowerCase();
   const all = await listMovements(getDb(), workspace.id, { period: p });
-  const rows = tipo === "ALL" ? all : all.filter((t) => t.type === tipo);
-  const q = (o: Record<string, string>) => `/app/movimientos?${new URLSearchParams({ mes: p, ...(tipo !== "ALL" ? { tipo } : {}), ...o })}`;
+  const rows = all
+    .filter((t) => (tipo === "ALL" ? !(t.type === "TRANSFER" && t.direction === "IN") : tipo === "TRANSFER" ? t.type === "TRANSFER" && t.direction === "OUT" : t.type === tipo))
+    .filter((t) => !q || `${t.description} ${t.category?.name ?? ""} ${t.account.name}`.toLowerCase().includes(q));
+  const link = (o: Record<string, string>) => `/app/movimientos?${new URLSearchParams({ mes: p, ...(tipo !== "ALL" ? { tipo } : {}), ...(q ? { q } : {}), ...o })}`;
+  const cur = workspace.baseCurrency;
+  const real = all.filter((t) => t.currency === cur && !t.reversedBy && !t.reversalOfId);
+  const inc = real.filter((t) => t.type === "INCOME").reduce((s, t) => (t.direction === "IN" ? s.plus(t.amount) : s.minus(t.amount)), ZERO);
+  const out = real.filter((t) => t.type === "EXPENSE" || t.type === "DEBT_PAYMENT").reduce((s, t) => (t.direction === "OUT" ? s.plus(t.amount) : s.minus(t.amount)), ZERO);
+  const byDay = new Map<string, typeof rows>();
+  for (const t of rows) { const k = t.effectiveDate.toISOString().slice(0, 10); byDay.set(k, [...(byDay.get(k) ?? []), t]); }
+
   return (
     <>
-      <PageHead crumb="Mi dinero" title="Movimientos" desc="Cada movimiento guarda a qué mes corresponde y cuándo se movió el dinero."
-        actions={<><Link className="btn" href={q({ mes: addMonths(p, -1) })} aria-label="Mes anterior">‹</Link><span className="btn" style={{ minWidth: 150, justifyContent: "center" }}>{fmtPeriod(p)}</span><Link className="btn" href={q({ mes: addMonths(p, 1) })} aria-label="Mes siguiente">›</Link><Link className="btn pri" href="/app/movimientos/nuevo">+ Nuevo movimiento</Link></>} />
-      {modules.tipos && (
-        <Tabs current={tipo} items={[["ALL", "Todos"], ["INCOME", "Ingresos"], ["EXPENSE", "Gastos"], ["TRANSFER", "Transferencias"]].map(([k, l]) => ({ key: k, label: l, href: `/app/movimientos?${new URLSearchParams({ mes: p, ...(k !== "ALL" ? { tipo: k } : {}) })}` }))} />
-      )}
+      <PageHead crumb="Mi dinero" title="Movimientos" desc="Lo que ya entró y salió de tus cuentas. Lo que falta está en Próximos pagos." />
+      <div className="acts" style={{ justifyContent: "space-between", alignItems: "center" }}>
+        <div className="acts" style={{ alignItems: "center" }}>
+          <Link className="ibtn" href={link({ mes: addMonths(p, -1) })} aria-label="Mes anterior">‹</Link>
+          <b style={{ fontSize: 20, fontWeight: 400, minWidth: 150, textAlign: "center" }}>{fmtPeriod(p)}</b>
+          <Link className="ibtn" href={link({ mes: addMonths(p, 1) })} aria-label="Mes siguiente">›</Link>
+        </div>
+        <form className="search" style={{ maxWidth: 320 }}><input type="hidden" name="mes" value={p} />{tipo !== "ALL" && <input type="hidden" name="tipo" value={tipo} />}<input name="q" defaultValue={sp.q ?? ""} placeholder="Buscar en este mes" aria-label="Buscar en este mes" /></form>
+      </div>
+      <div className="fc" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))" }}>
+        <div><small>Entró</small><b className="pos">{formatMoney(inc, cur)}</b></div>
+        <div><small>Salió</small><b className="neg">{formatMoney(out, cur)}</b></div>
+        <div><small>Resultado</small><b className={inc.minus(out).isNegative() ? "neg" : ""}>{formatMoney(inc.minus(out), cur, { sign: true })}</b></div>
+      </div>
+      <div className="seg" style={{ alignSelf: "flex-start" }}>
+        {[["ALL", "Todos"], ["INCOME", "Ingresos"], ["EXPENSE", "Gastos"], ["TRANSFER", "Transferencias"]].map(([k, l]) => <Link key={k} className={`segl ${tipo === k ? "on" : ""}`} href={`/app/movimientos?${new URLSearchParams({ mes: p, ...(k !== "ALL" ? { tipo: k } : {}), ...(q ? { q } : {}) })}`}>{l}</Link>)}
+      </div>
       <div className="card">
         {rows.length ? (
-          <div className="tw"><table>
-            <thead><tr><th>Fecha</th><th>Concepto</th><th>Tipo</th><th>Corresponde a</th><th>Cuenta</th><th className="n">Importe</th><th /></tr></thead>
-            <tbody>{rows.map((t) => {
-              const sign = t.direction === "IN" ? t.amount : t.amount.neg();
+          <div className="list">
+            {[...byDay.entries()].map(([day, list]) => {
+              const d = new Date(day + "T00:00:00Z");
               return (
-                <tr key={t.id} style={t.reversedBy || t.reversalOfId ? { opacity: 0.6 } : undefined}>
-                  <td className="num">{fmtDate(t.effectiveDate)}</td>
-                  <td>{t.description}{t.category && <small>{t.category.name}</small>}{t.reversedBy && <small>Revertido</small>}</td>
-                  <td><span className={`pill ${t.type === "INCOME" ? "g" : ""}`}>{TYPE_LABEL[t.type]}</span></td>
-                  <td>{fmtPeriod(t.economicPeriod)}</td>
-                  <td>{t.account.name}</td>
-                  <td className={`n ${t.type === "INCOME" && t.direction === "IN" ? "pos" : ""}`}>{formatMoney(sign, t.currency, { sign: t.type !== "TRANSFER" })}</td>
-                  <td>{!t.reversedBy && !t.reversalOfId && (
-                    <form action={reverseAction}><input type="hidden" name="id" value={t.id} /><button className="btn sm ghost" type="submit" title="Crea un movimiento opuesto; no borra el original">Revertir</button></form>
-                  )}</td>
-                </tr>);
-            })}</tbody>
-          </table></div>
-        ) : <Empty>No hay movimientos en {fmtPeriod(p).toLowerCase()}. <Link className="lk" href="/app/movimientos/nuevo">Cargá el primero</Link>.</Empty>}
+                <div key={day}>
+                  <div className="crumb" style={{ padding: "14px 0 4px", borderBottom: "1px solid var(--line)" }}>{DIAS[d.getUTCDay()]} {d.getUTCDate()} de {MESES[d.getUTCMonth()]}</div>
+                  {list.map((t) => {
+                    const off = !!(t.reversedBy || t.reversalOfId);
+                    const isIn = t.direction === "IN";
+                    return (
+                      <Link className="li" key={t.id} href={`/app/movimientos/${t.id}`} style={{ color: "inherit", opacity: off ? 0.55 : 1 }}>
+                        <div className="grow">
+                          <div className="t" style={off ? { textDecoration: "line-through" } : undefined}>{t.description}</div>
+                          <div className="s">{[TYPE_LABEL[t.type], t.category?.name, t.account.name, off ? (t.reversedBy ? "Anulado" : "Anulación") : null].filter(Boolean).join(" · ")}</div>
+                        </div>
+                        <b className={`num ${t.type === "TRANSFER" ? "" : isIn ? "pos" : "neg"}`}>{isIn ? "+" : "−"}{formatMoney(t.amount, t.currency)}</b>
+                      </Link>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="empty">
+            <p style={{ margin: "0 0 12px" }}>{q ? `No encontramos "${sp.q}" en ${fmtPeriod(p).toLowerCase()}.` : `No hay movimientos en ${fmtPeriod(p).toLowerCase()}.`}</p>
+            <Link className="btn" href="/app/movimientos/nuevo">+ Cargar un gasto</Link>
+          </div>
+        )}
       </div>
-      <p className="foot-note">Revertir no borra: crea un movimiento opuesto vinculado, así el historial queda completo.</p>
     </>
   );
 }

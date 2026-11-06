@@ -1,4 +1,5 @@
 "use client";
+import { Help } from "@/components/help";
 import { useState } from "react";
 
 const SYSTEMS: [string, string, string][] = [
@@ -23,7 +24,7 @@ export function DebtFormFields({ accounts, today, baseCurrency }: { accounts: { 
       {!free && <div className="frow"><label className="field">Primera cuota<input name="firstDue" type="date" /></label><label className="field">Importe de la cuota (si lo sabés)<input name="installmentAmount" inputMode="decimal" placeholder="0,00" /></label></div>}
       {withRate && (
         <details className="more"><summary>Tasas (opcional)</summary>
-          <div className="frow" style={{ gridTemplateColumns: "1fr 1fr 1fr", paddingTop: 8 }}><label className="field">TNA %<input name="tna" inputMode="decimal" /></label><label className="field">TEA %<input name="tea" inputMode="decimal" /></label><label className="field">CFT %<input name="cft" inputMode="decimal" /></label></div>
+          <div className="frow" style={{ gridTemplateColumns: "1fr 1fr 1fr", paddingTop: 8 }}><label className="field"><span>TNA % <Help term="TNA" /></span><input name="tna" inputMode="decimal" /></label><label className="field"><span>TEA % <Help term="TEA" /></span><input name="tea" inputMode="decimal" /></label><label className="field"><span>CFT % <Help term="CFT" /></span><input name="cft" inputMode="decimal" /></label></div>
           <p className="sub">Si no las tenés, no pasa nada: alcanza con el importe de la cuota. Nunca inventamos una tasa.</p>
         </details>
       )}

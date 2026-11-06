@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import { requireWorkspace } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
 import { assetsOverview, netWorth } from "@/server/wealth";
+import { ensureFreshRates } from "@/server/fx";
 import { formatMoney } from "@/lib/money";
 import { fmtDate } from "@/lib/dates";
-import { PageHead } from "@/components/page";
+import { PageHead, Tabs } from "@/components/page";
 import { ActionForm, Submit } from "@/components/forms";
 import { createAssetAction, rateAction, valuationAction } from "@/app/actions/modules";
 import { CURRENCIES } from "@/lib/countries";
@@ -16,13 +17,15 @@ export default async function NetWorth() {
   const { workspace, modules } = await requireWorkspace();
   const db = getDb();
   const cur = workspace.baseCurrency;
+  await ensureFreshRates(db);
   const [nw, assets] = await Promise.all([netWorth(db, workspace.id, cur), assetsOverview(db, workspace.id)]);
   const fm = (v: Parameters<typeof formatMoney>[0]) => formatMoney(v, cur);
   return (
     <>
       <PageHead crumb="Patrimonio" title="Patrimonio neto" desc="Todo lo que tenés menos todo lo que debés. Las fechas de cobro y pago no lo cambian; las valuaciones sí." />
+      <Tabs current="pat" items={[{ key: "pat", label: "Patrimonio neto", href: "/app/patrimonio" }, { key: "inv", label: "Inversiones", href: "/app/inversiones" }]} />
       <div className="card hero">
-        <div><div className="lbl">Patrimonio neto</div><div className={`big ${nw.net.isNegative() ? "neg" : ""}`}>{fm(nw.net)}</div><p className="sub">En {cur}, con las cotizaciones que cargaste.</p></div>
+        <div><div className="lbl">Patrimonio neto</div><div className={`big ${nw.net.isNegative() ? "neg" : ""}`}>{fm(nw.net)}</div><p className="sub">En {cur}. Las cotizaciones se actualizan solas; si cargás una a mano, se usa esa.</p></div>
         <div className="hero-side"><div className="hrow"><span>Lo que tenés</span><b>{fm(nw.assets)}</b></div><div className="hrow"><span>Lo que debés</span><b>{fm(nw.liabilities.neg())}</b></div></div>
       </div>
       {nw.missingRates.length > 0 && (

@@ -36,7 +36,8 @@ export function parseDate(input: string | null | undefined): Date | null {
 }
 
 const MES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
-export const fmtDate = (d: Date) => `${String(d.getUTCDate()).padStart(2, "0")}/${String(d.getUTCMonth() + 1).padStart(2, "0")}/${d.getUTCFullYear()}`;
+export const fmtDate = (d: Date) => `${d.getUTCDate()} ${MES[d.getUTCMonth()].slice(0, 3)}${d.getUTCFullYear() !== new Date().getUTCFullYear() ? ` ${d.getUTCFullYear()}` : ""}`;
+export const fmtDateNum = (d: Date) => `${String(d.getUTCDate()).padStart(2, "0")}/${String(d.getUTCMonth() + 1).padStart(2, "0")}/${d.getUTCFullYear()}`;
 export const fmtDayMonth = (d: Date) => `${d.getUTCDate()} ${MES[d.getUTCMonth()].slice(0, 3)}`;
 export const isoDate = (d: Date) => d.toISOString().slice(0, 10);
 export function fmtPeriod(p: string): string {

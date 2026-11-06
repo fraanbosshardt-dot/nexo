@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Icon } from "./icons";
 
 export function Brand({ inverse = false, href = "/" }: { inverse?: boolean; href?: string }) {
   return (
@@ -9,24 +10,25 @@ export function Brand({ inverse = false, href = "/" }: { inverse?: boolean; href
   );
 }
 
+// Pantallas de registro, ingreso y verificación: una tarjeta blanca centrada, sin animaciones.
 export function AuthShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="auth">
-      <aside className="auth-side">
-        <Brand inverse />
-        <div>
-          <h2>Tu plata, clara.</h2>
-          <p>Cuentas, tarjetas, deudas y cobros en un solo lugar, con lo que vas a tener mes a mes.</p>
-        </div>
-        <ul>
-          <li>Verificación en dos pasos</li>
-          <li>Nunca te pedimos la clave de tu banco</li>
-          <li>Tu moneda y otras, cada una en su cuenta</li>
-        </ul>
-      </aside>
-      <main className="auth-main">
-        <div className="auth-card">{children}</div>
-      </main>
+    <div className="nx auth">
+      <div className="auth-card">
+        <main className="auth-main">
+          <Brand />
+          <div className="auth-box">{children}</div>
+        </main>
+        <aside className="auth-side">
+          <h2>Tu plata, ordenada mes a mes.</h2>
+          <ul>
+            <li><Icon name="check" /><span>Sabé cuánto tenés disponible hoy y con cuánto terminás el mes.</span></li>
+            <li><Icon name="check" /><span>Tarjetas, cuotas y deudas en un solo lugar, sin contar nada dos veces.</span></li>
+            <li><Icon name="check" /><span>Avisos antes de que un mes quede en rojo.</span></li>
+            <li><Icon name="lock" /><span>Nunca te pedimos la clave de tu banco.</span></li>
+          </ul>
+        </aside>
+      </div>
     </div>
   );
 }

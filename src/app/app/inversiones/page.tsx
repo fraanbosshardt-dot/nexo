@@ -4,7 +4,7 @@ import { getDb } from "@/lib/db";
 import { investmentsOverview } from "@/server/wealth";
 import { formatMoney, ZERO } from "@/lib/money";
 import { fmtDate } from "@/lib/dates";
-import { PageHead, Stat } from "@/components/page";
+import { PageHead, Stat, Tabs } from "@/components/page";
 import { ActionForm, Submit } from "@/components/forms";
 import { createInvestmentAction, investmentMoveAction, valuationAction } from "@/app/actions/modules";
 import { CURRENCIES } from "@/lib/countries";
@@ -22,6 +22,7 @@ export default async function Investments() {
   return (
     <>
       <PageHead crumb="Patrimonio" title="Inversiones" desc="Lo invertido no es dinero disponible. Cambiar la valuación no mueve tu caja: solo aportar o retirar." />
+      <Tabs current="inv" items={[{ key: "pat", label: "Patrimonio neto", href: "/app/patrimonio" }, { key: "inv", label: "Inversiones", href: "/app/inversiones" }]} />
       {list.length > 0 && <div className="card" style={{ display: "flex", gap: 28, flexWrap: "wrap" }}><Stat label="Invertido" value={formatMoney(invested, cur)} /><Stat label="Vale hoy" value={formatMoney(value, cur)} /><Stat label="Resultado" value={formatMoney(value.minus(invested), cur, { sign: true })} tone={value.lt(invested) ? "neg" : "pos"} /></div>}
       {list.map((i) => {
         const fm = (v: Parameters<typeof formatMoney>[0], o?: Parameters<typeof formatMoney>[2]) => formatMoney(v, i.inv.currency, o);

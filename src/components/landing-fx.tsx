@@ -1,22 +1,9 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 
-// Número que sube hasta su valor al cargar (se apaga si el sistema pide menos movimiento).
+// Número fijo, sin animación.
 export function CountUp({ to, prefix = "$ " }: { to: number; prefix?: string }) {
-  const [v, setV] = useState(to);
-  useEffect(() => {
-    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    let raf = 0;
-    const t0 = performance.now();
-    const tick = (t: number) => {
-      const p = Math.min(1, (t - t0) / 1300);
-      setV(Math.round(to * (1 - Math.pow(1 - p, 3))));
-      if (p < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [to]);
-  return <>{prefix}{v.toLocaleString("es-AR")}</>;
+  return <>{prefix}{to.toLocaleString("es-AR")}</>;
 }
 
 // Agrega la clase "in" cuando el bloque entra en pantalla (solo mueve; nunca lo oculta).
@@ -34,7 +21,7 @@ export function Reveal({ children, className = "", as: Tag = "div" }: { children
 }
 
 export function ScrollTo({ id, children }: { id: string; children: React.ReactNode }) {
-  return <button type="button" onClick={() => document.getElementById(id)?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" })}>{children}</button>;
+  return <button type="button" onClick={() => document.getElementById(id)?.scrollIntoView({ behavior: "auto" })}>{children}</button>;
 }
 
 export function PlanToggle({ monthly, yearly }: { monthly: React.ReactNode; yearly: React.ReactNode }) {

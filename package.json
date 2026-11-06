@@ -17,7 +17,8 @@
     "db:migrate": "prisma migrate deploy",
     "db:generate": "prisma generate",
     "postinstall": "prisma generate",
-    "vercel-build": "prisma generate && prisma migrate deploy && next build"
+    "vercel-build": "prisma generate && prisma migrate deploy && next build",
+    "admin": "tsx scripts/make-admin.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.1",

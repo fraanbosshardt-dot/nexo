@@ -12,10 +12,10 @@ export default async function SignupPage() {
   if (await getSession()) redirect("/app");
   return (
     <AuthShell>
-      <h1>Crear cuenta</h1>
+      <h1>Creá tu cuenta</h1>
       <p className="sub">¿Ya tenés cuenta? <Link className="lnk" href="/ingresar">Iniciá sesión</Link></p>
-      <ActionForm action={signupAction} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        <label className="field">Nombre<input name="name" autoComplete="name" placeholder="Cómo te llamamos" required autoFocus /></label>
+      <ActionForm action={signupAction} >
+        <label className="field">Nombre<input name="name" autoComplete="name" placeholder="Tu nombre" required autoFocus /></label>
         <label className="field">Correo<input name="email" type="email" autoComplete="email" placeholder="nombre@correo.com" required /></label>
         <PasswordStrength />
         <label className="simtg">

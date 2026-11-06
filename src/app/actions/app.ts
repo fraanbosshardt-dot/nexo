@@ -55,13 +55,29 @@ export async function finishOnboardingAction(_: FormState, fd: FormData): Promis
     if (accName) {
       const type = z.enum(ACCOUNT_TYPES).catch("SAVINGS").parse(fd.get("accountType"));
       const initial = String(fd.get("accountBalance") ?? "").trim();
-      await createAccount(db, workspace.id, {
+      const account = await createAccount(db, workspace.id, {
         name: accName,
         type,
         currency: currencyOf(fd.get("accountCurrency"), currency),
         initialBalance: initial ? money(initial, "el saldo de la cuenta") : "0",
         initialDate: todayIn(timezone),
       });
+      // Ingresos fijos (opcionales): cada uno queda como regla mensual desde su próximo cobro.
+      const names = fd.getAll("incomeName").map(String), amounts = fd.getAll("incomeAmount").map(String), days = fd.getAll("incomeDay").map(Number);
+      if (amounts.length) {
+        const today = todayIn(timezone);
+        const y = today.getUTCFullYear(), m = today.getUTCMonth();
+        const sueldo = await db.category.findFirst({ where: { workspaceId: workspace.id, name: "Sueldo" } });
+        for (let i = 0; i < amounts.length; i++) {
+          const day = days[i];
+          const label = names[i]?.trim() || "Ingreso";
+          if (!(day >= 1 && day <= 31)) throw new UserError(`El día de cobro de ${label} va del 1 al 31.`);
+          const at = (yy: number, mm: number) => new Date(Date.UTC(yy, mm, Math.min(day, new Date(Date.UTC(yy, mm + 1, 0)).getUTCDate())));
+          const first = at(y, m) >= today ? at(y, m) : at(y, m + 1);
+          await createRule(db, workspace.id, { direction: "RECEIVABLE", description: label, amount: money(amounts[i], `el monto de ${label}`), currency: account.currency, categoryId: /sueldo/i.test(label) ? sueldo?.id ?? null : null, accountId: account.id, frequency: "MONTHLY", dayOfMonth: day, startDate: first });
+        }
+        await materialize(db, workspace.id, new Date(today.getTime() + MATERIALIZE_DAYS * 864e5));
+      }
     }
     await audit("workspace.onboarded", { userId: user.id, workspaceId: workspace.id, meta: { uses } });
   } catch (e) {
@@ -136,6 +152,7 @@ export async function reconcileAction(_: FormState, fd: FormData): Promise<FormS
 
 export async function createMovementAction(_: FormState, fd: FormData): Promise<FormState> {
   const { user, workspace } = await requireWorkspace();
+  let savedId: string | null = null;
   try {
     const db = getDb();
     const kind = z.enum(["INCOME", "EXPENSE", "TRANSFER"]).parse(fd.get("kind"));
@@ -182,6 +199,7 @@ export async function createMovementAction(_: FormState, fd: FormData): Promise<
         userId: user.id,
       });
       // ¿Se repite? Desde la próxima vez, lo genera la regla recurrente (esta vez ya quedó cargada).
+      savedId = res.transactionId;
       if (fd.get("repeat") === "on" && !res.duplicate) {
         const freq = z.enum(["WEEKLY", "BIWEEKLY", "MONTHLY", "BIMONTHLY", "QUARTERLY", "SEMIANNUAL", "ANNUAL"]).catch("MONTHLY").parse(fd.get("frequency"));
         const ref = status === "PENDING" ? date(fd.get("dueDate"), "el vencimiento") : date(fd.get("effectiveDate"), "la fecha de pago");
@@ -202,7 +220,7 @@ export async function createMovementAction(_: FormState, fd: FormData): Promise<
     return fail(e);
   }
   revalidatePath("/app", "layout");
-  redirect(String(fd.get("back") || "/app/movimientos"));
+  redirect(String(fd.get("back") || (savedId ? `/app/movimientos?guardado=${savedId}` : "/app/movimientos")));
 }
 
 export async function payObligationAction(_: FormState, fd: FormData): Promise<FormState> {
@@ -314,5 +332,41 @@ export async function disable2faAction(_: FormState, fd: FormData): Promise<Form
 export async function revokeOtherSessionsAction() {
   const { user, session } = await requireUser();
   await getDb().session.updateMany({ where: { userId: user.id, id: { not: session.id }, revokedAt: null }, data: { revokedAt: new Date() } });
+  revalidatePath("/app/configuracion");
+}
+
+// ---------- Editar un movimiento ----------
+// Concepto, categoría, fecha, mes y notas se pueden cambiar siempre. El importe, solo en un ingreso o gasto suelto
+// (sin pago pendiente, transferencia ni anulación vinculada), porque si no, se descuadran los saldos.
+export async function updateMovementAction(_: FormState, fd: FormData): Promise<FormState> {
+  const { user, workspace } = await requireWorkspace();
+  const id = String(fd.get("id") ?? "");
+  try {
+    const db = getDb();
+    const t = await db.transaction.findFirst({ where: { id, workspaceId: workspace.id }, include: { reversedBy: true } });
+    if (!t) throw new UserError("No encontramos ese movimiento.");
+    if (t.reversalOfId || t.reversedBy) throw new UserError("Un movimiento anulado no se puede editar.");
+    const description = String(fd.get("description") ?? "").trim();
+    if (!description) throw new UserError("Escribí el concepto.");
+    const categoryId = String(fd.get("categoryId") ?? "") || null;
+    if (categoryId && !(await db.category.findFirst({ where: { id: categoryId, workspaceId: workspace.id } }))) throw new UserError("No encontramos esa categoría.");
+    const effectiveDate = date(fd.get("effectiveDate"), "la fecha");
+    const economicPeriod = /^\d{4}-\d{2}$/.test(String(fd.get("economicPeriod"))) ? String(fd.get("economicPeriod")) : t.economicPeriod;
+    const simple = (t.type === "INCOME" || t.type === "EXPENSE") && !t.obligationId && !t.transferGroupId;
+    const amount = simple && String(fd.get("amount") ?? "").trim() ? money(fd.get("amount"), "el importe") : null;
+    if (amount && !amount.gt(0)) throw new UserError("El importe tiene que ser mayor a cero.");
+    await db.transaction.update({
+      where: { id: t.id },
+      data: { description: description.slice(0, 140), categoryId, effectiveDate, economicPeriod, notes: String(fd.get("notes") ?? "").trim() || null, ...(amount ? { amount: amount.toFixed(2) } : {}) },
+    });
+    await audit("tx.updated", { userId: user.id, workspaceId: workspace.id, entity: "transaction", entityId: t.id });
+  } catch (e) { return fail(e); }
+  revalidatePath("/app", "layout");
+  redirect("/app/movimientos?guardado=1");
+}
+
+export async function emailRemindersAction(fd: FormData) {
+  const { user } = await requireUser();
+  await getDb().user.update({ where: { id: user.id }, data: { emailReminders: fd.get("on") === "1" } });
   revalidatePath("/app/configuracion");
 }

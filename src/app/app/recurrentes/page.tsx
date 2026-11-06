@@ -4,11 +4,11 @@ import { getDb } from "@/lib/db";
 import { formatMoney } from "@/lib/money";
 import { fmtDate, isoDate, todayIn } from "@/lib/dates";
 import { nextOccurrence } from "@/server/recurring";
-import { Empty, PageHead } from "@/components/page";
+import { Empty, PageHead, SettingsTabs } from "@/components/page";
 import { ActionForm, Submit } from "@/components/forms";
 import { changeRuleAction, createRuleAction, endRuleAction, pauseRuleAction } from "@/app/actions/modules";
 
-export const metadata: Metadata = { title: "Recurrentes" };
+export const metadata: Metadata = { title: "Pagos que se repiten" };
 
 const FREQ: Record<string, string> = { DAILY: "Todos los días", WEEKLY: "Cada semana", BIWEEKLY: "Cada 2 semanas", MONTHLY: "Todos los meses", BIMONTHLY: "Cada 2 meses", QUARTERLY: "Cada 3 meses", SEMIANNUAL: "Cada 6 meses", ANNUAL: "Una vez por año", CUSTOM: "Personalizada" };
 
@@ -24,7 +24,8 @@ export default async function Rules({ searchParams }: { searchParams: Promise<{ 
   const open = (await searchParams).nueva === "1" || rules.length === 0;
   return (
     <>
-      <PageHead crumb="Ajustes" title="Recurrentes" desc="Sueldos, servicios y cuotas que se repiten solos. También las podés crear al cargar un movimiento, con “¿Se repite?”." />
+      <PageHead crumb="Configuración" title="Pagos que se repiten" desc="Sueldos, servicios y cuotas que se repiten solos. También las podés crear al cargar un movimiento, con “¿Se repite?”." />
+      <SettingsTabs current="recurrentes" />
       <div className="card">
         {rules.length ? (
           <div className="list">{rules.map((r) => {

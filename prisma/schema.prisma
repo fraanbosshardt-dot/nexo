@@ -19,23 +19,25 @@ datasource db {
 // ---------- Identidad, espacios y planes ----------
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  name          String
-  passwordHash  String
-  emailVerified DateTime?
-  totpSecretEnc String? // secreto TOTP cifrado (AES-256-GCM)
-  totpEnabledAt DateTime?
-  isAdmin       Boolean   @default(false)
-  suspendedAt   DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  deletedAt     DateTime?
+  id             String    @id @default(cuid())
+  email          String    @unique
+  name           String
+  passwordHash   String
+  emailVerified  DateTime?
+  totpSecretEnc  String? // secreto TOTP cifrado (AES-256-GCM)
+  totpEnabledAt  DateTime?
+  isAdmin        Boolean   @default(false)
+  suspendedAt    DateTime?
+  emailReminders Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
 
-  sessions    Session[]
-  memberships Membership[]
-  auditLogs   AuditLog[]
-  tickets     SupportTicket[]
+  sessions       Session[]
+  passwordResets PasswordReset[]
+  memberships    Membership[]
+  auditLogs      AuditLog[]
+  tickets        SupportTicket[]
 }
 
 model Session {
@@ -89,6 +91,7 @@ model Workspace {
   exchangeRates  ExchangeRate[]
   importBatches  ImportBatch[]
   auditLogs      AuditLog[]
+  invoices       Invoice[]
 }
 
 model Membership {
@@ -287,7 +290,8 @@ model Obligation {
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
 
-  payments Transaction[]
+  payments   Transaction[]
+  remindedAt DateTime?
 
   @@unique([recurringRuleId, occurrenceDate]) // regenerar el calendario no duplica
   @@index([workspaceId, dueDate])
@@ -642,4 +646,33 @@ model SupportTicket {
   updatedAt DateTime @updatedAt
 
   @@index([status, createdAt])
+}
+
+// Enlaces de un solo uso para elegir una contraseña nueva (vencen en 1 hora).
+model PasswordReset {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+// Cobros de Pro (Mercado Pago). Se guardan para mostrar las facturas.
+model Invoice {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  provider    String // "mercadopago"
+  providerRef String    @unique
+  amount      Decimal   @db.Decimal(18, 2)
+  currency    String
+  status      String // "approved" | "rejected" | "refunded"
+  paidAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([workspaceId, createdAt])
 }

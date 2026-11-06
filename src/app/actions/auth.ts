@@ -65,3 +65,46 @@ export async function logoutAction() {
   await destroySession();
   redirect("/");
 }
+
+// ---------- Recuperar contraseña ----------
+// Siempre responde lo mismo, exista o no la cuenta, para no revelar qué correos están registrados.
+export async function requestResetAction(_: FormState, fd: FormData): Promise<FormState> {
+  const parsed = email.safeParse(fd.get("email"));
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  const db = getDb();
+  const since = new Date(Date.now() - 15 * 60 * 1000);
+  const recent = await db.auditLog.count({ where: { action: "auth.reset_requested", createdAt: { gte: since }, entityId: parsed.data } });
+  const ok: FormState = { ok: "Si hay una cuenta con ese correo, te mandamos un enlace para elegir una contraseña nueva. Vence en 1 hora." };
+  if (recent >= 3) return ok;
+  await audit("auth.reset_requested", { entity: "email", entityId: parsed.data });
+  const user = await db.user.findUnique({ where: { email: parsed.data } });
+  if (!user || user.deletedAt || user.suspendedAt) return ok;
+  const { randomBytes, createHash } = await import("node:crypto");
+  const token = randomBytes(32).toString("base64url");
+  await db.passwordReset.create({ data: { userId: user.id, tokenHash: createHash("sha256").update(token).digest("hex"), expiresAt: new Date(Date.now() + 60 * 60 * 1000) } });
+  const { sendEmail, appUrl } = await import("@/lib/email");
+  await sendEmail({
+    to: user.email,
+    subject: "Elegí una contraseña nueva para NEXO",
+    text: `Hola ${user.name.split(" ")[0]}:\n\nPara elegir una contraseña nueva, entrá a este enlace (vence en 1 hora):\n${appUrl()}/recuperar/${token}\n\nSi no lo pediste vos, ignorá este correo: tu contraseña no cambia.\n\nNEXO`,
+  });
+  return ok;
+}
+
+export async function resetPasswordAction(_: FormState, fd: FormData): Promise<FormState> {
+  const token = String(fd.get("token") ?? "");
+  const password = String(fd.get("password") ?? "");
+  const problem = passwordProblem(password);
+  if (problem) return { error: problem };
+  const { createHash } = await import("node:crypto");
+  const db = getDb();
+  const r = await db.passwordReset.findUnique({ where: { tokenHash: createHash("sha256").update(token).digest("hex") } });
+  if (!r || r.usedAt || r.expiresAt < new Date()) return { error: "El enlace venció o ya se usó. Pedí uno nuevo." };
+  await db.$transaction([
+    db.user.update({ where: { id: r.userId }, data: { passwordHash: await hashPassword(password) } }),
+    db.passwordReset.update({ where: { id: r.id }, data: { usedAt: new Date() } }),
+    db.session.deleteMany({ where: { userId: r.userId } }), // cierra todas las sesiones abiertas
+  ]);
+  await audit("auth.password_reset", { userId: r.userId });
+  redirect("/ingresar?nueva=1");
+}

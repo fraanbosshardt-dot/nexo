@@ -1,7 +1,8 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { SavedToast } from "./saved-toast";
 import { Icon, type IconName } from "./icons";
 import type { ModuleState } from "@/lib/modules";
 
@@ -16,10 +17,9 @@ function groups(overdue: number): [string, Item[]][] {
       { href: "/app/cereal", label: "Ventas de cereal", icon: "grain", module: "cereal" },
     ]],
     ["Pagos y deudas", [
-      { href: "/app/proximos", label: "Próximos pagos", icon: "list", badge: overdue },
+      { href: "/app/proximos", label: "Próximos pagos", icon: "clock", badge: overdue, match: "/app/(proximos|calendario)" },
       { href: "/app/tarjetas", label: "Tarjetas", icon: "card", module: "tarjetas" },
       { href: "/app/deudas", label: "Deudas y préstamos", icon: "bank", module: "deudas" },
-      { href: "/app/calendario", label: "Calendario", icon: "cal", module: "calendario" },
     ]],
     ["Planificar", [
       { href: "/app/flujo", label: "Flujo de caja", icon: "flow", module: "flujo" },
@@ -28,23 +28,20 @@ function groups(overdue: number): [string, Item[]][] {
       { href: "/app/simulador", label: "Simulador", icon: "sliders", module: "simulador" },
     ]],
     ["Patrimonio", [
-      { href: "/app/inversiones", label: "Inversiones", icon: "chart", module: "inversiones" },
-      { href: "/app/patrimonio", label: "Patrimonio neto", icon: "scale", module: "inversiones" },
+      { href: "/app/patrimonio", label: "Inversiones y patrimonio", icon: "scale", module: "inversiones", match: "/app/(patrimonio|inversiones)" },
     ]],
     ["Análisis", [
-      { href: "/app/alertas", label: "Alertas y consejos", icon: "spark", module: "alertas" },
+      { href: "/app/alertas", label: "Alertas y consejos", icon: "bell", module: "alertas" },
       { href: "/app/informes", label: "Informes", icon: "file", module: "informes" },
     ]],
   ];
 }
 const SETTINGS: Item[] = [
-  { href: "/app/configuracion", label: "Configuración", icon: "gear", match: "/app/configuracion(?!.*funciones)" },
-  { href: "/app/configuracion?tab=funciones", label: "Funciones", icon: "toggle", match: "__funciones" },
-  { href: "/app/categorias", label: "Categorías", icon: "tag" },
-  { href: "/app/recurrentes", label: "Recurrentes", icon: "repeat", module: "reglas" },
-  { href: "/app/importar", label: "Importar y exportar", icon: "db" },
-  { href: "/app/ayuda", label: "Ayuda", icon: "spark" },
+  { href: "/app/configuracion", label: "Configuración", icon: "gear", match: "/app/(configuracion|categorias|recurrentes|importar)" },
+  { href: "/app/ayuda", label: "Ayuda", icon: "help" },
 ];
+
+const Mark = () => <span className="brand-mark">N</span>;
 
 export function Shell({ children, modules, overdue, userName, plan, isAdmin, logout }: { children: React.ReactNode; modules: ModuleState; overdue: number; userName: string; plan: string; isAdmin: boolean; logout: () => Promise<void> }) {
   const path = usePathname();
@@ -59,46 +56,65 @@ export function Shell({ children, modules, overdue, userName, plan, isAdmin, log
       <Link key={i.href} href={i.href} className={isOn(i) ? "on" : ""} onClick={() => setOpen(false)}>
         <Icon name={i.icon} />
         <span>{i.label}</span>
-        {!!i.badge && <span className="badge">{i.badge}</span>}
+        {!!i.badge && <span className="badge" aria-label={`${i.badge} atrasados`}>{i.badge}</span>}
       </Link>
     );
   const initials = userName.trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase()).join("") || "N";
+  const tab = (href: string, label: string, icon: IconName, exact = false) => {
+    const on = exact ? path === href : path === href || path.startsWith(href + "/");
+    return <Link href={href} className={on ? "on" : ""}><Icon name={icon} />{label}</Link>;
+  };
   return (
     <div className="app">
+      <header className="top">
+        <button className="ibtn menu-btn" aria-label="Abrir menú" onClick={() => setOpen(!open)}><Icon name="menu" /></button>
+        <Link href="/app" className="brand" aria-label="NEXO, ir al inicio"><Mark /><b>NEXO</b></Link>
+        <form action="/app/buscar" className="search top-search" role="search"><input name="q" placeholder="Buscar movimientos, cuentas, categorías…" aria-label="Buscar" /></form>
+        <span style={{ flex: 1 }} />
+        <Link className="ibtn top-search-btn" href="/app/buscar" aria-label="Buscar"><Icon name="search" /></Link>
+        <Link href="/app/movimientos/nuevo" className="btn pri top-new"><Icon name="plus" />Nuevo movimiento</Link>
+        {modules.alertas && <Link className="ibtn" href="/app/alertas" aria-label="Alertas"><Icon name="bell" />{overdue > 0 && <span className="dot" />}</Link>}
+        <Link className="ibtn" href="/app/ayuda" aria-label="Ayuda"><Icon name="help" /></Link>
+        <Link className="ibtn" href="/app/configuracion" aria-label="Configuración"><Icon name="gear" /></Link>
+        <button className="avatar" style={{ border: 0, cursor: "pointer" }} aria-label="Tu cuenta" title={userName} onClick={() => setMenu(true)}>{initials}</button>
+      </header>
       <aside className={`side ${open ? "open" : ""}`} aria-label="Menú principal">
-        <div className="brand"><div className="brand-mark">N</div><div><b>NEXO</b><small>Espacio personal</small></div></div>
+        <Link href="/app" className="brand" onClick={() => setOpen(false)}><Mark /><b>NEXO</b></Link>
         {groups(overdue).map(([g, items]) => {
           const links = items.map(link).filter(Boolean);
-          return links.length ? <nav className="navg" key={g || "inicio"}>{g && <h6>{g.toUpperCase()}</h6>}{links}</nav> : null;
+          return links.length ? <nav className="navg" key={g || "inicio"}>{g && <h6>{g}</h6>}{links}</nav> : null;
         })}
-        <div style={{ flex: 1 }} />
-        <nav className="navg"><h6>AJUSTES</h6>{SETTINGS.map(link)}</nav>
+        <nav className="navg"><h6>Ajustes</h6>{SETTINGS.map(link)}{isAdmin && link({ href: "/admin", label: "Panel interno", icon: "shield" })}</nav>
       </aside>
       <div className="main">
-        <header className="top">
-          <button className="ibtn menu-btn" aria-label="Abrir menú" onClick={() => setOpen(!open)}><Icon name="menu" /></button>
-          <span style={{ flex: 1 }} />
-          <Link className="ibtn" href="/app/movimientos/nuevo" aria-label="Nuevo movimiento"><Icon name="plus" /></Link>
-          <button className="avatar" style={{ border: 0, cursor: "pointer" }} aria-label="Tu cuenta" onClick={() => setMenu(true)}>{initials}</button>
-        </header>
         <main className="view">{children}</main>
+        <Suspense fallback={null}><SavedToast /></Suspense>
       </div>
+      <nav className="tabbar" aria-label="Accesos rápidos">
+        {tab("/app", "Inicio", "home", true)}
+        {tab("/app/movimientos", "Movimientos", "list")}
+        <Link href="/app/movimientos/nuevo" className="plus" aria-label="Nuevo movimiento"><span><Icon name="plus" /></span></Link>
+        {tab("/app/proximos", "Próximos", "clock")}
+        <button onClick={() => setOpen(true)}><Icon name="menu" />Más</button>
+      </nav>
       {open && <div className="drawer-bg" onClick={() => setOpen(false)} />}
       {menu && (
         <>
           <div className="drawer-bg" onClick={() => setMenu(false)} />
           <aside className="panel" aria-label="Tu cuenta">
             <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-              <div className="avatar" style={{ width: 44, height: 44, fontSize: 15 }}>{initials}</div>
-              <div><h2 style={{ fontSize: 17 }}>{userName}</h2><p className="sub">Plan {plan === "PRO" ? "Pro" : "Gratis"}</p></div>
+              <div className="avatar" style={{ width: 44, height: 44, fontSize: 16, margin: 0 }}>{initials}</div>
+              <div><h2>{userName}</h2><p className="sub" style={{ margin: 0, color: "var(--muted)" }}>Plan {plan === "PRO" ? "Pro" : "Gratis"}</p></div>
             </div>
             <div className="list">
-              {[...(isAdmin ? [["Panel interno (administración)", "/admin"]] : []), ["Tu plan", "/app/configuracion?tab=plan"], ["Configuración", "/app/configuracion"], ["Funciones", "/app/configuracion?tab=funciones"], ["Seguridad", "/app/configuracion?tab=seguridad"], ["Términos y condiciones", "/terminos"], ["Política de privacidad", "/privacidad"]].map(([l, h]) => (
+              {[...(isAdmin ? [["Panel interno", "/admin"]] : []), ["Tu plan", "/app/configuracion?tab=plan"], ["Configuración", "/app/configuracion"]].map(([l, h]) => (
                 <Link key={h} className="li" href={h} onClick={() => setMenu(false)} style={{ textDecoration: "none", color: "inherit" }}><div className="grow">{l}</div><span className="mut">›</span></Link>
               ))}
             </div>
-            <form action={logout}><button className="btn" type="submit">Cerrar sesión</button></form>
-            <button className="btn ghost" onClick={() => setMenu(false)}>Cerrar</button>
+            <div className="acts">
+              <form action={logout}><button className="btn" type="submit">Cerrar sesión</button></form>
+              <button className="btn ghost" onClick={() => setMenu(false)}>Cerrar</button>
+            </div>
           </aside>
         </>
       )}

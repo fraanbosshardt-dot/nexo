@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { requireWorkspace } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
-import { PageHead, Tabs } from "@/components/page";
+import { PageHead, Tabs, SettingsTabs } from "@/components/page";
 import { ActionForm, Submit } from "@/components/forms";
 import { createCategoryAction } from "@/app/actions/app";
 
@@ -14,7 +14,8 @@ export default async function Categories({ searchParams }: { searchParams: Promi
   const parents = cats.filter((c) => !c.parentId);
   return (
     <>
-      <PageHead crumb="Ajustes" title="Categorías" desc="También podés crear una categoría desde el formulario de un gasto o un ingreso." />
+      <PageHead crumb="Configuración" title="Categorías" desc="También podés crear una categoría desde el formulario de un gasto o un ingreso." />
+      <SettingsTabs current="categorias" />
       <Tabs current={kind} items={[{ key: "EXPENSE", label: "Gastos", href: "/app/categorias" }, { key: "INCOME", label: "Ingresos", href: "/app/categorias?tipo=INCOME" }]} />
       <div className="grid g3">
         {parents.map((p) => {

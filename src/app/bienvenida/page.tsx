@@ -14,6 +14,7 @@ export default async function WelcomePage() {
   // País sugerido: el que informa Vercel según la conexión; si no, el idioma del navegador.
   const h = await headers();
   const geo = h.get("x-vercel-ip-country") ?? h.get("accept-language")?.match(/-([A-Z]{2})/)?.[1] ?? "AR";
-  const guess = COUNTRIES.some((c) => c.code === geo) ? geo : "AR";
-  return <Onboarding firstName={user.name.split(" ")[0]} uses={USES} modules={MODULES} guessCountry={guess} />;
+  const detected = COUNTRIES.some((c) => c.code === geo);
+  const guess = detected ? geo : "AR";
+  return <Onboarding firstName={user.name.split(" ")[0]} uses={USES} modules={MODULES} guessCountry={guess} detected={detected} />;
 }
