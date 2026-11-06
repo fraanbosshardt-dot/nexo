@@ -35,6 +35,7 @@ Regla general: la primera vista de cada pantalla muestra solo lo indispensable. 
 
 ## Para mañana (estado al 06/11/2026)
 
+- R0. Hecho el 07/11: nexo-v2 rehecho con estilo sobrio tipo calendario de escritorio (blanco, líneas finas, un azul, Roboto, sin animaciones). Falta tu visto bueno.
 - R1. Revisar el rediseño completo (prototipo/nexo-v2.html, artefacto https://claude.ai/artifact/9gNbpFVT5Tt6X6Pdr2BJGR). Si se aprueba, pasar ese diseño a la app real (globals.css, shell, todas las pantallas).
 - R2. App real: faltan Alertas, Informes, Importar y exportar (con rutas de exportación CSV y respaldo), Ayuda y el Panel interno del dueño. Después borrar la página provisoria [seccion].
 - R3. Revisión con capturas de todas las pantallas en escritorio y celular.
