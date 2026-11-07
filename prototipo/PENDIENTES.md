@@ -7,7 +7,6 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 
 ### Necesitan algo tuyo
 - [ ] G8. Ingresar con Google. Necesita que crees el acceso en Google Cloud (lo hacemos juntos).
-- [ ] Z1. Conectar Railway (base) y Vercel (despliegue). Requiere tu autorización y que inicies sesión.
 - [ ] Z2. Cargar las claves reales para activar lo que ya está programado: RESEND_API_KEY y EMAIL_FROM (emails), CRON_SECRET (tarea diaria), MP_ACCESS_TOKEN, MP_WEBHOOK_SECRET y precios (Mercado Pago). Están explicadas en .env.example.
 - [ ] Z3. Decidir el precio de Pro en pesos (u otra moneda) para Mercado Pago.
 
@@ -19,10 +18,9 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 - [ ] P5. Más herramientas gratis que atraen búsquedas: plazo fijo, conversor de monedas, fondo de emergencia, presupuesto 50/30/20.
 - [ ] P1. Asistente con IA (Pro): hoy figura como "próximamente".
 - [ ] P2. Espacio compartido (Pro): invitar hasta 3 personas.
-- [ ] P3. Revisión con capturas pantalla por pantalla en celular (se revisó que nada se corra de costado; falta mirar cada una con calma).
 
 ## Completado
-
+- [x] 07/11/2026 — App en el celular revisada pantalla por pantalla (375 px): montos, botones, fechas, buscador, presupuestos, flujo, ayudas y tablas ya no se enciman ni se cortan. La computadora sigue igual.
 - [x] 05/11/2026 — Prototipo navegable completo (versión 11), publicado como artefacto.
 - [x] 06/11/2026 — App real, Fase 1 y núcleo de Fase 2: registro e inicio de sesión con dos pasos, introducción, cuentas, movimientos, pendientes, pagos parciales, transferencias, conciliación, reversas, categorías, configuración, landing y legales. 28 pruebas automáticas. Subido a GitHub.
 - [x] 06/11/2026 — Sin subrayados, sin barra de desplazamiento en el menú, nada de "hecho en Argentina"; país y moneda de una lista amplia con zona horaria automática.
@@ -57,3 +55,5 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 - [x] 07/11/2026 — Landing rehecha sin líneas: tarjetas suaves con íconos en círculo, pasos numerados, preguntas en tarjetas, más espacio entre secciones. Animación al bajar que siempre funciona (si Windows tiene las animaciones apagadas, es un fundido sin movimiento) y con respaldo para que nada quede oculto.
 - [x] 07/11/2026 — App instalable en el celular: íconos para Android y iPhone, pantalla completa, accesos directos (cargar un gasto, próximos pagos), botón "Instalar app" en Inicio y Configuración (en iPhone muestra cómo hacerlo) y página "Sin conexión". El service worker solo guarda diseño e íconos, nunca datos financieros.
 - [x] 07/11/2026 — Landing: barra semitransparente al bajar y desplazamiento suave al tocar las secciones; planes centrados.
+- [x] 07/11/2026 — Base de datos en Railway: proyecto "nexo" con PostgreSQL, acceso público activado, las 4 migraciones aplicadas (32 tablas). La dirección está en .env.railway (fuera de GitHub). Para correr un comando contra Railway: node scripts/with-railway.mjs <comando>.
+- [x] 07/11/2026 — Publicado en Vercel: https://nexo-eight-sage.vercel.app (plan Hobby), conectado a la base de Railway. Variables cargadas: DATABASE_URL, AUTH_SECRET, CRON_SECRET, DB_POOL_MAX y APP_URL. Cada cambio que se sube a GitHub se publica solo.

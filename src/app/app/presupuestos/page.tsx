@@ -30,9 +30,9 @@ export default async function Budgets({ searchParams }: { searchParams: Promise<
             const over = r.pct != null && r.pct > 100;
             return (
               <div className="li" key={r.id} style={{ flexWrap: "wrap" }}>
-                <div className="grow" style={{ minWidth: 160 }}><div className="t">{r.name}</div><div className="s">{r.limit ? `${fm(r.spent)} gastado${r.committed.gt(0) ? ` · ${fm(r.committed)} comprometido` : ""}` : `${fm(r.spent)} gastado · sin límite`}</div></div>
-                <div style={{ flex: "1 1 200px", minWidth: 160 }}>{r.limit && <><div className="bar"><i style={{ width: `${Math.min(100, r.spent.dividedBy(r.limit).times(100).toNumber())}%`, background: over ? "var(--red)" : "var(--ink)" }} /><i style={{ width: `${Math.max(0, Math.min(100 - r.spent.dividedBy(r.limit).times(100).toNumber(), r.committed.dividedBy(r.limit).times(100).toNumber()))}%`, background: "var(--c5)" }} /></div><small className="sub">{Math.round(r.pct ?? 0)}% de {fm(r.limit)}</small></>}</div>
-                <b className={`num ${r.available && r.available.isNegative() ? "neg" : ""}`} style={{ minWidth: 110, textAlign: "right" }}>{r.available ? fm(r.available) : "—"}</b>
+                <div className="grow"><div className="t">{r.name}</div><div className="s">{r.limit ? `${fm(r.spent)} gastado${r.committed.gt(0) ? ` · ${fm(r.committed)} comprometido` : ""}` : `${fm(r.spent)} gastado · sin límite`}</div></div>
+                <b className={`num ${r.available && r.available.isNegative() ? "neg" : ""}`} style={{ textAlign: "right", flex: "none" }}>{r.available ? fm(r.available) : "—"}</b>
+                <div style={{ flex: "1 1 100%" }}>{r.limit && <><div className="bar"><i style={{ width: `${Math.min(100, r.spent.dividedBy(r.limit).times(100).toNumber())}%`, background: over ? "var(--red)" : "var(--ink)" }} /><i style={{ width: `${Math.max(0, Math.min(100 - r.spent.dividedBy(r.limit).times(100).toNumber(), r.committed.dividedBy(r.limit).times(100).toNumber()))}%`, background: "var(--c5)" }} /></div><small className="sub">{Math.round(r.pct ?? 0)}% de {fm(r.limit)}</small></>}</div>
               </div>
             );
           })}</div></div>

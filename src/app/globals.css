@@ -598,3 +598,50 @@ details.more summary:hover{color:var(--ink-h)}
 .lp .lp-nav.scrolled{background:color-mix(in srgb,var(--bg) 72%,transparent);backdrop-filter:saturate(180%) blur(14px);-webkit-backdrop-filter:saturate(180%) blur(14px);box-shadow:0 1px 0 color-mix(in srgb,var(--line) 70%,transparent),0 6px 20px rgba(60,64,67,.06)}
 /* Las secciones quedan visibles debajo de la barra al llegar con el enlace. */
 .lp section[id]{scroll-margin-top:72px}
+
+/* ---------- Celular: nada encimado ni cortado ---------- */
+.li-acts{display:flex;gap:6px;align-items:center;flex:none}
+@media (max-width:640px){
+  .li{flex-wrap:wrap;row-gap:8px}
+  .li .grow{min-width:0;flex:1 1 0}
+  .li>b.num,.li>.num{flex:none}
+  .li .t{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.3}
+  .li-acts{flex:1 1 100%;justify-content:flex-end}
+  .li>form,.li>.btn{margin-left:auto}
+  .acts>.search,.ph .search{flex:1 1 100%;max-width:none!important}
+  .fsteps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+  .fsteps>i{display:none}
+  .fstep{min-width:0}
+  .fstep b{font-size:18px;overflow-wrap:anywhere}
+  .kv{grid-template-columns:minmax(0,1fr) auto}
+  .kv dd{overflow-wrap:anywhere}
+  .hrow{flex-wrap:wrap}
+  .hrow b{white-space:normal;text-align:right}
+  .chead{gap:6px}
+  .tabs a{padding:12px 12px}
+  .ph h1{overflow-wrap:anywhere}
+  .card{padding:14px 16px}
+  .tcard{gap:16px}
+  .ccard{max-width:100%}
+  .top{padding-right:max(8px,env(safe-area-inset-right,0px))}
+  .top .ibtn{width:36px;height:36px}
+}
+@media (max-width:640px){
+  /* Cuadros de cifras: si queda una suelta, ocupa todo el ancho (sin hueco vacío). */
+  .fc>div:last-child:nth-child(odd){grid-column:1/-1;border-right:0!important}
+}
+@media (max-width:640px){
+  /* Tablas anchas: sombra en el borde que indica que se puede deslizar de costado. */
+  .tw{background:
+      linear-gradient(to right, var(--surface) 30%, transparent) left center / 24px 100% no-repeat local,
+      linear-gradient(to left, var(--surface) 30%, transparent) right center / 24px 100% no-repeat local,
+      radial-gradient(farthest-side at 0 50%, rgba(0,0,0,.18), transparent) left center / 10px 100% no-repeat scroll,
+      radial-gradient(farthest-side at 100% 50%, rgba(0,0,0,.18), transparent) right center / 10px 100% no-repeat scroll;
+    -webkit-overflow-scrolling:touch}
+  .tw table{background:transparent}
+}
+@media (max-width:640px){
+  /* Ayuda "?": en el celular la explicación aparece a lo ancho, arriba de la barra de abajo. */
+  .help>span{position:fixed;left:16px;right:16px;top:auto;bottom:calc(88px + env(safe-area-inset-bottom,0px));width:auto;z-index:70}
+  .help:not([open])>span{display:none}
+}

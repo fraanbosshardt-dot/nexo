@@ -31,7 +31,7 @@ export default async function Debts() {
           <Link key={d.debt.id} href={`/app/deudas/${d.debt.id}`} className="card dcard" style={{ textDecoration: "none", color: "inherit" }}>
             <div className="chead" style={{ marginBottom: 6 }}><div><h3>{d.debt.creditor}</h3><p className="sub">{d.debt.kind}</p></div>{d.overdue > 0 && <span className="pill r">Atrasada</span>}</div>
             <div className="num" style={{ fontFamily: "var(--f-display)", fontSize: 22, fontWeight: 600 }}>{formatMoney(d.remainingCapital, d.debt.currency)}</div><p className="sub">te falta devolver</p>
-            {d.debt.installments ? (<><div className="bar" style={{ margin: "12px 0 6px" }}><i style={{ width: `${(d.settledCount / d.debt.installments) * 100}%`, background: "var(--ink)" }} /></div><div className="sub" style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}><span>{d.settledCount} de {d.debt.installments} cuotas</span>{d.next && <span>Próxima {fmtDate(d.next.dueDate).slice(0, 5)}</span>}</div></>) : <p className="sub" style={{ marginTop: 12 }}>Sin cuotas ni fecha pactada</p>}
+            {d.debt.installments ? (<><div className="bar" style={{ margin: "12px 0 6px" }}><i style={{ width: `${(d.settledCount / d.debt.installments) * 100}%`, background: "var(--ink)" }} /></div><div className="sub" style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}><span>{d.settledCount} de {d.debt.installments} cuotas</span>{d.next && <span>Próxima: {fmtDate(d.next.dueDate)}</span>}</div></>) : <p className="sub" style={{ marginTop: 12 }}>Sin cuotas ni fecha pactada</p>}
           </Link>
         ))}</div>
       )}

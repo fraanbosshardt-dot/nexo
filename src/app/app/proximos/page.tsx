@@ -73,8 +73,8 @@ export default async function Upcoming({ searchParams }: { searchParams: Promise
                     </div>
                   </div>
                   <b className={`num ${rec ? "pos" : "neg"}`}>{rec ? "+" : "−"}{formatMoney(o.remaining, o.currency)}</b>
-                  <Link className="btn sm" href={`/app/proximos/${o.id}`}>{rec ? "Cobrar" : "Pagar"}</Link>
-                  <form action={cancelObligationAction}><input type="hidden" name="id" value={o.id} /><button className="dots" type="submit" title="Cancelar: ya no se va a pagar ni cobrar" aria-label={`Cancelar ${o.description}`}>×</button></form>
+                  <div className="li-acts"><Link className="btn sm" href={`/app/proximos/${o.id}`}>{rec ? "Cobrar" : "Pagar"}</Link>
+                  <form action={cancelObligationAction}><input type="hidden" name="id" value={o.id} /><button className="dots" type="submit" title="Cancelar: ya no se va a pagar ni cobrar" aria-label={`Cancelar ${o.description}`}>×</button></form></div>
                 </div>
               );
             })}</div>
