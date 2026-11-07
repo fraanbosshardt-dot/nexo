@@ -22,7 +22,8 @@ model User {
   id             String    @id @default(cuid())
   email          String    @unique
   name           String
-  passwordHash   String
+  passwordHash   String // vacío si la cuenta entra solo con Google
+  googleSub      String?   @unique // identificador de la cuenta de Google vinculada
   emailVerified  DateTime?
   totpSecretEnc  String? // secreto TOTP cifrado (AES-256-GCM)
   totpEnabledAt  DateTime?

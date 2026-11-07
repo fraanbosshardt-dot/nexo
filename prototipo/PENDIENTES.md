@@ -6,7 +6,7 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 ## Pendientes
 
 ### Necesitan algo tuyo
-- [ ] G8. Ingresar con Google. Necesita que crees el acceso en Google Cloud (lo hacemos juntos).
+- [ ] G8. Ingresar con Google: el código ya está hecho y probado. Falta crear el acceso en Google Cloud y cargar GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET en Vercel (hasta entonces el botón no aparece).
 - [ ] Z2. Cargar las claves reales para activar lo que ya está programado: RESEND_API_KEY y EMAIL_FROM (emails), CRON_SECRET (tarea diaria), MP_ACCESS_TOKEN, MP_WEBHOOK_SECRET y precios (Mercado Pago). Están explicadas en .env.example.
 - [ ] Z3. Decidir el precio de Pro en pesos (u otra moneda) para Mercado Pago.
 

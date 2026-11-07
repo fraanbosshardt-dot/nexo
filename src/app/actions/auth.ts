@@ -41,6 +41,7 @@ export async function loginAction(_: FormState, fd: FormData): Promise<FormState
   if (fails >= 8) return { error: "Demasiados intentos. Probá de nuevo en 15 minutos." };
   const user = await db.user.findUnique({ where: { email: parsed.data.email } });
   const ok = user && !user.deletedAt && (await verifyPassword(parsed.data.password, user.passwordHash));
+  if (user && !user.deletedAt && !user.passwordHash && user.googleSub) return { error: "Esta cuenta entra con Google. Tocá «Continuar con Google»." };
   if (!user || !ok) {
     await audit("auth.login_failed", { entity: "email", entityId: parsed.data.email });
     return { error: "El correo o la contraseña no coinciden." };
