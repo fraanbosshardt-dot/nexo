@@ -452,3 +452,20 @@ export async function readStatementPdfAction(fd: FormData): Promise<{ error?: st
     return { error: r?.error ?? "No pudimos leer ese PDF." };
   }
 }
+
+// Proyectados (pagos que se repiten más adelante): pagar por adelantado o cancelar solo esa vez.
+export async function projectedAction(fd: FormData) {
+  const { workspace } = await requireWorkspace();
+  const { materializeOccurrence } = await import("@/server/recurring");
+  const { cancelObligation } = await import("@/server/ledger");
+  const occ = new Date(`${str(fd, "occurrence")}T00:00:00Z`);
+  if (Number.isNaN(occ.getTime())) redirect("/app/proximos");
+  const id = await materializeOccurrence(getDb(), workspace.id, str(fd, "ruleId"), occ);
+  if (str(fd, "do") === "cancelar") {
+    await cancelObligation(getDb(), workspace.id, id);
+    revalidatePath("/app", "layout");
+    const back = str(fd, "back");
+    redirect(/^\/app(\/|\?|$)/.test(back) ? back : "/app/proximos");
+  }
+  redirect(`/app/proximos/${id}`);
+}

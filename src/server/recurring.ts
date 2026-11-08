@@ -218,3 +218,37 @@ export function nextOccurrence(rule: RuleLike, today: Date): Date | null {
   const d = occurrences(rule, today, horizon)[0];
   return d ? applyWeekend(d, rule.weekendRule) : null;
 }
+
+// ---------- Proyectados: lo que las reglas van a generar más adelante, calculado al vuelo (no se guarda) ----------
+export type Projected = { ruleId: string; occurrence: Date; dueDate: Date; description: string; amount: ReturnType<typeof amountFor>; currency: string; direction: ObligationDirection; variable: boolean };
+
+export async function projectedItems(db: Db, ws: string, from: Date, to: Date): Promise<Projected[]> {
+  const rules = await db.recurringRule.findMany({ where: { workspaceId: ws, pausedAt: null, startDate: { lte: to }, OR: [{ endDate: null }, { endDate: { gte: from } }] } });
+  if (!rules.length) return [];
+  // Lo que ya existe como pendiente (o se pagó, o se canceló) no se vuelve a mostrar.
+  const existing = await db.obligation.findMany({ where: { workspaceId: ws, recurringRuleId: { in: rules.map((r) => r.id) }, occurrenceDate: { gte: from, lte: to } }, select: { recurringRuleId: true, occurrenceDate: true } });
+  const taken = new Set(existing.map((o) => `${o.recurringRuleId}|${o.occurrenceDate?.toISOString().slice(0, 10)}`));
+  const out: Projected[] = [];
+  for (const r of rules) {
+    for (const d of occurrences(r, from, to)) {
+      if (taken.has(`${r.id}|${d.toISOString().slice(0, 10)}`)) continue;
+      out.push({ ruleId: r.id, occurrence: d, dueDate: applyWeekend(d, r.weekendRule), description: r.description, amount: amountFor(r, d), currency: r.currency, direction: r.direction, variable: r.variableAmount });
+    }
+  }
+  return out.sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
+}
+
+// Convierte un proyectado en un pendiente de verdad (para pagarlo por adelantado o cancelarlo). Devuelve su id.
+export async function materializeOccurrence(db: Db, ws: string, ruleId: string, occurrence: Date) {
+  const r = await db.recurringRule.findFirst({ where: { id: ruleId, workspaceId: ws } });
+  if (!r) throw new UserError("No encontramos ese pago que se repite.");
+  const valid = occurrences(r, occurrence, occurrence).some((d) => d.getTime() === occurrence.getTime());
+  if (!valid) throw new UserError("Esa fecha no corresponde a este pago que se repite.");
+  await db.obligation.createMany({
+    skipDuplicates: true,
+    data: [{ workspaceId: ws, direction: r.direction, description: r.description, amount: amountFor(r, occurrence).toFixed(2), currency: r.currency, categoryId: r.categoryId, dueDate: applyWeekend(occurrence, r.weekendRule), occurrenceDate: occurrence, economicPeriod: period(occurrence), recurringRuleId: r.id }],
+  });
+  const ob = await db.obligation.findFirst({ where: { workspaceId: ws, recurringRuleId: r.id, occurrenceDate: occurrence }, select: { id: true } });
+  if (!ob) throw new UserError("No pudimos preparar ese pago. Probá de nuevo.");
+  return ob.id;
+}

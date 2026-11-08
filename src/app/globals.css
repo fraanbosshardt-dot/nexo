@@ -731,3 +731,7 @@ details.more summary:hover{color:var(--ink-h)}
 .rule-opts h4{margin:0;font-size:14px;font-weight:500}
 .rule-opts .sub{margin:0;font-size:13px}
 .rule-close{display:flex;justify-content:flex-end;padding-top:12px;border-top:1px solid var(--line)}
+/* Proyectados: pagos que se repiten más adelante (no guardados todavía) */
+.li.proj .dchip{opacity:.75} .li.proj .t{color:var(--muted)}
+.ev-form{display:block;margin:0}
+.ev.proj{width:100%;text-align:left;font:inherit;cursor:pointer;background:transparent!important;border:1px dashed var(--line-2)!important;color:var(--fg)}

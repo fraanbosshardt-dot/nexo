@@ -63,3 +63,23 @@ describe("pagos que se repiten", () => {
     expect(y2028!.pendingIn.gt(0)).toBe(true);
   });
 });
+
+describe("proyectados", () => {
+  it("muestra lo que se repite más allá de lo guardado, sin duplicar, y se puede pagar o cancelar una vez", async () => {
+    const { projectedItems, materializeOccurrence } = await import("@/server/recurring");
+    const { cancelObligation } = await import("@/server/ledger");
+    const r = await createRule(db, ws, { direction: "PAYABLE", description: "Seguro", amount: "30000", currency: "ARS", accountId: acc, frequency: "MONTHLY", dayOfMonth: 20, startDate: d("2026-11-20") });
+    await materialize(db, ws, d("2026-12-23")); // como la app: guarda solo ~45 días
+    const proj = (await projectedItems(db, ws, d("2026-11-08"), d("2027-12-31"))).filter((p) => p.ruleId === r.id);
+    expect(proj.map((p) => p.occurrence.toISOString().slice(0, 10))[0]).toBe("2027-01-20"); // nov y dic ya están guardados
+    expect(proj).toHaveLength(12);
+    await expect(materializeOccurrence(db, ws, r.id, d("2027-01-21"))).rejects.toThrow(/no corresponde/);
+    const id1 = await materializeOccurrence(db, ws, r.id, d("2027-03-20"));
+    const id2 = await materializeOccurrence(db, ws, r.id, d("2027-03-20"));
+    expect(id1).toBe(id2);
+    await cancelObligation(db, ws, id1);
+    const after = (await projectedItems(db, ws, d("2026-11-08"), d("2027-12-31"))).filter((p) => p.ruleId === r.id).map((p) => p.occurrence.toISOString().slice(0, 10));
+    expect(after).not.toContain("2027-03-20");
+    expect(after).toHaveLength(11);
+  });
+});

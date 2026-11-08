@@ -4,9 +4,14 @@ import { requireWorkspace } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
 import { openObligations, type OpenItem } from "@/server/ledger";
 import { formatMoney, ZERO } from "@/lib/money";
-import { fmtDayMonth, fmtPeriod, period, todayIn } from "@/lib/dates";
+import { addMonths, fmtDayMonth, fmtPeriod, period, periodEnd, todayIn } from "@/lib/dates";
 import { PageHead, Tabs } from "@/components/page";
 import { cancelObligationAction } from "@/app/actions/app";
+import { projectedAction } from "@/app/actions/modules";
+import { projectedItems } from "@/server/recurring";
+
+// Un proyectado es un pago que se repite más adelante: se calcula al vuelo y se crea recién al pagarlo o cancelarlo.
+type Row = OpenItem & { proj?: { ruleId: string; occ: string; variable: boolean } };
 
 export const metadata: Metadata = { title: "Próximos pagos" };
 const MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
@@ -19,10 +24,18 @@ export default async function Upcoming({ searchParams }: { searchParams: Promise
   const in7 = new Date(today.getTime() + 7 * 864e5);
   const thisMonth = period(today);
   const all = await openObligations(getDb(), workspace.id, today);
-  const shown = all.filter((o) => (ver === "pagar" ? o.direction === "PAYABLE" : ver === "cobrar" ? o.direction === "RECEIVABLE" : true));
+  // Se muestran los próximos 12 meses completos (hasta fin del mes, dentro de un año).
+  const horizon = periodEnd(addMonths(thisMonth, 12));
+  const proj: Row[] = (await projectedItems(getDb(), workspace.id, today, horizon)).map((p) => ({
+    id: `p-${p.ruleId}-${p.occurrence.toISOString().slice(0, 10)}`, direction: p.direction, description: p.description, currency: p.currency, dueDate: p.dueDate,
+    economicPeriod: period(p.occurrence), amount: p.amount, remaining: p.amount, certainty: "PROBABLE", overdue: false, status: "PENDING", category: null,
+    proj: { ruleId: p.ruleId, occ: p.occurrence.toISOString().slice(0, 10), variable: p.variable },
+  }));
+  const rows: Row[] = [...all, ...proj].sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
+  const shown = rows.filter((o) => (ver === "pagar" ? o.direction === "PAYABLE" : ver === "cobrar" ? o.direction === "RECEIVABLE" : true));
 
   // Una sola lista por fecha: atrasado, esta semana, resto del mes y después, mes por mes.
-  const groups: [string, OpenItem[]][] = [
+  const groups: [string, Row[]][] = [
     ["Atrasado", shown.filter((o) => o.overdue)],
     ["Esta semana", shown.filter((o) => !o.overdue && o.dueDate <= in7)],
     ["Resto del mes", shown.filter((o) => o.dueDate > in7 && period(o.dueDate) === thisMonth)],
@@ -38,7 +51,7 @@ export default async function Upcoming({ searchParams }: { searchParams: Promise
 
   return (
     <>
-      <PageHead crumb="Pagos y deudas" title="Próximos pagos" desc="Lo que falta pagar y cobrar. Lo atrasado queda acá hasta que lo resuelvas." actions={<Link className="btn pri" href="/app/movimientos/nuevo?estado=pendiente">+ Agregar un pago o cobro</Link>} />
+      <PageHead crumb="Pagos y deudas" title="Próximos pagos" desc="Lo que falta pagar y cobrar en los próximos 12 meses. Lo marcado como Proyectado sale de tus pagos que se repiten." actions={<Link className="btn pri" href="/app/movimientos/nuevo?estado=pendiente">+ Agregar un pago o cobro</Link>} />
       {guardado && <div className="notice g" role="status"><span>Listo, quedó guardado.</span><Link className="btn sm" href="/app/movimientos/nuevo?estado=pendiente" style={{ marginLeft: "auto" }}>+ Cargar otro</Link></div>}
       {modules.calendario && <Tabs current="lista" items={[{ key: "lista", label: "Lista", href: "/app/proximos" }, { key: "cal", label: "Calendario", href: "/app/calendario" }]} />}
       <div className="fc" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))" }}>
@@ -61,6 +74,20 @@ export default async function Upcoming({ searchParams }: { searchParams: Promise
             <div className="chead"><h3>{title}</h3><span className={`num ${n.isNegative() ? "neg" : "pos"}`}>{formatMoney(n, cur, { sign: true })}</span></div>
             <div className="list">{list.map((o) => {
               const rec = o.direction === "RECEIVABLE";
+              if (o.proj) return (
+                <div className="li proj" key={o.id}>
+                  <div className="dchip"><b>{o.dueDate.getUTCDate()}</b><span>{MES[o.dueDate.getUTCMonth()]}</span></div>
+                  <div className="grow">
+                    <div className="t">{o.description}</div>
+                    <div className="s"><span className="pill">Proyectado</span> {rec ? "A cobrar" : "A pagar"} · se repite{o.proj.variable ? " · monto aproximado" : ""}</div>
+                  </div>
+                  <b className={`num ${rec ? "pos" : "neg"}`}>{rec ? "+" : "−"}{formatMoney(o.remaining, o.currency)}</b>
+                  <div className="li-acts">
+                    <form action={projectedAction}><input type="hidden" name="ruleId" value={o.proj.ruleId} /><input type="hidden" name="occurrence" value={o.proj.occ} /><input type="hidden" name="do" value="pagar" /><button className="btn sm" type="submit">{rec ? "Cobrar" : "Pagar"}</button></form>
+                    <form action={projectedAction}><input type="hidden" name="ruleId" value={o.proj.ruleId} /><input type="hidden" name="occurrence" value={o.proj.occ} /><input type="hidden" name="do" value="cancelar" /><input type="hidden" name="back" value="/app/proximos" /><button className="dots" type="submit" title="Cancelar solo esta vez" aria-label={`Cancelar ${o.description} solo esta vez`}>×</button></form>
+                  </div>
+                </div>
+              );
               return (
                 <div className="li" key={o.id}>
                   <div className="dchip"><b className={o.overdue ? "neg" : ""}>{o.dueDate.getUTCDate()}</b><span className={o.overdue ? "neg" : ""}>{MES[o.dueDate.getUTCMonth()]}</span></div>
