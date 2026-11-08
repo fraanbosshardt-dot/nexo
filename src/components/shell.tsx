@@ -7,6 +7,7 @@ import { Icon, type IconName } from "./icons";
 import type { ModuleState } from "@/lib/modules";
 import { QuickAdd, openQuickAdd } from "@/components/quick-add";
 import { BigTextToggle } from "@/components/big-text";
+import { ThemeButton } from "@/components/theme";
 
 type Item = { href: string; label: string; icon: IconName; module?: keyof ModuleState; badge?: number; match?: string };
 
@@ -84,6 +85,7 @@ export function Shell({ children, modules, overdue, userName, plan, isAdmin, log
         <Link className="ibtn top-search-btn" href="/app/buscar" aria-label="Buscar"><Icon name="search" /></Link>
         <Link href="/app/movimientos/nuevo" className="btn pri top-new"><Icon name="plus" />Nuevo movimiento</Link>
         {modules.alertas && <Link className="ibtn" href="/app/alertas" aria-label="Alertas"><Icon name="bell" />{overdue > 0 && <span className="dot" />}</Link>}
+        <ThemeButton />
         <Link className="ibtn" href="/app/ayuda" aria-label="Ayuda"><Icon name="help" /></Link>
         <Link className="ibtn" href="/app/configuracion" aria-label="Configuración"><Icon name="gear" /></Link>
         <button className="avatar" style={{ border: 0, cursor: "pointer" }} aria-label="Tu cuenta" aria-haspopup="dialog" aria-expanded={menu} title={userName} onClick={() => setMenu(true)}>{initials}</button>

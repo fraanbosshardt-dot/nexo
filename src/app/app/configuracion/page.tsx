@@ -11,6 +11,7 @@ import { COUNTRIES, CURRENCIES } from "@/lib/countries";
 import { PageHead, SettingsTabs } from "@/components/page";
 import { InstallApp } from "@/components/pwa";
 import { BigTextToggle } from "@/components/big-text";
+import { ThemeChoice } from "@/components/theme";
 import { ActionForm, OtpInput, Submit } from "@/components/forms";
 import { deleteMyAccountAction, emailRemindersAction, confirm2faAction, disable2faAction, revokeOtherSessionsAction, saveModulesAction, start2faAction, twoFactorQr, updateProfileAction } from "@/app/actions/app";
 import { ConfirmSubmit } from "@/components/confirm-submit";
@@ -168,5 +169,5 @@ export default async function Settings({ searchParams }: { searchParams: Promise
       </div></div>
     );
   }
-  return (<div className="narrow wide"><PageHead crumb="Ajustes" title="Configuración" />{tabs}{t === "general" && <><BigTextToggle /><InstallApp /></>}{body}</div>);
+  return (<div className="narrow wide"><PageHead crumb="Ajustes" title="Configuración" />{tabs}{t === "general" && <><ThemeChoice /><BigTextToggle /><InstallApp /></>}{body}</div>);
 }
