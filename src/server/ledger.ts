@@ -183,7 +183,7 @@ export async function recordMovement(db: Db, ws: string, input: MovementInput) {
 export async function payObligation(
   db: Db,
   ws: string,
-  input: { obligationId: string; accountId: string; amount: MoneyValue; date: Date; userId?: string | null },
+  input: { obligationId: string; accountId: string; amount: MoneyValue; date: Date; userId?: string | null; settle?: boolean; updateFuture?: boolean },
 ) {
   return db.$transaction(async (tx) => {
     const ob = await tx.obligation.findFirst({ where: { id: input.obligationId, workspaceId: ws }, include: { payments: true } });
@@ -194,7 +194,8 @@ export async function payObligation(
     const amount = round2(input.amount);
     const left = remaining(ob);
     if (!amount.gt(0)) throw new UserError("El importe tiene que ser mayor a cero.");
-    if (amount.gt(left)) throw new UserError(`Es más de lo que falta (${left.toFixed(2)}).`);
+    // "Fue el total": el importe real puede ser distinto del esperado (sueldo variable, una factura que vino distinta).
+    if (amount.gt(left) && !input.settle) throw new UserError(`Es más de lo que falta (${left.toFixed(2)}). Si ese fue el total, marcá "Fue el total".`);
     if (account.type === "CREDIT_CARD") throw new UserError("Elegí una cuenta de dinero, no una tarjeta.");
     // Resumen de tarjeta: el gasto ya se registró en cada compra, así que el pago es una transferencia.
     const card = ob.sourceType === "card" && ob.sourceId ? await tx.creditCard.findFirst({ where: { id: ob.sourceId, workspaceId: ws } }) : null;
@@ -220,6 +221,15 @@ export async function payObligation(
       await tx.transaction.create({
         data: { workspaceId: ws, accountId: card.accountId, type: "TRANSFER", direction: "IN", amount: money(amount), currency: ob.currency, description: ob.description, effectiveDate: input.date, economicPeriod: ob.economicPeriod, transferGroupId: group, createdById: input.userId ?? null },
       });
+    }
+    if (input.settle) {
+      const total = paidSoFar(ob).plus(amount);
+      await tx.obligation.update({ where: { id: ob.id }, data: { amount: money(total) } });
+      // Los meses que vienen usan este monto (solo los pendientes que todavía no se tocaron).
+      if (input.updateFuture && ob.recurringRuleId) {
+        await tx.recurringRule.updateMany({ where: { id: ob.recurringRuleId, workspaceId: ws }, data: { amount: money(amount) } });
+        await tx.obligation.updateMany({ where: { workspaceId: ws, recurringRuleId: ob.recurringRuleId, status: "PENDING", dueDate: { gt: ob.dueDate } }, data: { amount: money(amount) } });
+      }
     }
     const updated = await refreshStatus(tx, ob.id);
     if (ob.sourceType === "debt" && ob.sourceId && updated.status === "SETTLED") {

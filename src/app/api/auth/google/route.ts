@@ -7,8 +7,9 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   const base = appUrl();
-  if (!googleEnabled()) return NextResponse.redirect(`${base}/ingresar?google=off`);
-  const desde = req.nextUrl.searchParams.get("desde") === "registro" ? "registro" : "ingresar";
+  if (!googleEnabled()) return NextResponse.redirect(`${base}${req.nextUrl.searchParams.get("desde") === "admin" ? "/admin/ingresar" : "/ingresar"}?google=off`);
+  const d = req.nextUrl.searchParams.get("desde");
+  const desde = d === "registro" || d === "admin" ? d : "ingresar";
   const { url, cookie } = startGoogle(base, desde);
   const res = NextResponse.redirect(url);
   res.cookies.set(GOOGLE_COOKIE, cookie, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/api/auth/google", maxAge: 600 });

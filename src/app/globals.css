@@ -648,3 +648,77 @@ details.more summary:hover{color:var(--ink-h)}
   .help>span{position:fixed;left:16px;right:16px;top:auto;bottom:calc(88px + env(safe-area-inset-bottom,0px));width:auto;z-index:70}
   .help:not([open])>span{display:none}
 }
+
+/* ---------- Panel interno ---------- */
+.adm{min-height:100vh;background:var(--canvas)}
+.adm-top{background:var(--bg);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+.adm-bar{display:flex;align-items:center;gap:12px;height:60px;padding:0 max(16px,env(safe-area-inset-left,0px))}
+.adm-who{display:flex;flex-direction:column;align-items:flex-end;line-height:1.2;min-width:0}
+.adm-who b{font-weight:500;font-size:13.5px} .adm-who small{color:var(--muted);font-size:12px}
+.adm-wrap{display:grid;grid-template-columns:232px minmax(0,1fr);max-width:1400px;margin:0 auto}
+.adm-nav{display:flex;flex-direction:column;gap:2px;padding:16px 12px;position:sticky;top:60px;align-self:start}
+.adm-nav a{display:flex;align-items:center;gap:12px;height:40px;padding:0 14px;border-radius:20px;color:var(--fg);text-decoration:none;font-size:14px}
+.adm-nav a:hover{background:var(--surface-2)} .adm-nav a.on{background:var(--ink-soft);color:var(--ink-txt);font-weight:500}
+.adm-nav svg{width:18px;height:18px;flex:none}
+.adm-main{padding:20px 24px 56px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.adm-q{border:1px solid var(--line-2);border-radius:4px;min-height:40px;padding:8px 12px;background:var(--surface);min-width:0;flex:1;max-width:320px;color:var(--fg)}
+.adm-hint{display:block;color:var(--muted);font-size:12.5px;margin:2px 0 0}
+.adm-danger{border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:8px}
+.adm-danger summary{cursor:pointer;font-size:14px;color:var(--red)}
+.btn.danger{background:var(--red);color:#fff;border-color:transparent}
+.notice.b{background:var(--ink-soft);border-color:transparent;color:var(--ink-txt)}
+.app-ann{margin-bottom:4px} .app-ann svg{flex:none;margin-top:1px}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+/* Gráfico de barras */
+.bc{margin:8px 0 0}
+.bc-plot{display:flex;align-items:flex-end;gap:2px;height:160px;border-bottom:1px solid var(--line);padding-top:22px}
+.bc-col{flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;position:relative;outline:none;min-width:0}
+.bc-col i{display:block;background:var(--ink);border-radius:4px 4px 0 0;min-height:0}
+.bc-col:hover i,.bc-col:focus-visible i{background:var(--ink-h)}
+.bc-val{display:block;text-align:center;font-size:11px;color:var(--muted);white-space:nowrap;margin-bottom:3px;overflow:visible;pointer-events:none}
+.bc-tip{display:none;position:absolute;bottom:calc(100% - 14px);left:50%;transform:translateX(-50%);background:var(--fg);color:var(--bg);font-size:12px;padding:6px 8px;border-radius:6px;white-space:nowrap;z-index:2;flex-direction:column;align-items:center;gap:2px;pointer-events:none}
+.bc-tip b{font-weight:500}
+.bc-col:hover .bc-tip,.bc-col:focus-visible .bc-tip{display:flex}
+.bc-col:hover .bc-val,.bc-col:focus-visible .bc-val{visibility:hidden}
+.bc-x{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin-top:6px}
+/* Barras horizontales */
+.hb{display:flex;flex-direction:column;gap:12px;margin-top:4px}
+.hb-row{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.4fr) auto;gap:12px;align-items:center;font-size:13.5px}
+.hb-l{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hb-track{height:8px;background:var(--surface-2);border-radius:4px;overflow:hidden}
+.hb-track i{display:block;height:100%;background:var(--ink);border-radius:4px}
+.hb-v{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap} .hb-v small{color:var(--muted)}
+/* Ingreso al panel */
+.adm-login{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--canvas);padding:24px 16px}
+.adm-login-card{width:100%;max-width:420px;background:var(--bg);border-radius:24px;padding:36px 32px;display:flex;flex-direction:column;gap:16px}
+.adm-login-card h1{font-weight:400;font-size:26px;margin:0}
+.adm-login-card .sub{color:var(--muted);margin:0;font-size:14px}
+.adm-login-ico{width:48px;height:48px;border-radius:50%;background:var(--ink-soft);color:var(--ink-txt);display:flex;align-items:center;justify-content:center}
+.adm-dev{display:flex;flex-direction:column;gap:8px;border-top:1px dashed var(--line-2);padding-top:14px} .adm-dev small{color:var(--muted)}
+/* Novedades */
+.news-item{padding:20px 0;border-top:1px solid var(--line)} .news-item time{color:var(--muted);font-size:13px}
+.news-item h2{font-weight:500;font-size:20px;margin:4px 0 6px} .news-item p{margin:0;white-space:pre-wrap;line-height:1.55}
+@media (max-width:900px){
+  .adm-wrap{grid-template-columns:minmax(0,1fr)}
+  .adm-nav{flex-direction:row;overflow-x:auto;position:sticky;top:60px;z-index:15;background:var(--bg);border-bottom:1px solid var(--line);padding:8px 12px;gap:4px;scrollbar-width:none}
+  .adm-nav::-webkit-scrollbar{display:none}
+  .adm-nav a{flex:none;height:36px;padding:0 12px;font-size:13.5px}
+  .adm-main{padding:16px 16px 48px}
+  .adm-who small{display:none}
+}
+@media (max-width:520px){ .adm-who{display:none} .hb-row{grid-template-columns:minmax(0,1fr) auto} .hb-track{grid-column:1/-1;grid-row:2} }
+.bc-plot{position:relative}
+.bc-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;margin:0;color:var(--muted);font-size:13px}
+@media (max-width:640px){ .fc.adm-stats{grid-template-columns:repeat(2,minmax(0,1fr))!important} }
+
+/* Pantalla de carga */
+.sk{display:flex;flex-direction:column;gap:16px}
+.sk-line,.sk-card{border-radius:8px;background:linear-gradient(90deg,var(--surface-2) 0%,var(--canvas) 50%,var(--surface-2) 100%);background-size:200% 100%}
+.sk-card{border-radius:16px}
+.sk-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+@media (prefers-reduced-motion:no-preference){ .sk .sk-line,.sk .sk-card{animation:sk 1.2s ease-in-out infinite!important} }
+@keyframes sk{0%{background-position:100% 0}100%{background-position:-100% 0}}
+.cat-del{margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
+.cat-del summary{cursor:pointer;font-size:13px;color:var(--muted);list-style:none}
+.cat-del summary::-webkit-details-marker{display:none}
+.cat-del[open] summary{color:var(--red)}

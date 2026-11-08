@@ -11,6 +11,15 @@ export async function GET(req: Request) {
   const secret = process.env.CRON_SECRET;
   if (!secret || req.headers.get("authorization") !== `Bearer ${secret}`) return new Response("No autorizado", { status: 401 });
   const db = getDb();
+  try {
+    return await run(db);
+  } catch (e) {
+    await db.auditLog.create({ data: { action: "cron.failed", meta: { error: String(e).slice(0, 300) } } }).catch(() => {});
+    throw e;
+  }
+}
+
+async function run(db: ReturnType<typeof getDb>) {
   const fx = await refreshRates(db).catch(() => 0);
   let sent = 0, skipped = 0;
   const workspaces = await db.workspace.findMany({ where: { onboardedAt: { not: null } }, include: { members: { where: { role: "OWNER" }, include: { user: true } } } });
@@ -28,5 +37,6 @@ export async function GET(req: Request) {
     const r = await sendEmail({ to: owner.email, subject: due.length === 1 ? `Mañana vence ${due[0].description}` : `Mañana vencen ${due.length} pagos y cobros`, text: `Hola ${owner.name.split(" ")[0]}:\n\nMañana vence:\n${lines.join("\n")}\n\nRegistralo en ${appUrl()}/app/proximos\n\nSi no querés recibir estos avisos, apagalos en Configuración.\n\nNEXO` });
     if (r.sent) { sent++; await db.obligation.updateMany({ where: { id: { in: due.map((o) => o.id) } }, data: { remindedAt: new Date() } }); } else skipped++;
   }
+  await db.auditLog.create({ data: { action: "cron.diario", meta: { rates: fx, emails: sent, notSent: skipped } } });
   return Response.json({ ok: true, rates: fx, emails: sent, notSent: skipped });
 }

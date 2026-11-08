@@ -36,7 +36,7 @@ export async function createSession(userId: string, opts: { twoFactorVerified: b
 export async function getSession() {
   const token = (await cookies()).get(COOKIE)?.value;
   if (!token) return null;
-  const s = await getDb().session.findUnique({ where: { tokenHash: sha256(token) }, include: { user: true } });
+  const s = await getDb().session.findUnique({ where: { tokenHash: sha256(token) }, include: { user: { include: { memberships: { take: 1, orderBy: { createdAt: "asc" }, include: { workspace: { include: { subscription: true } } } } } } } });
   if (!s || s.revokedAt || s.expiresAt < new Date() || s.user.deletedAt || s.user.suspendedAt) return null;
   return s;
 }
@@ -57,13 +57,17 @@ export async function requireUser() {
   const s = await getSession();
   if (!s) redirect("/ingresar");
   if (s.user.totpEnabledAt && !s.twoFactorVerified) redirect("/verificar");
+  // Última actividad, para las métricas del panel (como mucho una escritura por hora).
+  if (!s.user.lastSeenAt || Date.now() - s.user.lastSeenAt.getTime() > 3600_000) {
+    await getDb().user.update({ where: { id: s.userId }, data: { lastSeenAt: new Date() } });
+  }
   return { session: s, user: s.user };
 }
 
 // Exige usuario y devuelve su espacio. Si no terminó la introducción, lo manda ahí.
 export async function requireWorkspace(opts: { allowNotOnboarded?: boolean } = {}) {
   const { session, user } = await requireUser();
-  const membership = await getDb().membership.findFirst({ where: { userId: user.id }, include: { workspace: { include: { subscription: true } } }, orderBy: { createdAt: "asc" } });
+  const membership = user.memberships[0];
   if (!membership) redirect("/ingresar");
   const workspace = membership.workspace;
   if (!workspace.onboardedAt && !opts.allowNotOnboarded) redirect("/bienvenida");
@@ -85,15 +89,6 @@ export async function audit(action: string, data: { userId?: string | null; work
   });
 }
 
-// Dueños de la plataforma: los correos de ADMIN_EMAILS (separados por coma) o usuarios marcados como administradores.
-export const isAdminEmail = (email: string) => (process.env.ADMIN_EMAILS ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean).includes(email.toLowerCase());
-
-export async function requireAdmin() {
-  const { user, session } = await requireUser();
-  if (!user.isAdmin && !isAdminEmail(user.email)) redirect("/app");
-  if (!user.isAdmin) await getDb().user.update({ where: { id: user.id }, data: { isAdmin: true } });
-  return { user, session };
-}
 
 export async function canUse(plan: "FREE" | "PRO", key: FeatureKey) {
   return hasFeature(getDb(), plan, key);

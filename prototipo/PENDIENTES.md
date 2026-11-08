@@ -6,7 +6,6 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 ## Pendientes
 
 ### Necesitan algo tuyo
-- [ ] G8. Ingresar con Google: el código ya está hecho y probado. Falta crear el acceso en Google Cloud y cargar GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET en Vercel (hasta entonces el botón no aparece).
 - [ ] Z2. Cargar las claves reales para activar lo que ya está programado: RESEND_API_KEY y EMAIL_FROM (emails), CRON_SECRET (tarea diaria), MP_ACCESS_TOKEN, MP_WEBHOOK_SECRET y precios (Mercado Pago). Están explicadas en .env.example.
 - [ ] Z3. Decidir el precio de Pro en pesos (u otra moneda) para Mercado Pago.
 
@@ -20,6 +19,9 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 - [ ] P2. Espacio compartido (Pro): invitar hasta 3 personas.
 
 ## Completado
+- [x] 08/11/2026 — Panel interno completo con ingreso propio (Google + lista blanca, roles Dueño/Soporte/Solo mirar): resumen con gráficos, clientes y ficha (sin montos), Pro regalado o reservado por correo, cobros y cupones, soporte con prioridades y respuestas guardadas, avisos en la app, correos masivos, novedades (/novedades), finanzas (ingresos contra gastos), sistema y seguridad, actividad, equipo, ajustes y mantenimiento, descargas para el contador.
+- [x] 08/11/2026 — Bienvenida rediseñada (4 pasos cortos con vista previa en vivo), ingresos que varían, "Para confirmar" en Inicio (cobré/pagué con un toque u otro monto y fecha), "Fue el total" y "usar para los próximos meses", borrar categorías sin perder movimientos, descargar mis datos y borrar mi cuenta, ícono de configuración corregido, app más rápida (región junto a la base, menos consultas, pantalla de carga).
+- [x] 07/11/2026 — Ingresar con Google: proyecto NEXO en Google Cloud (publicado), claves en Vercel y botón en ingresar y registro.
 - [x] 07/11/2026 — App en el celular revisada pantalla por pantalla (375 px): montos, botones, fechas, buscador, presupuestos, flujo, ayudas y tablas ya no se enciman ni se cortan. La computadora sigue igual.
 - [x] 05/11/2026 — Prototipo navegable completo (versión 11), publicado como artefacto.
 - [x] 06/11/2026 — App real, Fase 1 y núcleo de Fase 2: registro e inicio de sesión con dos pasos, introducción, cuentas, movimientos, pendientes, pagos parciales, transferencias, conciliación, reversas, categorías, configuración, landing y legales. 28 pruebas automáticas. Subido a GitHub.

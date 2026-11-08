@@ -11,13 +11,13 @@ import { COUNTRIES, CURRENCIES } from "@/lib/countries";
 import { PageHead, SettingsTabs } from "@/components/page";
 import { InstallApp } from "@/components/pwa";
 import { ActionForm, OtpInput, Submit } from "@/components/forms";
-import { emailRemindersAction, confirm2faAction, disable2faAction, revokeOtherSessionsAction, saveModulesAction, start2faAction, twoFactorQr, updateProfileAction } from "@/app/actions/app";
+import { deleteMyAccountAction, emailRemindersAction, confirm2faAction, disable2faAction, revokeOtherSessionsAction, saveModulesAction, start2faAction, twoFactorQr, updateProfileAction } from "@/app/actions/app";
 
 export const metadata: Metadata = { title: "Configuración" };
 
 const TABS = [["general", "General"], ["funciones", "Funciones"], ["seguridad", "Seguridad"], ["plan", "Plan"], ["datos", "Tus datos"]] as const;
 
-export default async function Settings({ searchParams }: { searchParams: Promise<{ tab?: string; pago?: string; cancelado?: string }> }) {
+export default async function Settings({ searchParams }: { searchParams: Promise<{ tab?: string; pago?: string; cancelado?: string; cupon?: string }> }) {
   const { user, workspace, modules, plan, session } = await requireWorkspace();
   const sp = await searchParams;
   const asked = sp.tab;
@@ -101,6 +101,19 @@ export default async function Settings({ searchParams }: { searchParams: Promise
           ))}</div>
           <p className="foot-note" style={{ marginTop: 10 }}>NEXO nunca te pide ni guarda las contraseñas de tu banco.</p>
         </div>
+        <div className="card">
+          <div className="chead"><div><h3>Tus datos</h3><p className="sub">Son tuyos: podés llevártelos o borrarlos cuando quieras.</p></div></div>
+          <div className="acts"><a className="btn" href="/app/configuracion/mis-datos">Descargar todos mis datos</a></div>
+          <details className="adm-danger" style={{ marginTop: 12 }}>
+            <summary>Borrar mi cuenta</summary>
+            <p className="sub" style={{ margin: 0 }}>Se borran para siempre tus cuentas, movimientos, tarjetas, deudas y todo lo que cargaste. No se puede deshacer. Si pagás Pro, cancelalo antes.</p>
+            <ActionForm action={deleteMyAccountAction} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {user.passwordHash ? <label className="field">Tu contraseña<input name="password" type="password" autoComplete="current-password" /></label> : null}
+              <label className="field">Para confirmar, escribí tu correo<input name="confirm" autoComplete="off" placeholder={user.email} /></label>
+              <div><Submit className="btn danger" pending="Borrando…">Borrar mi cuenta para siempre</Submit></div>
+            </ActionForm>
+          </details>
+        </div>
       </>
     );
   }
@@ -120,10 +133,14 @@ export default async function Settings({ searchParams }: { searchParams: Promise
           {paidPro ? (
             <form action={cancelPlanAction}><button className="btn" type="submit">Cancelar Pro</button></form>
           ) : bill.enabled ? (
-            <div className="acts">
-              <form action={checkoutAction}><input type="hidden" name="cycle" value="monthly" /><button className="btn pri" type="submit">Pasar a Pro · {formatMoney(String(bill.monthly), bill.currency)} por mes</button></form>
-              <form action={checkoutAction}><input type="hidden" name="cycle" value="yearly" /><button className="btn" type="submit">Pagar por año · {formatMoney(String(bill.yearly), bill.currency)}</button></form>
-            </div>
+            <form action={checkoutAction} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {sp.cupon && <p className="auth-err" role="alert">{sp.cupon}</p>}
+              <label className="field" style={{ maxWidth: 260 }}>¿Tenés un cupón? (opcional)<input name="coupon" autoComplete="off" placeholder="Ej.: BIENVENIDA" style={{ textTransform: "uppercase" }} /></label>
+              <div className="acts">
+                <button className="btn pri" type="submit" name="cycle" value="monthly">Pasar a Pro · {formatMoney(String(bill.monthly), bill.currency)} por mes</button>
+                <button className="btn" type="submit" name="cycle" value="yearly">Pagar por año · {formatMoney(String(bill.yearly), bill.currency)}</button>
+              </div>
+            </form>
           ) : (
             <p className="sub">Pro cuesta US$ {prices.monthly} por mes o US$ {prices.yearly} por año. El cobro con Mercado Pago se activa pronto; mientras tanto podés usar la prueba gratis.</p>
           )}

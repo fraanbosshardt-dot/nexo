@@ -14,6 +14,7 @@ export const PUBLIC_PAGES: { path: string; priority: number }[] = [
   { path: "/herramientas/cuotas", priority: 0.9 },
   { path: "/herramientas/prestamo", priority: 0.9 },
   { path: "/glosario", priority: 0.7 },
+  { path: "/novedades", priority: 0.5 },
   { path: "/registro", priority: 0.6 },
   { path: "/terminos", priority: 0.2 },
   { path: "/privacidad", priority: 0.2 },

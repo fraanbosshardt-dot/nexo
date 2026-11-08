@@ -360,8 +360,16 @@ export async function checkoutAction(fd: FormData) {
   const { startCheckout } = await import("@/server/billing");
   const { appUrl } = await import("@/lib/email");
   const cycle = fd.get("cycle") === "yearly" ? "yearly" : "monthly";
-  const link = await startCheckout(workspace.id, user.email, cycle, `${appUrl()}/app/configuracion?tab=plan&pago=1`);
-  await audit("billing.checkout_started", { userId: user.id, workspaceId: workspace.id, meta: { cycle } });
+  const rawCoupon = String(fd.get("coupon") ?? "").trim();
+  let discount: { code: string; percentOff: number } | undefined;
+  if (rawCoupon) {
+    const { checkCoupon } = await import("@/server/admin-accounts");
+    const c = await checkCoupon(getDb(), rawCoupon);
+    if (!c.ok) redirect(`/app/configuracion?tab=plan&cupon=${encodeURIComponent(c.error)}`);
+    discount = { code: c.coupon.code, percentOff: c.coupon.percentOff };
+  }
+  const link = await startCheckout(workspace.id, user.email, cycle, `${appUrl()}/app/configuracion?tab=plan&pago=1`, discount);
+  await audit("billing.checkout_started", { userId: user.id, workspaceId: workspace.id, meta: { cycle, coupon: discount?.code } });
   redirect(link);
 }
 
@@ -402,7 +410,8 @@ export async function loadStatementAction(_: FormState, fd: FormData): Promise<F
 export async function readStatementPdfAction(fd: FormData): Promise<{ error?: string; data?: import("@/server/statement-pdf").ParsedStatement; left?: number }> {
   const { user, workspace, plan } = await requireWorkspace();
   if (!(await canUse(plan, "pdf"))) return { error: "Leer el PDF es una función Pro. Podés cargar el resumen a mano." };
-  const limit = Number(process.env.PDF_MONTHLY_LIMIT || 5);
+  const { pdfMonthlyLimit } = await import("@/server/settings");
+  const limit = await pdfMonthlyLimit(getDb());
   const now = new Date();
   const used = await getDb().auditLog.count({ where: { workspaceId: workspace.id, action: "card.pdf_read", createdAt: { gte: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)) } } });
   if (used >= limit) return { error: `Ya leíste ${limit} resúmenes este mes. Cargá este a mano o esperá al mes que viene.` };

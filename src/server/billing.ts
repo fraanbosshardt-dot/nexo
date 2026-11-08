@@ -24,17 +24,22 @@ async function mp<T>(path: string, init: RequestInit = {}): Promise<T> {
 type Preapproval = { id: string; status: "pending" | "authorized" | "paused" | "cancelled"; init_point?: string; external_reference?: string; auto_recurring?: { frequency: number; transaction_amount: number; currency_id: string } };
 
 // Crea la suscripción y devuelve el enlace de pago de Mercado Pago.
-export async function startCheckout(ws: string, payerEmail: string, cycle: "monthly" | "yearly", backUrl: string) {
+// La referencia externa lleva el espacio y, si hay, el cupón: "espacio|CUPON".
+export const splitRef = (ref: string | undefined) => { const [ws, coupon] = (ref ?? "").split("|"); return { ws: ws || null, coupon: coupon || null }; };
+
+export async function startCheckout(ws: string, payerEmail: string, cycle: "monthly" | "yearly", backUrl: string, discount?: { code: string; percentOff: number }) {
   const c = billingConfig();
+  const base = cycle === "yearly" ? c.yearly : c.monthly;
+  const amount = discount ? Math.round(base * (100 - discount.percentOff)) / 100 : base;
   if (!c.enabled) throw new UserError("Los cobros todavía no están activados.");
   const p = await mp<Preapproval>("/preapproval", {
     method: "POST",
     body: JSON.stringify({
       reason: cycle === "yearly" ? "NEXO Pro · anual" : "NEXO Pro · mensual",
-      external_reference: ws,
+      external_reference: discount ? `${ws}|${discount.code}` : ws,
       payer_email: payerEmail,
       back_url: backUrl,
-      auto_recurring: { frequency: cycle === "yearly" ? 12 : 1, frequency_type: "months", transaction_amount: cycle === "yearly" ? c.yearly : c.monthly, currency_id: c.currency },
+      auto_recurring: { frequency: cycle === "yearly" ? 12 : 1, frequency_type: "months", transaction_amount: amount, currency_id: c.currency },
     }),
   });
   if (!p.init_point) throw new UserError("Mercado Pago no devolvió el enlace de pago.");
@@ -62,14 +67,19 @@ export function validSignature(signature: string | null, requestId: string | nul
 export async function applyNotification(db: Db, type: string, id: string) {
   if (type === "subscription_preapproval") {
     const p = await mp<Preapproval>(`/preapproval/${id}`);
-    const ws = p.external_reference;
+    const { ws, coupon } = splitRef(p.external_reference);
     if (!ws || !(await db.workspace.findUnique({ where: { id: ws } }))) return;
     const active = p.status === "authorized";
+    const before = await db.subscription.findUnique({ where: { workspaceId: ws } });
+    // El cupón cuenta un uso solo la primera vez que esa suscripción queda activa.
+    if (active && coupon && !(before?.providerRef === p.id && before.status === "ACTIVE")) {
+      await db.coupon.updateMany({ where: { code: coupon }, data: { uses: { increment: 1 } } });
+    }
     const cycle = p.auto_recurring?.frequency === 12 ? "yearly" : "monthly";
     await db.subscription.upsert({
       where: { workspaceId: ws },
-      create: { workspaceId: ws, plan: active ? "PRO" : "FREE", status: active ? "ACTIVE" : p.status === "cancelled" ? "CANCELED" : "PAST_DUE", provider: "mercadopago", providerRef: p.id, billingCycle: cycle },
-      update: { plan: active ? "PRO" : p.status === "cancelled" ? "FREE" : undefined, status: active ? "ACTIVE" : p.status === "cancelled" ? "CANCELED" : "PAST_DUE", provider: "mercadopago", providerRef: p.id, billingCycle: cycle, trialEndsAt: active ? null : undefined },
+      create: { workspaceId: ws, plan: active ? "PRO" : "FREE", status: active ? "ACTIVE" : p.status === "cancelled" ? "CANCELED" : "PAST_DUE", provider: "mercadopago", providerRef: p.id, billingCycle: cycle, couponCode: coupon },
+      update: { plan: active ? "PRO" : p.status === "cancelled" ? "FREE" : undefined, status: active ? "ACTIVE" : p.status === "cancelled" ? "CANCELED" : "PAST_DUE", provider: "mercadopago", providerRef: p.id, billingCycle: cycle, trialEndsAt: active ? null : undefined, couponCode: coupon ?? undefined, canceledAt: p.status === "cancelled" ? new Date() : undefined },
     });
   }
   if (type === "subscription_authorized_payment") {

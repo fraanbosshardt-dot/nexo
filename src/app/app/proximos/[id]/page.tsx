@@ -22,6 +22,9 @@ export default async function PayPage({ params }: { params: Promise<{ id: string
   const left = remaining(ob);
   const inc = ob.direction === "RECEIVABLE";
   const today = todayIn(workspace.timezone);
+  // Ingresos y gastos que se repiten cambian de monto: por defecto, lo que se carga es el total de esta vez.
+  const recurring = !!ob.recurringRuleId;
+  const settleDefault = inc || recurring;
   return (
     <div className="narrow">
       <Link className="lk" href="/app/proximos">← Próximos pagos</Link>
@@ -39,7 +42,8 @@ export default async function PayPage({ params }: { params: Promise<{ id: string
               <label className="field">Fecha<input name="date" type="date" defaultValue={isoDate(today)} /></label>
             </div>
             <label className="field">{inc ? "Entra en" : "Sale de"}<select name="accountId">{accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>
-            <p className="sub">Si es menos de lo que falta, el resto queda pendiente con la misma fecha.</p>
+            <label className="simtg"><input type="checkbox" name="settle" defaultChecked={settleDefault} /><span><b style={{ fontWeight: 500 }}>Fue el total</b><br /><span className="sub">{inc ? "Si cobraste otro monto (más o menos), queda registrado así y no queda nada pendiente." : "Si la factura vino por otro monto, queda así y no queda nada pendiente."} Destildalo si fue una parte y falta el resto.</span></span></label>
+            {recurring && <label className="simtg"><input type="checkbox" name="updateFuture" /><span>Usar este monto para los próximos meses</span></label>}
             <div className="acts" style={{ justifyContent: "flex-end" }}><Link className="btn" href="/app/proximos">Cancelar</Link><Submit>{inc ? "Registrar cobro" : "Registrar pago"}</Submit></div>
           </ActionForm>
         ) : <div className="empty">Necesitás una cuenta activa en {ob.currency}. <Link className="lk" href="/app/cuentas?nueva=1">Crear cuenta</Link></div>}

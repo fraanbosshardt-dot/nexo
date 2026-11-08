@@ -82,15 +82,23 @@
 .nx .auth-main{display:flex;flex-direction:column;gap:28px;padding:36px 40px 40px}
 .nx .auth-box{display:flex;flex-direction:column;gap:16px}
 .nx .auth-box form{display:flex;flex-direction:column;gap:16px}
-.nx .auth-side{padding:48px 40px;display:flex;flex-direction:column;justify-content:center;gap:18px;border-left:1px solid var(--nx-line)}
-.nx .auth-side{background:var(--nx-bg);color:var(--nx-ink)}
-.nx .auth-side h2{color:var(--nx-ink);font-family:inherit;font-size:20px;margin:0}
+.nx .auth-side{margin:12px;border-radius:18px;padding:40px 36px;display:flex;flex-direction:column;justify-content:space-between;gap:28px;background:var(--ink-soft);color:var(--ink-txt)}
+.nx .auth-side-top{display:flex;flex-direction:column;gap:20px}
+.nx .auth-side h2{color:var(--ink-txt);font-family:inherit;font-size:24px;font-weight:400;line-height:1.25;margin:0}
 .nx .auth-side ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px;opacity:1}
 .nx .auth-side li::before{content:none}
 .nx .auth-main{place-items:initial}
 .nx .auth-box h1{font-family:inherit;font-size:30px}
-.nx .auth-side li{display:flex;gap:12px;color:var(--nx-ink2)}
-.nx .auth-side li svg{color:var(--nx-accent);margin-top:1px}
+.nx .auth-side li{display:flex;gap:12px;color:var(--ink-txt);line-height:1.45}
+.nx .auth-side li svg,.nx .auth-safe svg{color:var(--ink);margin-top:1px;flex:none}
+.nx .auth-demo{background:var(--surface);color:var(--fg);border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:6px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.nx .auth-demo small{color:var(--muted);font-size:12.5px}
+.nx .auth-demo b{font-size:28px;font-weight:400;letter-spacing:-.01em}
+.nx .auth-demo-bar{height:6px;border-radius:3px;background:var(--surface-2);margin:6px 0 8px;overflow:hidden}
+.nx .auth-demo-bar i{display:block;height:100%;width:45%;background:var(--ink);border-radius:3px}
+.nx .auth-demo-row{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);padding-top:6px;border-top:1px solid var(--line)}
+.nx .auth-demo-row span:last-child{color:var(--fg);font-variant-numeric:tabular-nums}
+.nx .auth-safe{display:flex;gap:10px;margin:0;font-size:13.5px;color:var(--ink-txt)}
 .nx .pub-note{color:var(--nx-ink3);font-size:12.5px}
 
 /* Bienvenida */
@@ -147,3 +155,101 @@
   .nx .ob-steps li+li::before{width:12px}
   .nx .seg{flex-wrap:wrap;border-radius:12px}
 }
+
+/* ---------- Bienvenida (rediseño) ---------- */
+.nx.obx{min-height:100vh;display:flex;flex-direction:column;background:var(--nx-canvas)}
+.nx .obx-top{display:flex;align-items:center;justify-content:space-between;gap:16px;height:64px;padding:0 max(20px,env(safe-area-inset-left,0px));background:var(--nx-bg)}
+.nx .obx-steps{display:flex;align-items:center;gap:6px;list-style:none;margin:0;padding:0}
+.nx .obx-steps li{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--nx-ink3)}
+.nx .obx-steps li+li::before{content:"";width:20px;height:1px;background:var(--nx-line2)}
+.nx .obx-steps i{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:12.5px;font-weight:500;background:var(--nx-sunk);color:var(--nx-ink2)}
+.nx .obx-steps i svg{width:14px;height:14px}
+.nx .obx-steps li.on{color:var(--nx-ink);font-weight:500} .nx .obx-steps li.on i{background:var(--nx-accent);color:var(--nx-on-accent)}
+.nx .obx-steps li.done i{background:var(--nx-accent-soft);color:var(--nx-accent-ink)}
+.nx .obx-wrap{flex:1;width:100%;max-width:1080px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:32px;padding:40px max(20px,env(safe-area-inset-left,0px)) 120px}
+.nx .obx-body{background:var(--nx-bg);border-radius:24px;padding:36px 40px;display:flex;flex-direction:column;gap:22px;align-self:start}
+.nx .obx-body h1{font-family:inherit;font-weight:400;font-size:32px;line-height:1.15;margin:0}
+.nx .obx-body .lead{color:var(--nx-ink2);font-size:15.5px;margin:10px 0 0;max-width:52ch}
+.nx .obx-card{display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:16px;background:var(--nx-sunk)}
+.nx .obx-card .grow{display:flex;flex-direction:column;gap:2px;min-width:0} .nx .obx-card b{font-weight:500} .nx .obx-card small{color:var(--nx-ink3);font-size:13px}
+.nx .obx-ico{width:40px;height:40px;border-radius:50%;flex:none;display:grid;place-items:center;background:var(--nx-accent-soft);color:var(--nx-accent-ink)}
+.nx .obx-two{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.nx .chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.nx .chip svg{width:14px;height:14px}
+.nx .chip-sel{height:36px;border-radius:18px;padding:0 12px;width:auto}
+.nx .obx-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.nx .obx-tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:104px;padding:14px 8px;border-radius:16px;border:1px solid var(--nx-line2);background:var(--nx-bg);color:var(--nx-ink);font:inherit;font-size:14px;cursor:pointer;text-align:center}
+.nx .obx-tile svg{width:26px;height:26px;color:var(--nx-ink2)}
+.nx .obx-tile:hover{background:var(--nx-sunk)}
+.nx .obx-tile.on{border-color:var(--nx-accent);background:var(--nx-accent-soft);color:var(--nx-accent-ink);font-weight:500} .nx .obx-tile.on svg{color:var(--nx-accent-ink)}
+.nx .obx-money{display:flex;align-items:center;border:1px solid var(--nx-line2);border-radius:4px;background:var(--nx-bg);padding-left:12px}
+.nx .obx-money em{font-style:normal;color:var(--nx-ink3)} .nx .obx-money input{border:0!important;box-shadow:none!important;background:transparent;flex:1;min-width:0}
+.nx .obx-skip{align-self:flex-start;background:none;border:0;padding:0;font:inherit;font-size:14px;cursor:pointer}
+.nx .obx-choices{display:flex;flex-direction:column;gap:10px}
+.nx .obx-choice{display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:16px;border:1px solid var(--nx-line2);background:var(--nx-bg);color:var(--nx-ink);font:inherit;text-align:left;cursor:pointer}
+.nx .obx-choice .grow{display:flex;flex-direction:column;gap:3px} .nx .obx-choice b{font-weight:500;font-size:15px} .nx .obx-choice small{color:var(--nx-ink3);font-size:13px;line-height:1.4}
+.nx .obx-choice:hover{background:var(--nx-sunk)} .nx .obx-choice.on{border-color:var(--nx-accent);background:var(--nx-accent-soft)}
+.nx .obx-incs{display:flex;flex-direction:column;gap:12px}
+.nx .obx-inc{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) 100px;gap:10px;align-items:end;padding:14px;border-radius:16px;background:var(--nx-sunk)}
+.nx .obx-inc .obx-var{grid-column:1/-1;font-size:13.5px}
+.nx .obx-preview{position:sticky;top:24px;align-self:start;display:flex;flex-direction:column;gap:12px;padding:24px;border-radius:24px;background:var(--nx-accent-soft);color:var(--nx-accent-ink)}
+.nx .obx-pv-lbl{font-size:12.5px;font-weight:500;letter-spacing:.02em}
+.nx .obx-phone{background:var(--nx-bg);color:var(--nx-ink);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:6px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.nx .obx-phone small{color:var(--nx-ink3);font-size:12.5px}
+.nx .obx-big{font-size:30px;font-weight:400;letter-spacing:-.01em;overflow-wrap:anywhere}
+.nx .obx-rows{display:flex;flex-direction:column;margin-top:8px}
+.nx .obx-rows div{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:8px 0;border-top:1px solid var(--nx-line)}
+.nx .obx-rows span:first-child{color:var(--nx-ink2);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nx .obx-rows .pos{color:var(--nx-pos)}
+.nx .obx-note{display:flex;gap:8px;margin:6px 0 0;font-size:12.5px;color:var(--nx-ink2)} .nx .obx-note svg{width:16px;height:16px;flex:none}
+.nx .obx-feats{margin:0;font-size:13px;line-height:1.5}
+.nx .obx-bar{position:sticky;bottom:0;background:var(--nx-bg);border-top:1px solid var(--nx-line);padding:12px max(20px,env(safe-area-inset-left,0px)) max(12px,env(safe-area-inset-bottom,0px))}
+.nx .obx-bar .in{max-width:1080px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.nx .obx-bar .err{flex:1;color:var(--nx-neg);font-weight:500;font-size:13.5px;text-align:right}
+@media (max-width:900px){
+  .nx .obx-wrap{grid-template-columns:minmax(0,1fr);padding-top:16px;gap:16px}
+  .nx .obx-preview{position:static;order:2}
+  .nx .obx-steps span{display:none} .nx .obx-steps li.on span{display:inline}
+}
+@media (max-width:640px){
+  .nx .obx-body{padding:24px 20px;border-radius:20px}
+  .nx .obx-body h1{font-size:26px}
+  .nx .obx-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .nx .obx-inc{grid-template-columns:minmax(0,1fr) minmax(0,1fr)} .nx .obx-inc label:first-child{grid-column:1/-1}
+  .nx .obx-steps li+li::before{width:10px}
+  .nx .obx-bar .err{position:absolute;left:16px;right:16px;bottom:calc(100% + 8px);background:var(--nx-bg);padding:8px 12px;border-radius:8px;text-align:left;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+  .nx .obx-bar{position:sticky}
+}
+.nx.obx>form{flex:1;display:flex;flex-direction:column}
+@media (max-width:640px){ .nx .obx-card .obx-ico{display:none} .nx .obx-card{padding:14px 16px} }
+.nx .obx-steps li{white-space:nowrap}
+
+/* Bienvenida v2: progreso, pasos tocables, errores en el campo, transición y resumen en el celular */
+.nx .obx-top{position:sticky;top:0;z-index:10}
+.nx .obx-prog{height:3px;background:var(--nx-line)} .nx .obx-prog i{display:block;height:100%;background:var(--nx-accent);transition:width .3s ease!important}
+.nx .obx-steps button{display:flex;align-items:center;gap:8px;background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer}
+.nx .obx-steps button:hover span{text-decoration:underline}
+.nx .obx-count{display:none;font-size:13px;color:var(--nx-ink3)}
+.nx .obx-eyebrow{font-size:12.5px;font-weight:500;color:var(--nx-accent-ink);letter-spacing:.02em;margin-bottom:-12px}
+.nx .obx-err{display:flex;gap:10px;align-items:flex-start;margin:0;padding:12px 14px;border-radius:12px;background:var(--nx-neg-soft);color:var(--nx-neg);font-size:14px;font-weight:500}
+.nx .obx-err svg{flex:none;width:18px;height:18px;margin-top:1px}
+.nx .obx-body input[aria-invalid="true"],.nx .obx-money.bad{border-color:var(--nx-neg)!important;box-shadow:0 0 0 1px var(--nx-neg)}
+.nx .obx-tiles:focus{outline:none}
+.nx .obx-ico.sm{width:32px;height:32px} .nx .obx-ico.sm svg{width:18px;height:18px}
+.nx .use{border-radius:16px;padding:16px;position:relative}
+.nx .use .h{gap:12px}
+.nx .use.on{border-color:var(--nx-accent);background:var(--nx-accent-soft)}
+.nx .obx-tick{margin-left:auto;width:22px;height:22px;border-radius:50%;background:var(--nx-accent);color:var(--nx-on-accent);display:grid;place-items:center;flex:none}
+.nx .obx-tick svg{width:14px;height:14px}
+.nx .obx-mini{flex:1;display:none;font-size:13px;color:var(--nx-ink3);text-align:center} .nx .obx-mini b{color:var(--nx-ink);font-weight:500}
+.nx .obx-next{min-width:150px;justify-content:center}
+@media (prefers-reduced-motion:no-preference){ .nx .obx-step{animation:obxIn .22s ease-out both!important} }
+@keyframes obxIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media (max-width:900px){ .nx .obx-preview{display:none} .nx .obx-mini{display:block} }
+@media (max-width:640px){
+  .nx .obx-steps{display:none} .nx .obx-count{display:block}
+  .nx .obx-next{min-width:0;padding-inline:18px}
+  .nx .obx-bar .in{gap:8px}
+}
+.nx .obx-mini{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+@media (max-width:640px){ .nx .obx-eyebrow{display:none} }

@@ -8,7 +8,7 @@ export const googleRedirectUri = (base: string) => `${base}/api/auth/google/call
 
 const b64 = (n: number) => randomBytes(n).toString("base64url");
 
-export type GoogleStart = { state: string; verifier: string; nonce: string; desde: "ingresar" | "registro" };
+export type GoogleStart = { state: string; verifier: string; nonce: string; desde: "ingresar" | "registro" | "admin" };
 
 export function startGoogle(base: string, desde: GoogleStart["desde"]) {
   const st: GoogleStart = { state: b64(24), verifier: b64(48), nonce: b64(24), desde };
@@ -30,7 +30,7 @@ export function readStart(raw: string | undefined): GoogleStart | null {
   if (!raw) return null;
   try {
     const v = JSON.parse(raw);
-    return typeof v?.state === "string" && typeof v?.verifier === "string" && typeof v?.nonce === "string" ? { ...v, desde: v.desde === "registro" ? "registro" : "ingresar" } : null;
+    return typeof v?.state === "string" && typeof v?.verifier === "string" && typeof v?.nonce === "string" ? { ...v, desde: v.desde === "registro" || v.desde === "admin" ? v.desde : "ingresar" } : null;
   } catch {
     return null;
   }

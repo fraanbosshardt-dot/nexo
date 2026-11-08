@@ -30,7 +30,7 @@ export default async function CardDetail({ params }: { params: Promise<{ id: str
   const pdf = await canUse(plan, "pdf");
   const now = new Date();
   const pdfUsed = pdf ? await db.auditLog.count({ where: { workspaceId: workspace.id, action: "card.pdf_read", createdAt: { gte: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)) } } }) : 0;
-  const pdfLeft = Math.max(0, Number(process.env.PDF_MONTHLY_LIMIT || 5) - pdfUsed);
+  const pdfLeft = Math.max(0, (await (await import("@/server/settings")).pdfMonthlyLimit(getDb())) - pdfUsed);
   const lastClose = (() => { const x = closingFor(today, c.card.closingDay); return x > today ? prevClosing(x, c.card.closingDay) : x; })();
   const fm = (v: Parameters<typeof formatMoney>[0]) => formatMoney(v, c.card.currency);
   return (

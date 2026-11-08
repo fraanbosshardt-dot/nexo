@@ -63,7 +63,7 @@ export async function finishOnboardingAction(_: FormState, fd: FormData): Promis
         initialDate: todayIn(timezone),
       });
       // Ingresos fijos (opcionales): cada uno queda como regla mensual desde su próximo cobro.
-      const names = fd.getAll("incomeName").map(String), amounts = fd.getAll("incomeAmount").map(String), days = fd.getAll("incomeDay").map(Number);
+      const names = fd.getAll("incomeName").map(String), amounts = fd.getAll("incomeAmount").map(String), days = fd.getAll("incomeDay").map(Number), variable = fd.getAll("incomeVariable").map(String);
       if (amounts.length) {
         const today = todayIn(timezone);
         const y = today.getUTCFullYear(), m = today.getUTCMonth();
@@ -74,7 +74,7 @@ export async function finishOnboardingAction(_: FormState, fd: FormData): Promis
           if (!(day >= 1 && day <= 31)) throw new UserError(`El día de cobro de ${label} va del 1 al 31.`);
           const at = (yy: number, mm: number) => new Date(Date.UTC(yy, mm, Math.min(day, new Date(Date.UTC(yy, mm + 1, 0)).getUTCDate())));
           const first = at(y, m) >= today ? at(y, m) : at(y, m + 1);
-          await createRule(db, workspace.id, { direction: "RECEIVABLE", description: label, amount: money(amounts[i], `el monto de ${label}`), currency: account.currency, categoryId: /sueldo/i.test(label) ? sueldo?.id ?? null : null, accountId: account.id, frequency: "MONTHLY", dayOfMonth: day, startDate: first });
+          await createRule(db, workspace.id, { direction: "RECEIVABLE", description: label, amount: money(amounts[i], `el monto de ${label}`), currency: account.currency, categoryId: /sueldo/i.test(label) ? sueldo?.id ?? null : null, accountId: account.id, frequency: "MONTHLY", dayOfMonth: day, startDate: first, variableAmount: variable[i] === "1" });
         }
         await materialize(db, workspace.id, new Date(today.getTime() + MATERIALIZE_DAYS * 864e5));
       }
@@ -226,12 +226,27 @@ export async function createMovementAction(_: FormState, fd: FormData): Promise<
 export async function payObligationAction(_: FormState, fd: FormData): Promise<FormState> {
   const { user, workspace } = await requireWorkspace();
   try {
-    await payObligation(getDb(), workspace.id, { obligationId: String(fd.get("obligationId")), accountId: String(fd.get("accountId")), amount: money(fd.get("amount"), "el importe"), date: date(fd.get("date"), "la fecha"), userId: user.id });
+    await payObligation(getDb(), workspace.id, { obligationId: String(fd.get("obligationId")), accountId: String(fd.get("accountId")), amount: money(fd.get("amount"), "el importe"), date: date(fd.get("date"), "la fecha"), userId: user.id, settle: fd.get("settle") === "on", updateFuture: fd.get("updateFuture") === "on" });
   } catch (e) {
     return fail(e);
   }
   revalidatePath("/app", "layout");
-  redirect("/app/proximos");
+  redirect(String(fd.get("back") || "/app/proximos").startsWith("/app") ? String(fd.get("back") || "/app/proximos") : "/app/proximos");
+}
+
+// Inicio: "Sí, lo cobré / lo pagué" con el monto esperado, hoy, en la cuenta de siempre.
+export async function quickConfirmAction(fd: FormData) {
+  const { user, workspace } = await requireWorkspace();
+  const db = getDb();
+  const ob = await db.obligation.findFirst({ where: { id: String(fd.get("obligationId")), workspaceId: workspace.id, status: { in: ["PENDING", "PARTIAL"] } }, include: { payments: true, recurringRule: { select: { accountId: true } } } });
+  if (!ob) redirect("/app");
+  const acc = (ob.recurringRule?.accountId && (await db.account.findFirst({ where: { id: ob.recurringRule.accountId, workspaceId: workspace.id, active: true, currency: ob.currency, type: { notIn: ["CREDIT_CARD", "INVESTMENT"] } } })))
+    || (await db.account.findFirst({ where: { workspaceId: workspace.id, active: true, currency: ob.currency, type: { notIn: ["CREDIT_CARD", "INVESTMENT"] } }, orderBy: { createdAt: "asc" } }));
+  if (!acc) redirect(`/app/proximos/${ob.id}`);
+  const { remaining } = await import("@/server/ledger");
+  await payObligation(db, workspace.id, { obligationId: ob.id, accountId: acc.id, amount: remaining(ob), date: todayIn(workspace.timezone), userId: user.id, settle: true });
+  revalidatePath("/app", "layout");
+  redirect(`/app?listo=${ob.direction === "RECEIVABLE" ? "cobro" : "pago"}`);
 }
 
 export async function cancelObligationAction(fd: FormData) {
@@ -369,4 +384,37 @@ export async function emailRemindersAction(fd: FormData) {
   const { user } = await requireUser();
   await getDb().user.update({ where: { id: user.id }, data: { emailReminders: fd.get("on") === "1" } });
   revalidatePath("/app/configuracion");
+}
+
+export async function deleteCategoryAction(_: FormState, fd: FormData): Promise<FormState> {
+  const { user, workspace } = await requireWorkspace();
+  try {
+    const { deleteCategory } = await import("@/server/categories");
+    const moveTo = String(fd.get("moveTo") ?? "") || null;
+    await deleteCategory(getDb(), workspace.id, String(fd.get("id") ?? ""), moveTo);
+    await audit("category.deleted", { userId: user.id, workspaceId: workspace.id, entityId: String(fd.get("id") ?? ""), meta: { moveTo } });
+  } catch (e) {
+    return fail(e);
+  }
+  revalidatePath("/app", "layout");
+  redirect(`/app/categorias${fd.get("kind") === "INCOME" ? "?tipo=INCOME&" : "?"}borrada=1`);
+}
+
+// Borrar la propia cuenta: pide la contraseña (si tiene) y el correo escrito. No deja borrar con Pro pago activo.
+export async function deleteMyAccountAction(_: FormState, fd: FormData): Promise<FormState> {
+  const { user, workspace } = await requireWorkspace();
+  const db = getDb();
+  if (String(fd.get("confirm") ?? "").trim().toLowerCase() !== user.email) return { error: `Escribí tu correo exacto: ${user.email}` };
+  if (user.passwordHash) {
+    const { verifyPassword } = await import("@/lib/auth/password");
+    if (!(await verifyPassword(String(fd.get("password") ?? ""), user.passwordHash))) return { error: "La contraseña no es correcta." };
+  }
+  const sub = await db.subscription.findUnique({ where: { workspaceId: workspace.id } });
+  if (sub?.provider === "mercadopago" && sub.status === "ACTIVE") return { error: "Tenés Pro pago activo: cancelalo primero en Tu plan, así no te siguen cobrando." };
+  const { deleteAccount } = await import("@/server/admin-accounts");
+  await audit("auth.account_self_deleted", { meta: { email: user.email } });
+  await deleteAccount(db, user.id);
+  const { cookies } = await import("next/headers");
+  (await cookies()).delete("nexo_session");
+  redirect("/?cuenta-borrada=1");
 }

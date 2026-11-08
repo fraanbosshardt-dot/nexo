@@ -26,7 +26,9 @@ export async function signupAction(_: FormState, fd: FormData): Promise<FormStat
   if (await db.user.findUnique({ where: { email: parsed.data.email } })) return { error: "Ya hay una cuenta con ese correo. Iniciá sesión." };
   const user = await db.user.create({ data: { email: parsed.data.email, name: parsed.data.name, passwordHash: await hashPassword(parsed.data.password) } });
   const ws = await createWorkspaceForUser(db, user.id, "Personal");
-  await audit("auth.signup", { userId: user.id, workspaceId: ws.id });
+  await audit("auth.signup", { userId: user.id, workspaceId: ws.id, meta: { via: "email" } });
+  const { applyProGrant } = await import("@/server/grants");
+  await applyProGrant(db, user.email, ws.id);
   await createSession(user.id, { twoFactorVerified: true, remember: true });
   redirect("/bienvenida");
 }

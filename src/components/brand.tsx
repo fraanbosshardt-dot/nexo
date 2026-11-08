@@ -20,13 +20,23 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
           <div className="auth-box">{children}</div>
         </main>
         <aside className="auth-side">
-          <h2>Tu plata, ordenada mes a mes.</h2>
-          <ul>
-            <li><Icon name="check" /><span>Sabé cuánto tenés disponible hoy y con cuánto terminás el mes.</span></li>
-            <li><Icon name="check" /><span>Tarjetas, cuotas y deudas en un solo lugar, sin contar nada dos veces.</span></li>
-            <li><Icon name="check" /><span>Avisos antes de que un mes quede en rojo.</span></li>
-            <li><Icon name="lock" /><span>Nunca te pedimos la clave de tu banco.</span></li>
-          </ul>
+          <div className="auth-side-top">
+            <h2>Tu plata, ordenada mes a mes.</h2>
+            <ul>
+              <li><Icon name="check" /><span>Sabé cuánto tenés disponible hoy y con cuánto terminás el mes.</span></li>
+              <li><Icon name="check" /><span>Tarjetas, cuotas y deudas en un solo lugar, sin contar nada dos veces.</span></li>
+              <li><Icon name="check" /><span>Avisos antes de que un mes quede en rojo.</span></li>
+            </ul>
+          </div>
+          {/* Muestra de cómo se ve el inicio (datos de ejemplo). */}
+          <div className="auth-demo" aria-hidden="true">
+            <small>Te queda hasta tu próximo cobro, el 10</small>
+            <b>$ 184.250</b>
+            <div className="auth-demo-bar"><i /></div>
+            <div className="auth-demo-row"><span>En tus cuentas</span><span>$ 412.900</span></div>
+            <div className="auth-demo-row"><span>A pagar antes</span><span>−$ 228.650</span></div>
+          </div>
+          <p className="auth-safe"><Icon name="lock" /><span>Nunca te pedimos la clave de tu banco.</span></p>
         </aside>
       </div>
     </div>

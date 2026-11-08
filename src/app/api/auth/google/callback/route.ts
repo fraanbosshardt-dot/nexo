@@ -7,6 +7,9 @@ import { audit, createSession } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
 import { appUrl } from "@/lib/email";
 import { findOrCreateGoogleUser } from "@/server/google-auth";
+import { applyProGrant } from "@/server/grants";
+import { createAdminSession } from "@/lib/auth/admin";
+import { roleFor } from "@/server/admin-team";
 
 export const dynamic = "force-dynamic";
 
@@ -14,10 +17,10 @@ export async function GET(req: NextRequest) {
   const jar = await cookies();
   const st = readStart(jar.get(GOOGLE_COOKIE)?.value);
   jar.delete({ name: GOOGLE_COOKIE, path: "/api/auth/google" });
-  const back = st?.desde === "registro" ? "/registro" : "/ingresar";
+  const back = st?.desde === "admin" ? "/admin/ingresar" : st?.desde === "registro" ? "/registro" : "/ingresar";
   const q = req.nextUrl.searchParams;
   if (!googleEnabled()) redirect(`${back}?google=off`);
-  if (q.get("error")) redirect(`${back}?google=cancelado`);
+  if (q.get("error")) redirect(`${back}?google=${q.get("error") === "access_denied" ? "cancelado" : "fallo"}`);
   const code = q.get("code");
   if (!st || !code || q.get("state") !== st.state) redirect(`${back}?google=fallo`);
 
@@ -32,6 +35,20 @@ export async function GET(req: NextRequest) {
   if (!profile) redirect(`${back}?google=fallo`);
 
   const db = getDb();
+
+  // Panel interno: solo correos de la lista blanca. No crea cuentas de la app.
+  if (st.desde === "admin") {
+    const role = await roleFor(db, profile.email);
+    if (!role) {
+      await audit("admin.login_denied", { entity: "email", entityId: profile.email });
+      redirect("/admin/ingresar?google=nolista");
+    }
+    await createAdminSession(profile.email, profile.name);
+    await db.adminMember.updateMany({ where: { email: profile.email }, data: { lastLoginAt: new Date() } });
+    await audit("admin.login", { meta: { admin: profile.email, role } });
+    redirect("/admin");
+  }
+
   const exists = await db.user.findFirst({ where: { OR: [{ googleSub: profile.sub }, { email: profile.email }] }, select: { id: true } });
   if (!exists) {
     // Mismo freno que el registro con correo: 10 cuentas por hora por conexión.
@@ -41,7 +58,10 @@ export async function GET(req: NextRequest) {
 
   const r = await findOrCreateGoogleUser(db, profile);
   if (!r.ok) redirect(`${back}?google=${r.why}`);
-  if (r.created) await audit("auth.signup", { userId: r.userId, workspaceId: r.workspaceId, meta: { via: "google" } });
+  if (r.created) {
+    await audit("auth.signup", { userId: r.userId, workspaceId: r.workspaceId, meta: { via: "google" } });
+    if (r.workspaceId) await applyProGrant(db, profile.email, r.workspaceId);
+  }
   if (r.linked) await audit("auth.google_linked", { userId: r.userId, meta: { passwordCleared: r.passwordCleared } });
 
   const user = await db.user.findUniqueOrThrow({ where: { id: r.userId } });

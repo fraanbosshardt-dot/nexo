@@ -30,6 +30,7 @@ model User {
   isAdmin        Boolean   @default(false)
   suspendedAt    DateTime?
   emailReminders Boolean   @default(true)
+  lastSeenAt     DateTime? // última vez que usó la app (se actualiza como mucho una vez por hora)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   deletedAt      DateTime?
@@ -72,6 +73,7 @@ model Workspace {
   locale          String    @default("es-AR")
   modules         Json      @default("{}") // funciones activadas: { tarjetas: true, cereal: false, ... }
   onboardedAt     DateTime?
+  housekeptAt     DateTime? // última vez que se generaron pendientes recurrentes y resúmenes cerrados
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -132,6 +134,7 @@ model Subscription {
   currentPeriodEnd DateTime?
   trialEndsAt      DateTime?
   canceledAt       DateTime?
+  couponCode       String? // cupón usado al pasar a Pro
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
 }
@@ -642,6 +645,7 @@ model SupportTicket {
   subject   String
   body      String
   status    String   @default("OPEN") // OPEN | ANSWERED | CLOSED
+  priority  String   @default("NORMAL") // LOW | NORMAL | HIGH
   reply     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -676,4 +680,82 @@ model Invoice {
   createdAt   DateTime  @default(now())
 
   @@index([workspaceId, createdAt])
+}
+
+// ---------- Panel interno ----------
+
+// Lista blanca del panel. Los correos de ADMIN_EMAILS son dueños siempre, aunque no estén acá.
+model AdminMember {
+  id          String    @id @default(cuid())
+  email       String    @unique
+  role        String    @default("VIEWER") // OWNER | SUPPORT | VIEWER
+  addedBy     String?
+  lastLoginAt DateTime?
+  createdAt   DateTime  @default(now())
+}
+
+// Sesión del panel: separada de la sesión de la app, solo con Google y por 8 horas.
+model AdminSession {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  email     String
+  name      String?
+  ip        String?
+  userAgent String?
+  createdAt DateTime  @default(now())
+  expiresAt DateTime
+  revokedAt DateTime?
+
+  @@index([email])
+}
+
+model Coupon {
+  id         String    @id @default(cuid())
+  code       String    @unique
+  percentOff Int
+  maxUses    Int?
+  uses       Int       @default(0)
+  expiresAt  DateTime?
+  active     Boolean   @default(true)
+  note       String?
+  createdAt  DateTime  @default(now())
+}
+
+// Pro reservado para un correo: se aplica solo cuando esa persona crea la cuenta.
+model ProGrant {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  days      Int? // vacío = sin vencimiento
+  note      String?
+  addedBy   String?
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+}
+
+model CompanyCost {
+  id        String   @id @default(cuid())
+  name      String
+  amount    Decimal  @db.Decimal(18, 2)
+  currency  String   @default("USD")
+  period    String   @default("monthly") // monthly | yearly
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model ProductNews {
+  id          String   @id @default(cuid())
+  title       String
+  body        String
+  publishedAt DateTime @default(now())
+}
+
+model EmailCampaign {
+  id        String   @id @default(cuid())
+  subject   String
+  body      String
+  audience  String
+  sent      Int      @default(0)
+  failed    Int      @default(0)
+  createdBy String
+  createdAt DateTime @default(now())
 }
