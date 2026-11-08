@@ -4,13 +4,13 @@ import type { Db } from "./ledger";
 export type FeatureKey = "flujo5" | "simulador" | "asistente" | "cereal" | "informes" | "compartido" | "ilimitado" | "soporte" | "pdf";
 
 // Por defecto, casi todo es gratis. Pro suma lo avanzado.
-export const PRO_FEATURES: { key: FeatureKey; name: string }[] = [
+export const PRO_FEATURES: { key: FeatureKey; name: string; beta?: boolean }[] = [
   { key: "flujo5", name: "Flujo de caja a 2, 3 y 5 años" },
   { key: "simulador", name: "Simulador de escenarios" },
-  { key: "asistente", name: "Asistente con IA" },
+  { key: "asistente", name: "Asistente con IA", beta: true },
   { key: "cereal", name: "Módulo Agro: ventas de granos" },
   { key: "informes", name: "Informes avanzados y respaldo completo" },
-  { key: "compartido", name: "Espacio compartido (hasta 3 personas)" },
+  { key: "compartido", name: "Espacio compartido (hasta 3 personas)", beta: true },
   { key: "ilimitado", name: "Cuentas y objetivos sin límite" },
   { key: "soporte", name: "Soporte prioritario" },
   { key: "pdf", name: "Leer el resumen de la tarjeta desde el PDF (hasta 5 por mes)" },

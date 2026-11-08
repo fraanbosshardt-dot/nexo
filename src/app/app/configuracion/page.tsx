@@ -146,7 +146,7 @@ export default async function Settings({ searchParams }: { searchParams: Promise
           )}
           {!paidPro && !sub?.trialEndsAt && plan !== "PRO" && <form action={startTrialAction} style={{ marginTop: 12 }}><button className="btn ghost" type="submit">Probar Pro gratis 14 días</button></form>}
         </div>
-        <div className="card"><div className="chead"><h3>Qué suma Pro</h3></div><div className="list">{PLAN_FEATURES.filter((f) => f.plan === "pro").map((f) => <div className="li" key={f.name}><span className="pill b">Pro</span><div className="grow">{f.name}</div></div>)}</div></div>
+        <div className="card"><div className="chead"><h3>Qué suma Pro</h3></div><div className="list">{PLAN_FEATURES.filter((f) => f.plan === "pro").map((f) => <div className="li" key={f.name}><span className="pill b">Pro</span><div className="grow">{f.name}</div>{f.beta && <span className="pill a">Beta</span>}</div>)}</div><p className="foot-note" style={{ marginTop: 10 }}>Beta: en desarrollo. Se suma a Pro sin costo extra apenas esté lista.</p></div>
         {invoices.length > 0 && (
           <div className="card"><div className="chead"><h3>Facturas</h3></div><div className="tw"><table>
             <thead><tr><th>Fecha</th><th>Detalle</th><th>Estado</th><th className="n">Importe</th></tr></thead>

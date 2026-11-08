@@ -344,11 +344,12 @@ export async function startTrialAction() {
 }
 
 export async function supportTicketAction(_: FormState, fd: FormData): Promise<FormState> {
-  const { user } = await requireWorkspace();
+  const { user, plan } = await requireWorkspace();
   const subject = str(fd, "subject"), body = str(fd, "body");
   if (!subject || !body) return { error: "Contanos el asunto y el detalle." };
   if (body.length > 4000) return { error: "El mensaje es demasiado largo." };
-  await getDb().supportTicket.create({ data: { userId: user.id, subject: subject.slice(0, 140), body } });
+  // Soporte prioritario: las consultas de Pro entran con prioridad alta.
+  await getDb().supportTicket.create({ data: { userId: user.id, subject: subject.slice(0, 140), body, priority: plan === "PRO" ? "HIGH" : "NORMAL" } });
   revalidatePath("/app/ayuda");
   return { ok: "Recibimos tu consulta. Te respondemos acá mismo." };
 }

@@ -57,7 +57,8 @@ export function modulesForUses(uses: string[]): ModuleState {
 
 export const PRICE_USD = { monthly: 5, yearly: 48 };
 
-export const PLAN_FEATURES: { name: string; plan: "free" | "pro" }[] = [
+// beta: todavía en desarrollo; se habilita para Pro sin costo extra cuando esté lista.
+export const PLAN_FEATURES: { name: string; plan: "free" | "pro"; beta?: boolean }[] = [
   { name: "Cuentas, movimientos, ingresos y gastos", plan: "free" },
   { name: "Tarjetas, cuotas y deudas", plan: "free" },
   { name: "Próximos pagos y calendario", plan: "free" },
@@ -68,13 +69,16 @@ export const PLAN_FEATURES: { name: string; plan: "free" | "pro" }[] = [
   { name: "Cotización del dólar en vivo", plan: "free" },
   { name: "Importar y exportar CSV", plan: "free" },
   { name: "Verificación en dos pasos", plan: "free" },
-  { name: "Flujo de caja a 5 años y saldo día a día", plan: "pro" },
+  { name: "Flujo de caja a 2, 3 y 5 años", plan: "pro" },
   { name: "Simulador de escenarios", plan: "pro" },
-  { name: "Asistente con IA", plan: "pro" },
+  { name: "Asistente con IA", plan: "pro", beta: true },
   { name: "Módulo Agro: ventas de granos", plan: "pro" },
-  { name: "Informes avanzados y exportación a Excel y PDF", plan: "pro" },
-  { name: "Importar Excel, OFX y bases de datos", plan: "pro" },
-  { name: "Espacio compartido (hasta 3 personas)", plan: "pro" },
+  { name: "Informes avanzados", plan: "pro" },
+  { name: "Leer el resumen de la tarjeta desde el PDF", plan: "pro" },
+  { name: "Saldo día a día en el flujo de caja", plan: "pro", beta: true },
+  { name: "Exportar a Excel y PDF", plan: "pro", beta: true },
+  { name: "Importar Excel, OFX y bases de datos", plan: "pro", beta: true },
+  { name: "Espacio compartido (hasta 3 personas)", plan: "pro", beta: true },
   { name: "Cuentas y objetivos sin límite", plan: "pro" },
   { name: "Soporte prioritario", plan: "pro" },
 ];

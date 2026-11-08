@@ -722,3 +722,6 @@ details.more summary:hover{color:var(--ink-h)}
 .cat-del summary{cursor:pointer;font-size:13px;color:var(--muted);list-style:none}
 .cat-del summary::-webkit-details-marker{display:none}
 .cat-del[open] summary{color:var(--red)}
+.lp .lp-plan .beta,.pill.beta{height:18px;font-size:10.5px;padding:0 6px;vertical-align:1px}
+.lp .lp-beta-note{font-size:12.5px;color:var(--muted);margin:10px 0 0}
+.lp-plan li .pill.beta{position:static;margin-left:6px}

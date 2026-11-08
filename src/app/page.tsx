@@ -36,7 +36,9 @@ export default async function Landing() {
       <Reveal className="lp-plan"><h3>Gratis</h3><div className="lp-price">US$ 0</div><p className="sub">Para ordenar tus finanzas, sin límite de tiempo.</p>
         <ul>{PLAN_FEATURES.filter((f) => f.plan === "free").map((f) => <li key={f.name}>{f.name}</li>)}</ul><Link className="btn" href="/registro">Empezar gratis</Link></Reveal>
       <Reveal className="lp-plan pro"><h3>Pro</h3><div className="lp-price">US$ {price}<small> / {period}</small></div><p className="sub">Todo lo de Gratis, más:</p>
-        <ul>{PLAN_FEATURES.filter((f) => f.plan === "pro").map((f) => <li key={f.name}>{f.name}</li>)}</ul><Link className="btn pri" href="/registro">Probar 14 días gratis</Link></Reveal>
+        <ul>{PLAN_FEATURES.filter((f) => f.plan === "pro").map((f) => <li key={f.name}>{f.name}{f.beta && <> <span className="pill a beta">Beta</span></>}</li>)}</ul>
+        <p className="lp-beta-note">Beta: en desarrollo. Se suma a Pro sin costo extra apenas esté lista.</p>
+        <Link className="btn pri" href="/registro">Probar 14 días gratis</Link></Reveal>
     </div>
   );
   const ld = [

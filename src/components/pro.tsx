@@ -15,7 +15,7 @@ export function ProGate({ title, crumb, text, trialUsed }: { title: string; crum
           {!trialUsed && <form action={startTrialAction}><button className="btn pri" type="submit">Probar gratis 14 días</button></form>}
           <a className="btn" href="/app/configuracion?tab=plan">Ver planes</a>
         </div>
-        <p className="sub" style={{ marginTop: 14 }}>Pro también suma: {PRO_FEATURES.slice(0, 4).map((f) => f.name.toLowerCase()).join(", ")}.</p>
+        <p className="sub" style={{ marginTop: 14 }}>Pro también suma: {PRO_FEATURES.filter((f) => !f.beta).slice(0, 4).map((f) => f.name.toLowerCase()).join(", ")}.</p>
       </div>
     </>
   );
