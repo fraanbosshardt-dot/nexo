@@ -1,5 +1,14 @@
 // Íconos de trazo simple, los mismos del prototipo.
 const PATHS = {
+  minus: "M5 12h14",
+  swap: "M7 7h13l-4-4M17 17H4l4 4",
+  cart: "M3 4h2l2 11h11l2-8H6M9 20h.01M17 20h.01",
+  fuel: "M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16M3 21h12M14 9h2a2 2 0 0 1 2 2v5a1 1 0 0 0 2 0V8l-3-3M7 8h4",
+  bolt: "M13 3L5 14h6l-1 7l8-11h-6z",
+  tractor: "M7 18a3 3 0 1 0 0-.01M17 18a2 2 0 1 0 0-.01M4 15V9h7l2 6M11 9V5h4v6h4l2 4",
+  heart: "M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10z",
+  dots: "M5 12h.01M12 12h.01M19 12h.01",
+  back: "M4 7h11a5 5 0 0 1 0 10H9M4 7l4-4M4 7l4 4",
   home: "M3 11l9-8 9 8M5 10v10h14V10",
   list: "M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01",
   wallet: "M3 7h18v12H3zM3 7l3-3h12M16 13h2",

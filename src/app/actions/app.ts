@@ -419,3 +419,4 @@ export async function deleteMyAccountAction(_: FormState, fd: FormData): Promise
   (await cookies()).delete("nexo_session");
   redirect("/?cuenta-borrada=1");
 }
+

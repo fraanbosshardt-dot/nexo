@@ -760,3 +760,111 @@ html[data-big] body{zoom:1.15}
 .steps li.ok::before{background:var(--green);border-color:var(--green);content:"✓";color:#fff;font-size:12px;display:grid;place-items:center}
 .hero-help{margin:0;font-size:12.5px;display:flex;align-items:center;gap:6px}
 .help-line{display:flex;align-items:center;gap:6px;margin:0;font-size:13px}
+
+/* ===================== App en el celular ===================== */
+/* Lo marcado m-only aparece solo en el celular; en la computadora todo queda igual. */
+.m-only{display:none!important}
+/* Tonos de los íconos por categoría (fondo suave + trazo fuerte, se leen en claro y oscuro). */
+.t-g{background:var(--green-soft);color:var(--green)} .t-b{background:var(--ink-soft);color:var(--ink-txt)}
+.t-a{background:var(--amber-soft);color:var(--amber)} .t-r{background:var(--red-soft);color:var(--red)} .t-s{background:var(--surface-2);color:var(--muted)}
+.cat-ic{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;flex:none}
+.cat-ic .ic{width:20px;height:20px}
+
+/* Carga rápida (hoja desde abajo) */
+.qa-wrap{position:fixed;inset:0;z-index:80;display:flex;flex-direction:column;justify-content:flex-end}
+.qa-back{flex:1;border:0;background:rgba(0,0,0,.4);cursor:pointer}
+.qa-sheet{background:var(--bg);border-radius:28px 28px 0 0;padding:10px 18px calc(18px + env(safe-area-inset-bottom,0px));max-height:92vh;overflow-y:auto;outline:none;max-width:560px;width:100%;margin:0 auto;box-sizing:border-box}
+.qa-grip{display:block;width:40px;height:4px;border-radius:2px;background:var(--line-2);margin:0 auto 12px}
+.qa-form{display:flex;flex-direction:column;gap:14px}
+.qa-kinds{display:flex;gap:8px}
+.qa-kinds button,.qa-kind-link{flex:1;min-height:44px;border-radius:22px;border:1px solid var(--line-2);background:var(--surface);color:var(--fg);font:inherit;font-size:14px;font-weight:500;display:grid;place-items:center;text-decoration:none;cursor:pointer}
+.qa-kinds .on{background:var(--ink-soft);color:var(--ink-txt);border-color:var(--ink)}
+.qa-amount{display:flex;flex-direction:column;align-items:center;gap:2px}
+.qa-amount span{font-size:13px;color:var(--muted)}
+.qa-amount b{font-size:42px;font-weight:500;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
+.qa-cats{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.qa-cats::-webkit-scrollbar{display:none}
+.qa-cat{flex:none;display:flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border-radius:22px;border:1px solid transparent;font:inherit;font-size:14px;cursor:pointer}
+.qa-cat .ic{width:18px;height:18px}
+.qa-cat.on{outline:2px solid var(--ink);outline-offset:1px}
+.qa-loading{font-size:13px;color:var(--muted);padding:12px 0}
+.qa-acc{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px;color:var(--muted)}
+.qa-acc select{border:1px solid var(--line-2);border-radius:20px;min-height:40px;padding:0 12px;background:var(--surface);color:var(--fg);font:inherit;font-size:14px;max-width:65%}
+.qa-keys{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.qa-keys button{min-height:52px;border-radius:16px;border:0;background:var(--surface-2);color:var(--fg);font:inherit;font-size:22px;cursor:pointer;display:grid;place-items:center}
+.qa-keys button:active{background:var(--line)}
+.qa-keys .ic{width:24px;height:24px}
+.qa-save{min-height:54px;border-radius:27px;border:0;background:var(--ink);color:var(--on-ink);font:inherit;font-size:16px;font-weight:500;cursor:pointer}
+.qa-save:disabled{opacity:.5;cursor:default}
+.qa-more{text-align:center;font-size:14px;color:var(--ink-txt);padding:6px 0}
+.qa-err{margin:0;color:var(--red);font-size:14px;font-weight:500;text-align:center}
+
+/* Interruptor compacto de "Letra más grande" (menú del celular) */
+.big-switch{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:48px;border:0;background:var(--surface-2);border-radius:14px;padding:0 14px;font:inherit;font-size:14px;color:var(--fg);cursor:pointer}
+.sw-mini{width:44px;height:26px;border-radius:13px;background:var(--line-2);display:flex;padding:3px;box-sizing:border-box}
+.sw-mini i{width:20px;height:20px;border-radius:50%;background:#fff;display:block}
+.sw-mini.on{background:var(--ink);justify-content:flex-end}
+
+@media (max-width:900px){
+  /* Barra de abajo: + grande, redondo y azul en el centro. */
+  .tabbar .plus span{width:58px;height:58px;border-radius:50%;background:var(--ink);color:var(--on-ink);margin-top:-24px;border:4px solid var(--bg);box-shadow:none}
+  .tabbar .plus .ic{width:26px;height:26px}
+  .tabbar .ic{width:22px;height:22px}
+  .side-big{display:block!important;padding:8px 12px 16px}
+}
+
+@media (max-width:640px){
+  .m-only{display:revert!important}
+  .qb.m-only,.spend.m-only{display:grid!important}
+  .side-big.m-only{display:block!important}
+  span.cat-ic.m-only{display:grid!important}
+  .mbar.m-only{display:block!important}
+  .mbar-l.m-only{display:block!important}
+
+  /* Inicio: tarjeta grande de color + lado blanco aparte */
+  .card.hero{background:transparent;border:0;box-shadow:none;padding:0;gap:14px}
+  .hero-main{background:var(--ink);color:var(--on-ink);border-radius:28px;padding:22px 22px 20px}
+  .hero-main .lbl,.hero-main .sub{color:var(--on-ink);opacity:.85}
+  .hero-main .big{font-size:40px;color:var(--on-ink)}
+  .hero-main .big.neg{color:var(--on-ink)}
+  .hero-main .acts{display:none}
+  .mbar{height:6px;border-radius:3px;background:rgba(255,255,255,.28);margin-top:12px;overflow:hidden}
+  .mbar i{display:block;height:100%;border-radius:3px;background:var(--on-ink)}
+  .mbar-l{font-size:12px;margin-top:6px;opacity:.85}
+  .hero-side{background:var(--surface);border-radius:24px;padding:4px 18px;border:0}
+  .hero-side .hrow{min-height:48px;align-items:center}
+
+  /* Botones redondos */
+  .qb{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+  .qb a,.qb button{display:flex;flex-direction:column;align-items:center;gap:8px;border:0;background:transparent;font:inherit;font-size:13px;color:var(--fg);text-decoration:none;cursor:pointer;padding:2px 0}
+  .qb span{width:58px;height:58px;border-radius:50%;background:var(--surface);color:var(--ink);display:grid;place-items:center;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+  .qb .ic{width:26px;height:26px}
+
+  /* En qué se fue la plata */
+  .spend{gap:14px}
+  .spend-row{display:flex;gap:12px;align-items:center}
+  .spend-top{display:flex;justify-content:space-between;font-size:14px;margin-bottom:6px}
+  .spend-top b{font-weight:500;font-variant-numeric:tabular-nums}
+  .spend-bar{height:8px;border-radius:4px;background:var(--surface-2);overflow:hidden}
+  .spend-bar i{display:block;height:100%;border-radius:4px;background:var(--ink)}
+
+  /* Movimientos: totales con color */
+  .fc .fc-in,.fc .fc-out{border-radius:20px;border:0!important}
+  .fc:has(.fc-in){background:transparent;border:0;gap:10px;grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .fc .fc-in{background:var(--green-soft)} .fc .fc-in small,.fc .fc-in b{color:var(--green)}
+  .fc .fc-out{background:var(--red-soft)} .fc .fc-out small,.fc .fc-out b{color:var(--red)}
+  .fc:has(.fc-in)>div:last-child{grid-column:1/-1;background:var(--surface);border-radius:20px}
+
+  /* Tarjetas más redondeadas, como app */
+  .card{border-radius:24px}
+}
+@media (max-width:640px){ .hero-side{border:1px solid var(--line)!important} .qb span{border:1px solid var(--line)} }
+@media (max-width:640px){ .fc:has(.fc-in)>div:last-child{border:1px solid var(--line)!important} }
+/* Próximos pagos: meses desplegables */
+.grp>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:12px;margin:0;min-height:44px}
+.grp>summary::-webkit-details-marker{display:none}
+.grp-t{display:flex;align-items:baseline;gap:10px;flex:1;min-width:0;flex-wrap:wrap}
+.grp-t small{color:var(--muted);font-size:13px}
+.grp-chev{font-size:22px;color:var(--muted);transform:rotate(90deg);line-height:1}
+.grp:not([open])>summary .grp-chev{transform:rotate(0)}
+.grp[open]>summary{margin-bottom:8px}

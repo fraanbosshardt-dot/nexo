@@ -73,8 +73,9 @@ export default async function Upcoming({ searchParams }: { searchParams: Promise
       ) : groups.filter(([, l]) => l.length).map(([title, list]) => {
         const n = net(list);
         return (
-          <div className="card" key={title}>
-            <div className="chead"><h3>{title}</h3><span className={`num ${n.isNegative() ? "neg" : "pos"}`}>{formatMoney(n, cur, { sign: true })}</span></div>
+          // Lo urgente queda abierto; cada mes que viene se despliega al tocarlo.
+          <details className="card grp" key={title} open={["Atrasado", "Esta semana", "Resto del mes"].includes(title)}>
+            <summary className="chead grp-sum"><span className="grp-t"><h3>{title}</h3><small>{list.length} {list.length === 1 ? "pago o cobro" : "pagos y cobros"}</small></span><span className={`num ${n.isNegative() ? "neg" : "pos"}`}>{formatMoney(n, cur, { sign: true })}</span><span className="grp-chev" aria-hidden="true">›</span></summary>
             <div className="list">{list.map((o) => {
               const rec = o.direction === "RECEIVABLE";
               if (o.proj) return (
@@ -109,7 +110,7 @@ export default async function Upcoming({ searchParams }: { searchParams: Promise
                 </div>
               );
             })}</div>
-          </div>
+          </details>
         );
       })}
     </>

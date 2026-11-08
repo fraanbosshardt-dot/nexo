@@ -5,6 +5,8 @@ import { Suspense, useEffect, useState } from "react";
 import { SavedToast } from "./saved-toast";
 import { Icon, type IconName } from "./icons";
 import type { ModuleState } from "@/lib/modules";
+import { QuickAdd, openQuickAdd } from "@/components/quick-add";
+import { BigTextToggle } from "@/components/big-text";
 
 type Item = { href: string; label: string; icon: IconName; module?: keyof ModuleState; badge?: number; match?: string };
 
@@ -93,15 +95,17 @@ export function Shell({ children, modules, overdue, userName, plan, isAdmin, log
           return links.length ? <nav className="navg" key={g || "inicio"}>{g && <h6>{g}</h6>}{links}</nav> : null;
         })}
         <nav className="navg"><h6>Ajustes</h6>{SETTINGS.map(link)}{isAdmin && link({ href: "/admin", label: "Panel interno", icon: "shield" })}</nav>
+        <div className="side-big m-only"><BigTextToggle compact /></div>
       </aside>
       <div className="main">
         <main className="view">{children}</main>
         <Suspense fallback={null}><SavedToast /></Suspense>
+        <QuickAdd />
       </div>
       <nav className="tabbar" aria-label="Accesos rápidos">
         {tab("/app", "Inicio", "home", true)}
         {tab("/app/movimientos", "Movimientos", "list")}
-        <Link href="/app/movimientos/nuevo" className="plus" aria-label="Nuevo movimiento"><span><Icon name="plus" /></span></Link>
+        <button type="button" className="plus" aria-label="Cargar un movimiento" onClick={() => openQuickAdd("EXPENSE")}><span><Icon name="plus" /></span></button>
         {tab("/app/proximos", "Próximos", "clock")}
         <button onClick={() => setOpen(true)} aria-expanded={open}><Icon name="menu" />Más</button>
       </nav>

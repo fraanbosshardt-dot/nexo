@@ -6,6 +6,8 @@ import { listMovements } from "@/server/ledger";
 import { formatMoney, ZERO } from "@/lib/money";
 import { addMonths, fmtPeriod, period, todayIn } from "@/lib/dates";
 import { PageHead } from "@/components/page";
+import { categoryIcon, ICON_TONE } from "@/lib/category-icon";
+import { Icon, type IconName } from "@/components/icons";
 
 export const metadata: Metadata = { title: "Movimientos" };
 const DIAS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
@@ -67,8 +69,8 @@ export default async function Movements({ searchParams }: { searchParams: Promis
         </form>
       </details>
       <div className="fc" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))" }}>
-        <div><small>Entró</small><b className="pos">{formatMoney(inc, cur)}</b></div>
-        <div><small>Salió</small><b className="neg">{formatMoney(out, cur)}</b></div>
+        <div className="fc-in"><small>Entró</small><b className="pos">{formatMoney(inc, cur)}</b></div>
+        <div className="fc-out"><small>Salió</small><b className="neg">{formatMoney(out, cur)}</b></div>
         <div><small>Resultado</small><b className={inc.minus(out).isNegative() ? "neg" : ""}>{formatMoney(inc.minus(out), cur, { sign: true })}</b></div>
       </div>
       <div className="seg" style={{ alignSelf: "flex-start" }}>
@@ -87,6 +89,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
                     const isIn = t.direction === "IN";
                     return (
                       <Link className="li" key={t.id} href={`/app/movimientos/${t.id}`} style={{ color: "inherit", opacity: off ? 0.55 : 1 }}>
+                        {(() => { const ic = t.type === "TRANSFER" ? "swap" : categoryIcon(t.category?.name ?? (t.direction === "IN" ? "ingreso" : null)); return <span className={`cat-ic m-only t-${ICON_TONE[ic as keyof typeof ICON_TONE] ?? "s"}`}><Icon name={ic as IconName} /></span>; })()}
                         <div className="grow">
                           <div className="t" style={off ? { textDecoration: "line-through" } : undefined}>{t.description}</div>
                           <div className="s">{[TYPE_LABEL[t.type], t.category?.name, t.account.name, off ? (t.reversedBy ? "Anulado" : "Anulación") : null].filter(Boolean).join(" · ")}</div>

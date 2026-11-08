@@ -11,6 +11,9 @@ import { PageHead } from "@/components/page";
 import { quickConfirmAction } from "@/app/actions/app";
 import { InstallApp } from "@/components/pwa";
 import { Help } from "@/components/help";
+import { QuickButtons } from "@/components/quick-buttons";
+import { categoryIcon, ICON_TONE } from "@/lib/category-icon";
+import { Icon, type IconName } from "@/components/icons";
 
 export const metadata: Metadata = { title: "Inicio" };
 const MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
@@ -36,6 +39,9 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ l
     [expenses > 0, "Anotá un gasto del día", "/app/movimientos/nuevo"],
   ];
   const stepsLeft = steps.filter(([ok]) => !ok).length;
+  const dayOfMonth = today.getUTCDate();
+  const daysInMonth = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + 1, 0)).getUTCDate();
+  const monthPct = Math.round((dayOfMonth / daysInMonth) * 100);
   const fm = (v: Parameters<typeof formatMoney>[0], o?: Parameters<typeof formatMoney>[2]) => formatMoney(v, cur, o);
   const hour = Number(new Intl.DateTimeFormat("en-US", { timeZone: workspace.timezone, hour: "numeric", hour12: false }).format(new Date()));
   const hello = hour < 13 ? "Buen día" : hour < 20 ? "Buenas tardes" : "Buenas noches";
@@ -77,10 +83,12 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ l
     <>
       <PageHead crumb={dateLine} title={`${hello}, ${first}`} />
       <div className="card hero">
-        <div>
+        <div className="hero-main">
           <div className="lbl">{nextIn ? `Te queda hasta tu próximo cobro, el ${fmtDayMonth(nextIn.dueDate)}` : "Te queda hasta fin de mes"}</div>
           <div className={`big ${left.isNegative() ? "neg" : ""}`}>{fm(left)}</div>
           <p className="sub" style={{ maxWidth: "46ch" }}>{left.gt(0) ? `Unos ${fm(perDay)} por día durante ${days} ${days === 1 ? "día" : "días"}.` : "Lo que tenés no alcanza para lo que vence antes. Revisá Próximos pagos."}</p>
+          <div className="mbar m-only" aria-hidden="true"><i style={{ width: `${monthPct}%` }} /></div>
+          <span className="mbar-l m-only">Pasaron {dayOfMonth} de {daysInMonth} días del mes</span>
           <div className="acts" style={{ marginTop: 16 }}>
             <Link className="btn pri" href="/app/movimientos/nuevo">+ Gasto</Link>
             <Link className="btn" href="/app/movimientos/nuevo?tipo=INCOME">+ Ingreso</Link>
@@ -98,6 +106,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ l
           {d.others.map((o) => <div className="hrow" key={o.id}><span>{o.name}</span><b>{formatMoney(o.balance, o.currency)}</b></div>)}
         </div>
       </div>
+      <QuickButtons cereal={!!modules.cereal} />
       {listo && <p className="notice g" role="status">{listo === "cobro" ? "Listo, registramos el cobro." : "Listo, registramos el pago."}</p>}
       {toConfirm.length > 0 && (
         <div className="card confirm">
@@ -145,6 +154,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ l
           <Suspense fallback={<div className="sk-card" style={{ height: 160 }} />}><Recent ws={workspace.id} /></Suspense>
         </div>
       </div>
+      <Suspense fallback={null}><Spending ws={workspace.id} cur={cur} today={today} /></Suspense>
     </>
   );
 }
@@ -170,5 +180,34 @@ async function Recent({ ws }: { ws: string }) {
         <div className="grow"><div className="t">{t.description}</div><div className="s">{fmtDayMonth(t.effectiveDate)} · {t.category?.name ?? t.account.name}</div></div>
         <b className={`num ${t.type === "TRANSFER" ? "" : t.direction === "IN" ? "pos" : "neg"}`}>{t.direction === "IN" ? "+" : "−"}{formatMoney(t.amount, t.currency)}</b>
       </div>))}</div>
+  );
+}
+
+// "En qué se fue la plata" este mes (solo en el celular): las 4 categorías con más gasto.
+async function Spending({ ws, cur, today }: { ws: string; cur: string; today: Date }) {
+  const db = getDb();
+  const from = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1));
+  const rows = await db.transaction.groupBy({ by: ["categoryId"], where: { workspaceId: ws, type: "EXPENSE", currency: cur, direction: "OUT", effectiveDate: { gte: from }, reversalOfId: null, reversedBy: null }, _sum: { amount: true } });
+  const ids = rows.map((r) => r.categoryId).filter(Boolean) as string[];
+  const cats = await db.category.findMany({ where: { id: { in: ids } }, select: { id: true, name: true } });
+  const named = rows.map((r) => ({ name: cats.find((c) => c.id === r.categoryId)?.name ?? "Sin categoría", total: Number(r._sum.amount ?? 0) })).sort((a, b) => b.total - a.total).slice(0, 4);
+  if (!named.length) return null;
+  const max = named[0].total || 1;
+  return (
+    <div className="card m-only spend">
+      <div className="chead"><h3>En qué se fue la plata</h3><Link className="lk" href="/app/movimientos">Este mes</Link></div>
+      {named.map((c) => {
+        const icon = categoryIcon(c.name);
+        return (
+          <div className="spend-row" key={c.name}>
+            <span className={`cat-ic t-${ICON_TONE[icon]}`}><Icon name={icon as IconName} /></span>
+            <div className="grow">
+              <div className="spend-top"><span>{c.name}</span><b>{formatMoney(String(c.total), cur)}</b></div>
+              <div className="spend-bar"><i style={{ width: `${Math.max(4, Math.round((c.total / max) * 100))}%` }} /></div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 }

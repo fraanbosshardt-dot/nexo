@@ -4,6 +4,7 @@ import { SITE } from "@/lib/seo";
 import { PwaRegister } from "@/components/pwa";
 import "./globals.css";
 import "./nx.css";
+import Script from "next/script";
 
 const roboto = Roboto({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-roboto", display: "swap" });
 
@@ -25,7 +26,7 @@ export const viewport: Viewport = { width: "device-width", initialScale: 1, view
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" suppressHydrationWarning className={roboto.variable}>
-      <body><script dangerouslySetInnerHTML={{ __html: `try{if(localStorage.getItem("nexo-big")==="1")document.documentElement.setAttribute("data-big","")}catch(e){}` }} /></body>{children}<PwaRegister />
+      <body><Script id="nexo-big" strategy="beforeInteractive">{`try{if(localStorage.getItem("nexo-big")==="1")document.documentElement.setAttribute("data-big","")}catch(e){}`}</Script></body>{children}<PwaRegister />
     </html>
   );
 }
