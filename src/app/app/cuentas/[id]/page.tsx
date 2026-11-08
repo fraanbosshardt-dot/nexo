@@ -44,18 +44,18 @@ export default async function AccountDetail({ params }: { params: Promise<{ id: 
         {mv.length ? <div className="list">{mv.map((t) => (
           <div className="li" key={t.id} style={t.reversedBy || t.reversalOfId ? { opacity: 0.6 } : undefined}>
             <div className="dchip"><b>{t.effectiveDate.getUTCDate()}</b><span>{fmtDayMonth(t.effectiveDate).split(" ")[1]}</span></div>
-            <div className="grow"><div className="t">{t.description}</div><div className="s">{t.category?.name ?? (t.type === "TRANSFER" ? "Entre tus cuentas" : t.type === "ADJUSTMENT" ? "Ajuste" : "Sin categoría")}</div></div>
+            <div className="grow"><div className="t">{t.description}</div><div className="s">{t.category?.name ?? (t.type === "TRANSFER" ? "Entre tus cuentas" : t.type === "ADJUSTMENT" ? "Corrección de saldo" : "Sin categoría")}</div></div>
             <b className={`num ${t.direction === "IN" ? "pos" : ""}`}>{formatMoney(t.direction === "IN" ? t.amount : t.amount.neg(), a.currency, { sign: true })}</b>
           </div>))}</div> : <Empty>Todavía no hay movimientos en esta cuenta.</Empty>}
       </div>
       <div className="card">
-        <details className="more"><summary>Conciliar con el banco</summary>
+        <details className="more"><summary>¿No coincide con tu banco? Corregir el saldo</summary>
           <ActionForm action={reconcileAction} style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 10, maxWidth: 520 }}>
-            <p className="sub">Ingresá el saldo que ves en tu banco. Si no coincide, se crea un ajuste registrado, sin tocar los movimientos anteriores.</p>
+            <p className="sub">Escribí el saldo que ves en tu banco. Si es distinto, agregamos una "corrección de saldo" por la diferencia. Tus movimientos anteriores no cambian.</p>
             <input type="hidden" name="accountId" value={a.id} />
             <label className="field">Saldo según el banco<input name="target" inputMode="decimal" defaultValue={bal.toFixed(2).replace(".", ",")} /></label>
-            {a.lastReconciledAt && <p className="sub">Última conciliación: {fmtDate(a.lastReconciledAt)}</p>}
-            <div><Submit className="btn">Conciliar</Submit></div>
+            {a.lastReconciledAt && <p className="sub">Última vez que lo corregiste: {fmtDate(a.lastReconciledAt)}</p>}
+            <div><Submit className="btn">Corregir el saldo</Submit></div>
           </ActionForm>
         </details>
         <details className="more"><summary>Editar cuenta</summary>

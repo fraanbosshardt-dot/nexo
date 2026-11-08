@@ -8,6 +8,7 @@ import { Empty, PageHead, SettingsTabs } from "@/components/page";
 import { ActionForm, Submit } from "@/components/forms";
 import { CloseDetails } from "@/components/close-details";
 import { changeRuleAction, createRuleAction, deleteRuleAction, endRuleAction, pauseRuleAction, setRuleEndAction } from "@/app/actions/modules";
+import { ConfirmSubmit } from "@/components/confirm-submit";
 
 export const metadata: Metadata = { title: "Pagos que se repiten" };
 
@@ -68,7 +69,7 @@ export default async function Rules({ searchParams }: { searchParams: Promise<{ 
                   <p className="sub"><b>Pausar</b>: deja de aparecer hasta que la reanudes. <b>Terminar</b>: deja de repetirse desde hoy y pasa a "Terminadas"; lo que ya pagaste o cobraste queda igual.</p>
                   <div className="acts">
                     <form action={pauseRuleAction}><input type="hidden" name="id" value={r.id} /><input type="hidden" name="pause" value={r.pausedAt ? "0" : "1"} /><button className="btn sm" type="submit">{r.pausedAt ? "Reanudar" : "Pausar"}</button></form>
-                    <form action={endRuleAction}><input type="hidden" name="id" value={r.id} /><button className="btn sm" type="submit">Terminar desde hoy</button></form>
+                    <form action={endRuleAction}><input type="hidden" name="id" value={r.id} /><ConfirmSubmit question={`¿Terminar "${r.description}" desde hoy?`} yes="Sí, terminar">Terminar desde hoy</ConfirmSubmit></form>
                   </div>
                 </section>
               </>
@@ -76,7 +77,7 @@ export default async function Rules({ searchParams }: { searchParams: Promise<{ 
             <section>
               <h4>Borrar</h4>
               <p className="sub">Se borra la regla y sus próximos pendientes. Lo que ya pagaste o cobraste queda en tus movimientos.</p>
-              <form action={deleteRuleAction}><input type="hidden" name="id" value={r.id} /><button className="btn sm danger" type="submit">Borrar "{r.description}"</button></form>
+              <form action={deleteRuleAction}><input type="hidden" name="id" value={r.id} /><ConfirmSubmit className="btn sm danger" question={`¿Borrar "${r.description}" y sus próximos pendientes?`} yes="Sí, borrar">Borrar "{r.description}"</ConfirmSubmit></form>
             </section>
             <div className="rule-close"><CloseDetails /></div>
           </div>

@@ -10,6 +10,7 @@ import { contributeAction, createGoalAction, deleteGoalAction } from "@/app/acti
 import { FREE_LIMITS } from "@/server/plans";
 import { CURRENCIES } from "@/lib/countries";
 import { GoalSim } from "./goal-sim";
+import { ConfirmSubmit } from "@/components/confirm-submit";
 
 export const metadata: Metadata = { title: "Objetivos" };
 
@@ -37,7 +38,7 @@ export default async function Goals() {
                   <label className="field" style={{ flex: "1 1 160px" }}>Importe<input name="amount" inputMode="decimal" placeholder="0,00" /></label>
                   <Submit className="btn">Sumar</Submit>
                 </ActionForm>
-                <form action={deleteGoalAction} style={{ marginTop: 8 }}><input type="hidden" name="goalId" value={g.goal.id} /><button className="btn sm ghost" style={{ color: "var(--red)" }} type="submit">Eliminar objetivo</button></form>
+                <form action={deleteGoalAction} style={{ marginTop: 8 }}><input type="hidden" name="goalId" value={g.goal.id} /><ConfirmSubmit className="btn sm ghost" question={`¿Eliminar el objetivo "${g.goal.name}"?`} yes="Sí, eliminar">Eliminar objetivo</ConfirmSubmit></form>
               </details>
             </div>
           );

@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getDb } from "@/lib/db";
@@ -33,13 +34,14 @@ export async function createSession(userId: string, opts: { twoFactorVerified: b
   });
 }
 
-export async function getSession() {
+// Una sola búsqueda de la sesión por pedido, aunque la pidan el marco de la app y la pantalla.
+export const getSession = cache(async function getSession() {
   const token = (await cookies()).get(COOKIE)?.value;
   if (!token) return null;
   const s = await getDb().session.findUnique({ where: { tokenHash: sha256(token) }, include: { user: { include: { memberships: { take: 1, orderBy: { createdAt: "asc" }, include: { workspace: { include: { subscription: true } } } } } } } });
   if (!s || s.revokedAt || s.expiresAt < new Date() || s.user.deletedAt || s.user.suspendedAt) return null;
   return s;
-}
+});
 
 export async function markTwoFactorVerified(sessionId: string) {
   await getDb().session.update({ where: { id: sessionId }, data: { twoFactorVerified: true } });

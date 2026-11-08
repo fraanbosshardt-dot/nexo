@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db";
 import { PageHead, Tabs, SettingsTabs } from "@/components/page";
 import { ActionForm, Submit } from "@/components/forms";
 import { createCategoryAction, deleteCategoryAction } from "@/app/actions/app";
+import { ConfirmSubmit } from "@/components/confirm-submit";
 
 export const metadata: Metadata = { title: "Categorías" };
 
@@ -49,7 +50,7 @@ export default async function Categories({ searchParams }: { searchParams: Promi
                     {others.filter((o) => o.parentId).map((o) => <option key={o.id} value={o.id}>{parents.find((x) => x.id === o.parentId)?.name} › {o.name}</option>)}
                   </select></label>
                   <p className="sub" style={{ margin: 0 }}>Nada se pierde: los movimientos, pagos y presupuestos de esta categoría quedan en la que elijas.</p>
-                  <div><Submit className="btn danger" pending="Borrando…">Borrar</Submit></div>
+                  <div><ConfirmSubmit className="btn danger" question={`¿Borrar ${p.name}?`} yes="Sí, borrar">Borrar</ConfirmSubmit></div>
                 </ActionForm>
               </details>
             </div>

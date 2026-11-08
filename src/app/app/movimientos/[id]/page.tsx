@@ -8,6 +8,7 @@ import { fmtDate, isoDate } from "@/lib/dates";
 import { PageHead } from "@/components/page";
 import { ActionForm, Submit } from "@/components/forms";
 import { reverseAction, updateMovementAction } from "@/app/actions/app";
+import { ConfirmSubmit } from "@/components/confirm-submit";
 
 export const metadata: Metadata = { title: "Movimiento" };
 
@@ -62,7 +63,7 @@ export default async function MovementDetail({ params }: { params: Promise<{ id:
         <form action={reverseAction} className="card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <input type="hidden" name="id" value={t.id} />
           <p className="sub" style={{ margin: 0, maxWidth: "52ch" }}>Anular crea un movimiento al revés con fecha de hoy. No borra nada: el historial queda completo.</p>
-          <button className="btn" type="submit">Anular movimiento</button>
+          <ConfirmSubmit className="btn" question="¿Anular este movimiento?" yes="Sí, anular">Anular movimiento</ConfirmSubmit>
         </form>
       )}
     </div>

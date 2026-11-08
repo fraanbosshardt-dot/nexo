@@ -8,10 +8,10 @@ import { fmtPeriod, period } from "@/lib/dates";
 
 export type Insight = { level: "urgent" | "warn" | "info" | "good"; title: string; detail: string; href: string };
 
-export async function insights(db: Db, ws: string, currency: string, today: Date): Promise<Insight[]> {
+export async function insights(db: Db, ws: string, currency: string, today: Date, pre?: { open?: Awaited<ReturnType<typeof openObligations>> }): Promise<Insight[]> {
   const out: Insight[] = [];
   const f = (v: Parameters<typeof formatMoney>[0]) => formatMoney(v, currency);
-  const open = await openObligations(db, ws, today);
+  const open = pre?.open ?? (await openObligations(db, ws, today));
   const late = open.filter((o) => o.overdue && o.direction === "PAYABLE");
   if (late.length) out.push({ level: "urgent", title: `${late.length} ${late.length === 1 ? "pago atrasado" : "pagos atrasados"} por ${f(late.reduce((s, o) => s.plus(o.remaining), ZERO))}`, detail: late.slice(0, 3).map((o) => o.description).join(" · "), href: "/app/proximos" });
   const lateIn = open.filter((o) => o.overdue && o.direction === "RECEIVABLE");

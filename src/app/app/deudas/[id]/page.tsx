@@ -9,6 +9,7 @@ import { fmtDate, fmtPeriod, isoDate, period, todayIn } from "@/lib/dates";
 import { PageHead } from "@/components/page";
 import { ActionForm, Submit } from "@/components/forms";
 import { cancelDebtAction, payDebtOnAccountAction } from "@/app/actions/modules";
+import { ConfirmSubmit } from "@/components/confirm-submit";
 
 export const metadata: Metadata = { title: "Deuda" };
 const SYS: Record<string, string> = { FRENCH: "Francés", GERMAN: "Alemán", AMERICAN: "Americano", NO_INTEREST: "Sin interés", MANUAL: "Manual", NONE: "Sin cronograma" };
@@ -50,7 +51,7 @@ export default async function DebtPage({ params, searchParams }: { params: Promi
               <p className="sub">Pedile al acreedor el saldo para cancelar (capital, interés del período y comisión, si hay). Si no la tenés, usamos el capital que falta.</p>
               <div className="frow"><label className="field">Importe a pagar hoy<input name="amount" inputMode="decimal" defaultValue={det.remainingCapital.toFixed(2).replace(".", ",")} /></label><label className="field">Fecha<input name="date" type="date" defaultValue={isoDate(today)} /></label></div>
               <label className="field">Sale de<select name="accountId">{accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>
-              <div><Submit>Confirmar cancelación</Submit></div>
+              <div><ConfirmSubmit className="btn pri" question="¿Cancelar la deuda con este pago? Se borran las cuotas que quedan." yes="Sí, cancelar">Confirmar cancelación</ConfirmSubmit></div>
             </ActionForm>
           </details>
         ) : (

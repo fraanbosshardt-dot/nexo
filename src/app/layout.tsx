@@ -24,8 +24,8 @@ export const viewport: Viewport = { width: "device-width", initialScale: 1, view
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" className={roboto.variable}>
-      <body>{children}<PwaRegister /></body>
+    <html lang="es" suppressHydrationWarning className={roboto.variable}>
+      <body><script dangerouslySetInnerHTML={{ __html: `try{if(localStorage.getItem("nexo-big")==="1")document.documentElement.setAttribute("data-big","")}catch(e){}` }} /></body>{children}<PwaRegister />
     </html>
   );
 }

@@ -6,6 +6,7 @@ import { forecast, type Certainty } from "@/server/forecast";
 import { formatMoney, ZERO } from "@/lib/money";
 import { fmtDate, fmtPeriod, todayIn } from "@/lib/dates";
 import { PageHead } from "@/components/page";
+import { Help } from "@/components/help";
 
 export const metadata: Metadata = { title: "Flujo de caja" };
 
@@ -33,6 +34,7 @@ export default async function Flow({ searchParams }: { searchParams: Promise<{ h
     <>
       <PageHead crumb="Planificar" title="Flujo de caja" desc="Cuánto entra, cuánto sale y con cuánto terminás cada mes, con lo que ya sabés que viene."
         actions={<div className="seg">{[12, 24, 36, 60].map((x) => long || x === 12 ? <Link key={x} className={`segl ${h === x ? "on" : ""}`} href={q({ h: String(x) })}>{x === 12 ? "1 año" : `${x / 12} años`}</Link> : <span key={x} className="segl dis" title="Función Pro">{x / 12} años · Pro</span>)}</div>} />
+      <div className="sub help-line">¿Cómo se calcula? <Help term="flujo" /></div>
       <div className="card">
         <div className="fsteps">{step("Hoy", cashNow)}<i>→</i>{step("Fin de mes", rows[0].end)}<i>→</i>{step("En 6 meses", rows[Math.min(5, rows.length - 1)].end)}<i>→</i>{step(h === 12 ? "En 1 año" : `En ${h / 12} años`, rows[rows.length - 1].end)}</div>
         <p className="sub" style={{ marginTop: 12 }}>{red.length ? <span className="neg">Ojo: en {fmtPeriod(red[0].period).toLowerCase()} tu saldo baja a {f(red[0].min)}{red[0].minDate ? ` (el ${fmtDate(red[0].minDate)})` : ""}.</span> : <span className="pos">Tu saldo no baja de cero en este período.</span>}</p>

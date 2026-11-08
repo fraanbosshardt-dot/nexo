@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-export function PageHead({ crumb, title, desc, actions }: { crumb?: string; title: string; desc?: string; actions?: React.ReactNode }) {
+export function PageHead({ crumb, title, desc, actions }: { crumb?: string; title: string; desc?: React.ReactNode; actions?: React.ReactNode }) {
   return (
     <div className="ph">
       <div>

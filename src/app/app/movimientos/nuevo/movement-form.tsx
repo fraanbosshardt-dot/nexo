@@ -157,7 +157,7 @@ export function MovementForm({ accounts, categories, today, initialKind, initial
                 </>
               )}
               <label className="field">Corresponde al mes<input name="economicPeriod" type="month" value={period} onChange={(e) => { setPeriodTouched(true); setPeriod(e.target.value); }} /><span className="hint" style={{ fontWeight: 400 }}>Cualquier mes, también de años que vienen. Se ajusta solo a la fecha.</span></label>
-              {kind === "INCOME" && status !== "PAID" && <label className="simtg"><input type="checkbox" name="probable" /><span>No está confirmado (se muestra como probable)</span></label>}
+              {kind === "INCOME" && status !== "PAID" && <label className="simtg"><input type="checkbox" name="probable" /><span>Todavía no es seguro (por ejemplo, un cobro que puede no llegar)</span></label>}
               <label className="field">Notas<input name="notes" /></label>
             </div>
           </details>

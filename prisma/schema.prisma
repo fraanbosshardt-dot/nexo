@@ -246,6 +246,7 @@ model Transaction {
 
   @@unique([workspaceId, idempotencyKey])
   @@index([workspaceId, effectiveDate])
+  @@index([workspaceId, categoryId])
   @@index([accountId])
   @@index([obligationId])
   @@index([transferGroupId])

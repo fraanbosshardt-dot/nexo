@@ -9,8 +9,14 @@ import { fmtDate, isoDate, todayIn } from "@/lib/dates";
 import { PageHead } from "@/components/page";
 import { ActionForm, Submit } from "@/components/forms";
 import { payObligationAction } from "@/app/actions/app";
+import { Help } from "@/components/help";
 
-export const metadata: Metadata = { title: "Registrar pago" };
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const { workspace } = await requireWorkspace();
+  const ob = await getDb().obligation.findFirst({ where: { id, workspaceId: workspace.id }, select: { direction: true } });
+  return { title: ob?.direction === "RECEIVABLE" ? "Registrar cobro" : "Registrar pago" };
+}
 
 export default async function PayPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -43,6 +49,7 @@ export default async function PayPage({ params }: { params: Promise<{ id: string
             </div>
             <label className="field">{inc ? "Entra en" : "Sale de"}<select name="accountId">{accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>
             <label className="simtg"><input type="checkbox" name="settle" defaultChecked={settleDefault} /><span><b style={{ fontWeight: 500 }}>Fue el total</b><br /><span className="sub">{inc ? "Si cobraste otro monto (más o menos), queda registrado así y no queda nada pendiente." : "Si la factura vino por otro monto, queda así y no queda nada pendiente."} Destildalo si fue una parte y falta el resto.</span></span></label>
+            <div className="sub help-line">¿Qué es “Fue el total”? <Help term="total" /></div>
             {recurring && <label className="simtg"><input type="checkbox" name="updateFuture" /><span>Usar este monto para los próximos meses</span></label>}
             <div className="acts" style={{ justifyContent: "flex-end" }}><Link className="btn" href="/app/proximos">Cancelar</Link><Submit>{inc ? "Registrar cobro" : "Registrar pago"}</Submit></div>
           </ActionForm>

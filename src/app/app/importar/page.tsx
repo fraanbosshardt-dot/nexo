@@ -5,6 +5,7 @@ import { fmtDate } from "@/lib/dates";
 import { PageHead, SettingsTabs } from "@/components/page";
 import { ActionForm, Submit } from "@/components/forms";
 import { importAction, revertImportAction } from "@/app/actions/modules";
+import { ConfirmSubmit } from "@/components/confirm-submit";
 
 export const metadata: Metadata = { title: "Importar y exportar" };
 
@@ -40,7 +41,7 @@ export default async function ImportExport({ searchParams }: { searchParams: Pro
             {batches.map((b) => (
               <div className="li" key={b.id}>
                 <div className="grow"><div className="t">{b.fileName}</div><div className="s">{fmtDate(b.createdAt)} · {b.rows} movimientos{b.status === "REVERTED" ? " · deshecha" : ""}</div></div>
-                {b.status !== "REVERTED" && <form action={revertImportAction}><input type="hidden" name="id" value={b.id} /><button className="btn sm" type="submit">Deshacer</button></form>}
+                {b.status !== "REVERTED" && <form action={revertImportAction}><input type="hidden" name="id" value={b.id} /><ConfirmSubmit question="¿Deshacer esta importación? Se anulan sus movimientos." yes="Sí, deshacer">Deshacer</ConfirmSubmit></form>}
               </div>
             ))}
           </div>

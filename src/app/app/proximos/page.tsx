@@ -9,6 +9,8 @@ import { PageHead, Tabs } from "@/components/page";
 import { cancelObligationAction } from "@/app/actions/app";
 import { projectedAction } from "@/app/actions/modules";
 import { projectedItems } from "@/server/recurring";
+import { ConfirmSubmit } from "@/components/confirm-submit";
+import { Help } from "@/components/help";
 
 // Un proyectado es un pago que se repite más adelante: se calcula al vuelo y se crea recién al pagarlo o cancelarlo.
 type Row = OpenItem & { proj?: { ruleId: string; occ: string; variable: boolean } };
@@ -23,10 +25,10 @@ export default async function Upcoming({ searchParams }: { searchParams: Promise
   const today = todayIn(workspace.timezone);
   const in7 = new Date(today.getTime() + 7 * 864e5);
   const thisMonth = period(today);
-  const all = await openObligations(getDb(), workspace.id, today);
-  // Se muestran los próximos 12 meses completos (hasta fin del mes, dentro de un año).
+  // Se muestran los próximos 12 meses completos (hasta fin del mes, dentro de un año). Pendientes y proyectados, en paralelo.
   const horizon = periodEnd(addMonths(thisMonth, 12));
-  const proj: Row[] = (await projectedItems(getDb(), workspace.id, today, horizon)).map((p) => ({
+  const [all, projRaw] = await Promise.all([openObligations(getDb(), workspace.id, today), projectedItems(getDb(), workspace.id, today, horizon)]);
+  const proj: Row[] = projRaw.map((p) => ({
     id: `p-${p.ruleId}-${p.occurrence.toISOString().slice(0, 10)}`, direction: p.direction, description: p.description, currency: p.currency, dueDate: p.dueDate,
     economicPeriod: period(p.occurrence), amount: p.amount, remaining: p.amount, certainty: "PROBABLE", overdue: false, status: "PENDING", category: null,
     proj: { ruleId: p.ruleId, occ: p.occurrence.toISOString().slice(0, 10), variable: p.variable },
@@ -53,6 +55,7 @@ export default async function Upcoming({ searchParams }: { searchParams: Promise
     <>
       <PageHead crumb="Pagos y deudas" title="Próximos pagos" desc="Lo que falta pagar y cobrar en los próximos 12 meses. Lo marcado como Proyectado sale de tus pagos que se repiten." actions={<Link className="btn pri" href="/app/movimientos/nuevo?estado=pendiente">+ Agregar un pago o cobro</Link>} />
       {guardado && <div className="notice g" role="status"><span>Listo, quedó guardado.</span><Link className="btn sm" href="/app/movimientos/nuevo?estado=pendiente" style={{ marginLeft: "auto" }}>+ Cargar otro</Link></div>}
+      {proj.length > 0 && <div className="sub help-line"><span className="pill">Proyectado</span> = lo que esperás de tus pagos que se repiten <Help term="proyectado" /></div>}
       {modules.calendario && <Tabs current="lista" items={[{ key: "lista", label: "Lista", href: "/app/proximos" }, { key: "cal", label: "Calendario", href: "/app/calendario" }]} />}
       <div className="fc" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))" }}>
         <div><small>Atrasado</small><b className={lateList.length ? "neg" : ""}>{formatMoney(total(lateList, "PAYABLE"), cur)}</b></div>
@@ -84,7 +87,7 @@ export default async function Upcoming({ searchParams }: { searchParams: Promise
                   <b className={`num ${rec ? "pos" : "neg"}`}>{rec ? "+" : "−"}{formatMoney(o.remaining, o.currency)}</b>
                   <div className="li-acts">
                     <form action={projectedAction}><input type="hidden" name="ruleId" value={o.proj.ruleId} /><input type="hidden" name="occurrence" value={o.proj.occ} /><input type="hidden" name="do" value="pagar" /><button className="btn sm" type="submit">{rec ? "Cobrar" : "Pagar"}</button></form>
-                    <form action={projectedAction}><input type="hidden" name="ruleId" value={o.proj.ruleId} /><input type="hidden" name="occurrence" value={o.proj.occ} /><input type="hidden" name="do" value="cancelar" /><input type="hidden" name="back" value="/app/proximos" /><button className="dots" type="submit" title="Cancelar solo esta vez" aria-label={`Cancelar ${o.description} solo esta vez`}>×</button></form>
+                    <form action={projectedAction}><input type="hidden" name="ruleId" value={o.proj.ruleId} /><input type="hidden" name="occurrence" value={o.proj.occ} /><input type="hidden" name="do" value="cancelar" /><input type="hidden" name="back" value="/app/proximos" /><ConfirmSubmit className="dots" title="Cancelar solo esta vez" ariaLabel={`Cancelar ${o.description} solo esta vez`} question={`¿Cancelar ${o.description} del ${o.dueDate.getUTCDate()} de ${MES[o.dueDate.getUTCMonth()]}?`} yes="Sí, cancelar">×</ConfirmSubmit></form>
                   </div>
                 </div>
               );
@@ -102,7 +105,7 @@ export default async function Upcoming({ searchParams }: { searchParams: Promise
                   </div>
                   <b className={`num ${rec ? "pos" : "neg"}`}>{rec ? "+" : "−"}{formatMoney(o.remaining, o.currency)}</b>
                   <div className="li-acts"><Link className="btn sm" href={`/app/proximos/${o.id}`}>{rec ? "Cobrar" : "Pagar"}</Link>
-                  <form action={cancelObligationAction}><input type="hidden" name="id" value={o.id} /><button className="dots" type="submit" title="Cancelar: ya no se va a pagar ni cobrar" aria-label={`Cancelar ${o.description}`}>×</button></form></div>
+                  <form action={cancelObligationAction}><input type="hidden" name="id" value={o.id} /><ConfirmSubmit className="dots" title="Cancelar: ya no se va a pagar ni cobrar" ariaLabel={`Cancelar ${o.description}`} question={`¿Cancelar ${o.description} (${formatMoney(o.remaining, o.currency)})?`} yes="Sí, cancelar">×</ConfirmSubmit></form></div>
                 </div>
               );
             })}</div>

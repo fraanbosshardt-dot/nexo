@@ -10,9 +10,9 @@ import { PageHead } from "@/components/page";
 export const metadata: Metadata = { title: "Movimientos" };
 const DIAS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
 const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
-const TYPE_LABEL: Record<string, string> = { TRANSFER: "Transferencia", ADJUSTMENT: "Ajuste", DEBT_PAYMENT: "Cuota de deuda", CARD_PAYMENT: "Pago de tarjeta", INVESTMENT: "Inversión", DEBT_DISBURSEMENT: "Préstamo recibido" };
+const TYPE_LABEL: Record<string, string> = { TRANSFER: "Transferencia", ADJUSTMENT: "Corrección de saldo", DEBT_PAYMENT: "Cuota de deuda", CARD_PAYMENT: "Pago de tarjeta", INVESTMENT: "Inversión", DEBT_DISBURSEMENT: "Préstamo recibido" };
 
-export default async function Movements({ searchParams }: { searchParams: Promise<{ mes?: string; tipo?: string; q?: string; desde?: string; hasta?: string }> }) {
+export default async function Movements({ searchParams }: { searchParams: Promise<{ mes?: string; tipo?: string; q?: string; desde?: string; hasta?: string; n?: string; guardado?: string }> }) {
   const { workspace } = await requireWorkspace();
   const sp = await searchParams;
   const p = /^\d{4}-\d{2}$/.test(sp.mes ?? "") ? sp.mes! : period(todayIn(workspace.timezone));
@@ -23,7 +23,9 @@ export default async function Movements({ searchParams }: { searchParams: Promis
   let from = iso(sp.desde), to = iso(sp.hasta);
   if (from && to && from > to) [from, to] = [to, from];
   const ranged = !!(from || to);
-  const all = await listMovements(getDb(), workspace.id, ranged ? { from: from ?? undefined, to: to ?? undefined, take: 2000 } : { period: p });
+  // Se traen todos los del período (los totales siempre son exactos) y se muestran de a 200 con "Ver más".
+  const all = await listMovements(getDb(), workspace.id, ranged ? { from: from ?? undefined, to: to ?? undefined, take: 20000 } : { period: p, take: 20000 });
+  const showN = Math.min(20000, Math.max(200, Number(sp.n) || 200));
   const fmtD = (d: Date) => `${d.getUTCDate()} de ${MESES[d.getUTCMonth()]} de ${d.getUTCFullYear()}`;
   const rangeLabel = ranged ? (from && to ? `Del ${fmtD(from)} al ${fmtD(to)}` : from ? `Desde el ${fmtD(from)}` : `Hasta el ${fmtD(to!)}`) : "";
   const rows = all
@@ -35,12 +37,14 @@ export default async function Movements({ searchParams }: { searchParams: Promis
   const real = all.filter((t) => t.currency === cur && !t.reversedBy && !t.reversalOfId);
   const inc = real.filter((t) => t.type === "INCOME").reduce((s, t) => (t.direction === "IN" ? s.plus(t.amount) : s.minus(t.amount)), ZERO);
   const out = real.filter((t) => t.type === "EXPENSE" || t.type === "DEBT_PAYMENT").reduce((s, t) => (t.direction === "OUT" ? s.plus(t.amount) : s.minus(t.amount)), ZERO);
+  const visible = rows.slice(0, showN);
   const byDay = new Map<string, typeof rows>();
-  for (const t of rows) { const k = t.effectiveDate.toISOString().slice(0, 10); byDay.set(k, [...(byDay.get(k) ?? []), t]); }
+  for (const t of visible) { const k = t.effectiveDate.toISOString().slice(0, 10); byDay.set(k, [...(byDay.get(k) ?? []), t]); }
 
   return (
     <>
       <PageHead crumb="Mi dinero" title="Movimientos" desc="Lo que ya entró y salió de tus cuentas. Lo que falta está en Próximos pagos." />
+      {sp.guardado && <div className="notice g" role="status"><span>Listo, quedó guardado.</span><span className="acts" style={{ marginLeft: "auto" }}><Link className="btn sm" href="/app/movimientos/nuevo">+ Cargar otro</Link>{/^[a-z0-9]{20,}$/.test(sp.guardado) && <Link className="btn sm" href={`/app/movimientos/${sp.guardado}`}>Ver o anular</Link>}</span></div>}
       <div className="acts" style={{ justifyContent: "space-between", alignItems: "center" }}>
         {ranged ? (
           <div className="acts" style={{ alignItems: "center" }}><b style={{ fontSize: 18, fontWeight: 400 }}>{rangeLabel}</b><Link className="btn sm" href={`/app/movimientos?mes=${p}`}>Volver al mes</Link></div>
@@ -94,6 +98,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
                 </div>
               );
             })}
+            {rows.length > visible.length && <div className="acts" style={{ justifyContent: "center", paddingTop: 14 }}><Link className="btn" href={`/app/movimientos?${new URLSearchParams({ ...rangeQ, ...(tipo !== "ALL" ? { tipo } : {}), ...(q ? { q } : {}), n: String(showN + 200) })}`}>Ver más ({rows.length - visible.length} más)</Link></div>}
           </div>
         ) : (
           <div className="empty">

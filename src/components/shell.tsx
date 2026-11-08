@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { SavedToast } from "./saved-toast";
 import { Icon, type IconName } from "./icons";
 import type { ModuleState } from "@/lib/modules";
@@ -47,6 +47,14 @@ export function Shell({ children, modules, overdue, userName, plan, isAdmin, log
   const path = usePathname();
   const [open, setOpen] = useState(false);
   const [menu, setMenu] = useState(false);
+  // Esc cierra el menú del celular y el de tu cuenta; al abrir el de tu cuenta, el foco va adentro.
+  useEffect(() => {
+    if (!open && !menu) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { setOpen(false); setMenu(false); } };
+    window.addEventListener("keydown", onKey);
+    if (menu) setTimeout(() => (document.querySelector(".panel a, .panel button") as HTMLElement | null)?.focus(), 0);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, menu]);
   const isOn = (i: Item) => {
     if (i.match === "__funciones") return false;
     return i.match ? new RegExp(`^${i.match}`).test(path) : path === i.href || path.startsWith(i.href + "/");
@@ -67,7 +75,7 @@ export function Shell({ children, modules, overdue, userName, plan, isAdmin, log
   return (
     <div className="app">
       <header className="top">
-        <button className="ibtn menu-btn" aria-label="Abrir menú" onClick={() => setOpen(!open)}><Icon name="menu" /></button>
+        <button className="ibtn menu-btn" aria-label={open ? "Cerrar menú" : "Abrir menú"} aria-expanded={open} onClick={() => setOpen(!open)}><Icon name="menu" /></button>
         <Link href="/app" className="brand" aria-label="NEXO, ir al inicio"><Mark /><b>NEXO</b></Link>
         <form action="/app/buscar" className="search top-search" role="search"><input name="q" placeholder="Buscar movimientos, cuentas, categorías…" aria-label="Buscar" /></form>
         <span style={{ flex: 1 }} />
@@ -76,7 +84,7 @@ export function Shell({ children, modules, overdue, userName, plan, isAdmin, log
         {modules.alertas && <Link className="ibtn" href="/app/alertas" aria-label="Alertas"><Icon name="bell" />{overdue > 0 && <span className="dot" />}</Link>}
         <Link className="ibtn" href="/app/ayuda" aria-label="Ayuda"><Icon name="help" /></Link>
         <Link className="ibtn" href="/app/configuracion" aria-label="Configuración"><Icon name="gear" /></Link>
-        <button className="avatar" style={{ border: 0, cursor: "pointer" }} aria-label="Tu cuenta" title={userName} onClick={() => setMenu(true)}>{initials}</button>
+        <button className="avatar" style={{ border: 0, cursor: "pointer" }} aria-label="Tu cuenta" aria-haspopup="dialog" aria-expanded={menu} title={userName} onClick={() => setMenu(true)}>{initials}</button>
       </header>
       <aside className={`side ${open ? "open" : ""}`} aria-label="Menú principal">
         <Link href="/app" className="brand" onClick={() => setOpen(false)}><Mark /><b>NEXO</b></Link>
@@ -95,13 +103,13 @@ export function Shell({ children, modules, overdue, userName, plan, isAdmin, log
         {tab("/app/movimientos", "Movimientos", "list")}
         <Link href="/app/movimientos/nuevo" className="plus" aria-label="Nuevo movimiento"><span><Icon name="plus" /></span></Link>
         {tab("/app/proximos", "Próximos", "clock")}
-        <button onClick={() => setOpen(true)}><Icon name="menu" />Más</button>
+        <button onClick={() => setOpen(true)} aria-expanded={open}><Icon name="menu" />Más</button>
       </nav>
       {open && <div className="drawer-bg" onClick={() => setOpen(false)} />}
       {menu && (
         <>
           <div className="drawer-bg" onClick={() => setMenu(false)} />
-          <aside className="panel" aria-label="Tu cuenta">
+          <aside className="panel" role="dialog" aria-modal="true" aria-label="Tu cuenta">
             <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
               <div className="avatar" style={{ width: 44, height: 44, fontSize: 16, margin: 0 }}>{initials}</div>
               <div><h2>{userName}</h2><p className="sub" style={{ margin: 0, color: "var(--muted)" }}>Plan {plan === "PRO" ? "Pro" : "Gratis"}</p></div>

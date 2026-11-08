@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { requireWorkspace } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
@@ -9,6 +10,7 @@ import { fmtDayMonth, periodEnd, period, todayIn } from "@/lib/dates";
 import { PageHead } from "@/components/page";
 import { quickConfirmAction } from "@/app/actions/app";
 import { InstallApp } from "@/components/pwa";
+import { Help } from "@/components/help";
 
 export const metadata: Metadata = { title: "Inicio" };
 const MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
@@ -19,12 +21,21 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ l
   const db = getDb();
   const today = todayIn(workspace.timezone);
   const cur = workspace.baseCurrency;
-  const [d, recent, open, tips] = await Promise.all([
-    dashboard(db, workspace.id, cur, today),
-    listMovements(db, workspace.id, { take: 4 }),
-    openObligations(db, workspace.id, today),
-    modules.alertas ? insights(db, workspace.id, cur, today) : Promise.resolve([]),
+  // Lo principal primero (saldo y pendientes). El consejo y lo último cargado se muestran apenas estén, sin frenar el resto.
+  const [d, open, incomeRules, expenseRules, expenses] = await Promise.all([
+    dashboard(db, workspace.id, cur, today), openObligations(db, workspace.id, today),
+    db.recurringRule.count({ where: { workspaceId: workspace.id, direction: "RECEIVABLE" } }),
+    db.recurringRule.count({ where: { workspaceId: workspace.id, direction: "PAYABLE" } }),
+    db.transaction.count({ where: { workspaceId: workspace.id, type: "EXPENSE" } }),
   ]);
+  // Primeros pasos: se tachan solos y desaparecen cuando están todos.
+  const steps: [boolean, string, string][] = [
+    [true, "Cargá tu primera cuenta", "/app/cuentas"],
+    [incomeRules > 0, "Cargá tu sueldo o lo que cobrás seguido", "/app/recurrentes?nueva=1"],
+    [expenseRules > 0, "Cargá tus gastos fijos (luz, expensas, alquiler)", "/app/recurrentes?nueva=1"],
+    [expenses > 0, "Anotá un gasto del día", "/app/movimientos/nuevo"],
+  ];
+  const stepsLeft = steps.filter(([ok]) => !ok).length;
   const fm = (v: Parameters<typeof formatMoney>[0], o?: Parameters<typeof formatMoney>[2]) => formatMoney(v, cur, o);
   const hour = Number(new Intl.DateTimeFormat("en-US", { timeZone: workspace.timezone, hour: "numeric", hour12: false }).format(new Date()));
   const hello = hour < 13 ? "Buen día" : hour < 20 ? "Buenas tardes" : "Buenas noches";
@@ -45,7 +56,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ l
 
   // ¿Cuánto puedo gastar? Lo que tenés menos lo que tenés que pagar antes de tu próximo cobro.
   const base = open.filter((o) => o.currency === cur);
-  const nextIn = base.find((o) => o.direction === "RECEIVABLE" && !o.overdue);
+  // Próximo cobro: el siguiente después de hoy (lo de hoy se confirma en "Para confirmar").
+  const nextIn = base.find((o) => o.direction === "RECEIVABLE" && o.dueDate > today);
   const until = nextIn?.dueDate ?? periodEnd(period(today));
   const owed = base.filter((o) => o.direction === "PAYABLE" && (o.overdue || o.dueDate < until)).reduce((s, o) => s.plus(o.remaining), ZERO);
   const left = d.cash.minus(owed);
@@ -58,7 +70,6 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ l
   const endOfMonth = d.cash.plus(base.filter((o) => o.direction === "RECEIVABLE" && o.dueDate <= monthEnd).reduce((s, o) => s.plus(o.remaining), ZERO)).minus(base.filter((o) => o.direction === "PAYABLE" && o.dueDate <= monthEnd).reduce((s, o) => s.plus(o.remaining), ZERO));
   const in7 = new Date(today.getTime() + 7 * 864e5);
   const week = open.filter((o) => o.overdue || o.dueDate <= in7).slice(0, 5);
-  const tip = tips.find((t) => t.level === "urgent" || t.level === "warn") ?? tips[0];
   // Lo que vence hoy o ya venció: primero los cobros. Se confirma con un toque o se cambia el monto y la fecha.
   const toConfirm = open.filter((o) => o.dueDate <= today).sort((a, b) => (a.direction === b.direction ? 0 : a.direction === "RECEIVABLE" ? -1 : 1)).slice(0, 3);
 
@@ -81,6 +92,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ l
           <Link className="hrow" href="/app/proximos"><span>A pagar antes de esa fecha</span><b>{fm(owed.neg())}</b></Link>
           {nextIn && <Link className="hrow" href="/app/proximos"><span>{nextIn.description}</span><b className="pos">{formatMoney(nextIn.remaining, nextIn.currency, { sign: true })}</b></Link>}
           {toCollect.length > 0 && <Link className="hrow" href="/app/proximos?ver=cobrar"><span>Por cobrar ({toCollect.length})</span><b className="pos">{formatMoney(toCollectTotal, cur, { sign: true })}</b></Link>}
+          {toCollect.length > 0 && <div className="sub hero-help">Por cobrar todavía no está en tus cuentas <Help term="porcobrar" /></div>}
           <Link className="hrow" href="/app/flujo"><span>A fin de mes terminás con</span><b className={endOfMonth.isNegative() ? "neg" : ""}>{fm(endOfMonth)}</b></Link>
           {d.cardDebt.gt(0) && <Link className="hrow" href="/app/tarjetas"><span>Debés en tarjetas</span><b>{fm(d.cardDebt.neg())}</b></Link>}
           {d.others.map((o) => <div className="hrow" key={o.id}><span>{o.name}</span><b>{formatMoney(o.balance, o.currency)}</b></div>)}
@@ -108,12 +120,14 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ l
           })}</div>
         </div>
       )}
-      <InstallApp />
-      {tip && (
-        <Link href={tip.href} className={`notice ${tip.level === "urgent" ? "r" : tip.level === "good" ? "g" : ""}`} style={{ color: "inherit" }}>
-          <span><b>{tip.title}</b>{tip.detail ? ` · ${tip.detail}` : ""}</span>
-        </Link>
+      {stepsLeft > 0 && (
+        <div className="card">
+          <div className="chead"><div><h3>Primeros pasos</h3><p className="sub">Te faltan {stepsLeft}. Con esto NEXO te muestra cuánto vas a tener cada mes.</p></div></div>
+          <ol className="steps">{steps.map(([ok, label, href]) => <li key={label} className={ok ? "ok" : ""}>{ok ? <span>{label}</span> : <Link className="lnk" href={href}>{label}</Link>}</li>)}</ol>
+        </div>
       )}
+      <InstallApp />
+      {modules.alertas && <Suspense fallback={null}><Tip ws={workspace.id} cur={cur} today={today} open={open} /></Suspense>}
       <div className="grid g2">
         <div className="card">
           <div className="chead"><h3>Esta semana</h3><Link className="lk" href="/app/proximos">Ver todo</Link></div>
@@ -128,13 +142,33 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ l
         </div>
         <div className="card">
           <div className="chead"><h3>Lo último que cargaste</h3><Link className="lk" href="/app/movimientos">Movimientos</Link></div>
-          {recent.length ? <div className="list">{recent.map((t) => (
-            <div className="li" key={t.id}>
-              <div className="grow"><div className="t">{t.description}</div><div className="s">{fmtDayMonth(t.effectiveDate)} · {t.category?.name ?? t.account.name}</div></div>
-              <b className={`num ${t.type === "TRANSFER" ? "" : t.direction === "IN" ? "pos" : "neg"}`}>{t.direction === "IN" ? "+" : "−"}{formatMoney(t.amount, t.currency)}</b>
-            </div>))}</div> : <div className="empty">Todavía no cargaste nada. <Link className="lk" href="/app/movimientos/nuevo">+ Cargar un gasto</Link></div>}
+          <Suspense fallback={<div className="sk-card" style={{ height: 160 }} />}><Recent ws={workspace.id} /></Suspense>
         </div>
       </div>
     </>
+  );
+}
+
+// Consejo del día: se calcula aparte y aparece apenas está listo.
+async function Tip({ ws, cur, today, open }: { ws: string; cur: string; today: Date; open: Awaited<ReturnType<typeof openObligations>> }) {
+  const tips = await insights(getDb(), ws, cur, today, { open });
+  const tip = tips.find((t) => t.level === "urgent" || t.level === "warn") ?? tips[0];
+  if (!tip) return null;
+  return (
+    <Link href={tip.href} className={`notice ${tip.level === "urgent" ? "r" : tip.level === "good" ? "g" : ""}`} style={{ color: "inherit" }}>
+      <span><b>{tip.title}</b>{tip.detail ? ` · ${tip.detail}` : ""}</span>
+    </Link>
+  );
+}
+
+async function Recent({ ws }: { ws: string }) {
+  const recent = await listMovements(getDb(), ws, { take: 4 });
+  if (!recent.length) return <div className="empty">Todavía no cargaste nada. <Link className="lk" href="/app/movimientos/nuevo">+ Cargar un gasto</Link></div>;
+  return (
+    <div className="list">{recent.map((t) => (
+      <div className="li" key={t.id}>
+        <div className="grow"><div className="t">{t.description}</div><div className="s">{fmtDayMonth(t.effectiveDate)} · {t.category?.name ?? t.account.name}</div></div>
+        <b className={`num ${t.type === "TRANSFER" ? "" : t.direction === "IN" ? "pos" : "neg"}`}>{t.direction === "IN" ? "+" : "−"}{formatMoney(t.amount, t.currency)}</b>
+      </div>))}</div>
   );
 }

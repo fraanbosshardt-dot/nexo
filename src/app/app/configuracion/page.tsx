@@ -10,8 +10,10 @@ import { fmtDate } from "@/lib/dates";
 import { COUNTRIES, CURRENCIES } from "@/lib/countries";
 import { PageHead, SettingsTabs } from "@/components/page";
 import { InstallApp } from "@/components/pwa";
+import { BigTextToggle } from "@/components/big-text";
 import { ActionForm, OtpInput, Submit } from "@/components/forms";
 import { deleteMyAccountAction, emailRemindersAction, confirm2faAction, disable2faAction, revokeOtherSessionsAction, saveModulesAction, start2faAction, twoFactorQr, updateProfileAction } from "@/app/actions/app";
+import { ConfirmSubmit } from "@/components/confirm-submit";
 
 export const metadata: Metadata = { title: "Configuración" };
 
@@ -131,7 +133,7 @@ export default async function Settings({ searchParams }: { searchParams: Promise
         <div className="card">
           <div className="chead"><div><h3>Tu plan: {plan === "PRO" ? "Pro" : "Gratis"}</h3><p className="sub">{trial ? `Prueba gratis hasta el ${fmtDate(sub!.trialEndsAt!)}.` : paidPro ? `Pagás con Mercado Pago, ${sub!.billingCycle === "yearly" ? "por año" : "por mes"}.` : plan === "PRO" ? "Pro activado por NEXO." : "Tenés casi todo incluido, sin costo."}</p></div></div>
           {paidPro ? (
-            <form action={cancelPlanAction}><button className="btn" type="submit">Cancelar Pro</button></form>
+            <form action={cancelPlanAction}><ConfirmSubmit className="btn" question="¿Cancelar Pro? Dejás de pagar y volvés al plan Gratis." yes="Sí, cancelar">Cancelar Pro</ConfirmSubmit></form>
           ) : bill.enabled ? (
             <form action={checkoutAction} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {sp.cupon && <p className="auth-err" role="alert">{sp.cupon}</p>}
@@ -166,5 +168,5 @@ export default async function Settings({ searchParams }: { searchParams: Promise
       </div></div>
     );
   }
-  return (<div className="narrow wide"><PageHead crumb="Ajustes" title="Configuración" />{tabs}{t === "general" && <InstallApp />}{body}</div>);
+  return (<div className="narrow wide"><PageHead crumb="Ajustes" title="Configuración" />{tabs}{t === "general" && <><BigTextToggle /><InstallApp /></>}{body}</div>);
 }
