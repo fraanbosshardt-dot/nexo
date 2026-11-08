@@ -35,7 +35,7 @@ export default async function NewMovement({ searchParams }: { searchParams: Prom
       <Link className="lk" href="/app/movimientos">← Movimientos</Link>
       <PageHead crumb="Mi dinero" title="Nuevo movimiento" />
       <div className="card">
-        <MovementForm accounts={accounts} categories={categories} today={isoDate(todayIn(workspace.timezone))} initialKind={kind} initialAccount={lastAccount} initialStatus={sp.estado === "pendiente" ? "PENDING" : undefined} history={history} baseCurrency={workspace.baseCurrency} idem={randomUUID()} />
+        <MovementForm accounts={accounts} categories={categories} today={isoDate(todayIn(workspace.timezone))} initialKind={kind} initialAccount={lastAccount} initialStatus={sp.estado === "pendiente" ? "PENDING" : undefined} history={history} baseCurrency={workspace.baseCurrency} idem={randomUUID()} back={sp.estado === "pendiente" ? "/app/proximos?guardado=1" : undefined} />
       </div>
     </div>
   );

@@ -11,9 +11,9 @@ import { cancelObligationAction } from "@/app/actions/app";
 export const metadata: Metadata = { title: "Próximos pagos" };
 const MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 
-export default async function Upcoming({ searchParams }: { searchParams: Promise<{ ver?: string }> }) {
+export default async function Upcoming({ searchParams }: { searchParams: Promise<{ ver?: string; guardado?: string }> }) {
   const { workspace, modules } = await requireWorkspace();
-  const ver = (await searchParams).ver;
+  const { ver, guardado } = await searchParams;
   const cur = workspace.baseCurrency;
   const today = todayIn(workspace.timezone);
   const in7 = new Date(today.getTime() + 7 * 864e5);
@@ -39,6 +39,7 @@ export default async function Upcoming({ searchParams }: { searchParams: Promise
   return (
     <>
       <PageHead crumb="Pagos y deudas" title="Próximos pagos" desc="Lo que falta pagar y cobrar. Lo atrasado queda acá hasta que lo resuelvas." actions={<Link className="btn pri" href="/app/movimientos/nuevo?estado=pendiente">+ Agregar un pago o cobro</Link>} />
+      {guardado && <div className="notice g" role="status"><span>Listo, quedó guardado.</span><Link className="btn sm" href="/app/movimientos/nuevo?estado=pendiente" style={{ marginLeft: "auto" }}>+ Cargar otro</Link></div>}
       {modules.calendario && <Tabs current="lista" items={[{ key: "lista", label: "Lista", href: "/app/proximos" }, { key: "cal", label: "Calendario", href: "/app/calendario" }]} />}
       <div className="fc" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))" }}>
         <div><small>Atrasado</small><b className={lateList.length ? "neg" : ""}>{formatMoney(total(lateList, "PAYABLE"), cur)}</b></div>

@@ -438,12 +438,12 @@ export async function dashboard(db: Db, ws: string, currency: string, today: Dat
   };
 }
 
-export async function listMovements(db: Db, ws: string, opts: { period?: string; accountId?: string; take?: number } = {}) {
+export async function listMovements(db: Db, ws: string, opts: { period?: string; from?: Date; to?: Date; accountId?: string; take?: number } = {}) {
   return db.transaction.findMany({
     where: {
       workspaceId: ws,
       ...(opts.accountId ? { accountId: opts.accountId } : {}),
-      ...(opts.period ? { effectiveDate: { gte: periodStart(opts.period), lte: periodEnd(opts.period) } } : {}),
+      ...(opts.from || opts.to ? { effectiveDate: { ...(opts.from ? { gte: opts.from } : {}), ...(opts.to ? { lte: opts.to } : {}) } } : opts.period ? { effectiveDate: { gte: periodStart(opts.period), lte: periodEnd(opts.period) } } : {}),
     },
     include: { account: { select: { name: true, currency: true } }, category: { select: { name: true } }, reversedBy: { select: { id: true } } },
     orderBy: [{ effectiveDate: "desc" }, { createdAt: "desc" }],

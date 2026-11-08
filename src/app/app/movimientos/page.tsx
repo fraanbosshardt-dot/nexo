@@ -12,16 +12,24 @@ const DIAS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "
 const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 const TYPE_LABEL: Record<string, string> = { TRANSFER: "Transferencia", ADJUSTMENT: "Ajuste", DEBT_PAYMENT: "Cuota de deuda", CARD_PAYMENT: "Pago de tarjeta", INVESTMENT: "Inversión", DEBT_DISBURSEMENT: "Préstamo recibido" };
 
-export default async function Movements({ searchParams }: { searchParams: Promise<{ mes?: string; tipo?: string; q?: string }> }) {
+export default async function Movements({ searchParams }: { searchParams: Promise<{ mes?: string; tipo?: string; q?: string; desde?: string; hasta?: string }> }) {
   const { workspace } = await requireWorkspace();
   const sp = await searchParams;
   const p = /^\d{4}-\d{2}$/.test(sp.mes ?? "") ? sp.mes! : period(todayIn(workspace.timezone));
   const tipo = ["INCOME", "EXPENSE", "TRANSFER"].includes(sp.tipo ?? "") ? sp.tipo! : "ALL";
   const q = (sp.q ?? "").trim().toLowerCase();
-  const all = await listMovements(getDb(), workspace.id, { period: p });
+  // Rango libre: desde y hasta (si están, reemplazan al mes).
+  const iso = (v?: string) => (/^\d{4}-\d{2}-\d{2}$/.test(v ?? "") ? new Date(`${v}T00:00:00Z`) : null);
+  let from = iso(sp.desde), to = iso(sp.hasta);
+  if (from && to && from > to) [from, to] = [to, from];
+  const ranged = !!(from || to);
+  const all = await listMovements(getDb(), workspace.id, ranged ? { from: from ?? undefined, to: to ?? undefined, take: 2000 } : { period: p });
+  const fmtD = (d: Date) => `${d.getUTCDate()} de ${MESES[d.getUTCMonth()]} de ${d.getUTCFullYear()}`;
+  const rangeLabel = ranged ? (from && to ? `Del ${fmtD(from)} al ${fmtD(to)}` : from ? `Desde el ${fmtD(from)}` : `Hasta el ${fmtD(to!)}`) : "";
   const rows = all
     .filter((t) => (tipo === "ALL" ? !(t.type === "TRANSFER" && t.direction === "IN") : tipo === "TRANSFER" ? t.type === "TRANSFER" && t.direction === "OUT" : t.type === tipo))
     .filter((t) => !q || `${t.description} ${t.category?.name ?? ""} ${t.account.name}`.toLowerCase().includes(q));
+  const rangeQ: Record<string, string> = ranged ? { ...(sp.desde ? { desde: sp.desde } : {}), ...(sp.hasta ? { hasta: sp.hasta } : {}) } : { mes: p };
   const link = (o: Record<string, string>) => `/app/movimientos?${new URLSearchParams({ mes: p, ...(tipo !== "ALL" ? { tipo } : {}), ...(q ? { q } : {}), ...o })}`;
   const cur = workspace.baseCurrency;
   const real = all.filter((t) => t.currency === cur && !t.reversedBy && !t.reversalOfId);
@@ -34,20 +42,33 @@ export default async function Movements({ searchParams }: { searchParams: Promis
     <>
       <PageHead crumb="Mi dinero" title="Movimientos" desc="Lo que ya entró y salió de tus cuentas. Lo que falta está en Próximos pagos." />
       <div className="acts" style={{ justifyContent: "space-between", alignItems: "center" }}>
-        <div className="acts" style={{ alignItems: "center" }}>
-          <Link className="ibtn" href={link({ mes: addMonths(p, -1) })} aria-label="Mes anterior">‹</Link>
-          <b style={{ fontSize: 20, fontWeight: 400, minWidth: 150, textAlign: "center" }}>{fmtPeriod(p)}</b>
-          <Link className="ibtn" href={link({ mes: addMonths(p, 1) })} aria-label="Mes siguiente">›</Link>
-        </div>
-        <form className="search" style={{ maxWidth: 320 }}><input type="hidden" name="mes" value={p} />{tipo !== "ALL" && <input type="hidden" name="tipo" value={tipo} />}<input name="q" defaultValue={sp.q ?? ""} placeholder="Buscar en este mes" aria-label="Buscar en este mes" /></form>
+        {ranged ? (
+          <div className="acts" style={{ alignItems: "center" }}><b style={{ fontSize: 18, fontWeight: 400 }}>{rangeLabel}</b><Link className="btn sm" href={`/app/movimientos?mes=${p}`}>Volver al mes</Link></div>
+        ) : (
+          <div className="acts" style={{ alignItems: "center" }}>
+            <Link className="ibtn" href={link({ mes: addMonths(p, -1) })} aria-label="Mes anterior">‹</Link>
+            <b style={{ fontSize: 20, fontWeight: 400, minWidth: 150, textAlign: "center" }}>{fmtPeriod(p)}</b>
+            <Link className="ibtn" href={link({ mes: addMonths(p, 1) })} aria-label="Mes siguiente">›</Link>
+          </div>
+        )}
+        <form className="search" style={{ maxWidth: 320 }}>{Object.entries(rangeQ).map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)}{tipo !== "ALL" && <input type="hidden" name="tipo" value={tipo} />}<input name="q" defaultValue={sp.q ?? ""} placeholder={ranged ? "Buscar en estas fechas" : "Buscar en este mes"} aria-label="Buscar" /></form>
       </div>
+      <details className="more" open={ranged}>
+        <summary>Elegir fechas desde y hasta</summary>
+        <form className="acts" style={{ alignItems: "flex-end", paddingTop: 10 }}>
+          <label className="field" style={{ flex: "1 1 150px" }}>Desde<input name="desde" type="date" defaultValue={sp.desde ?? ""} /></label>
+          <label className="field" style={{ flex: "1 1 150px" }}>Hasta<input name="hasta" type="date" defaultValue={sp.hasta ?? ""} /></label>
+          {tipo !== "ALL" && <input type="hidden" name="tipo" value={tipo} />}
+          <button className="btn" type="submit">Ver</button>
+        </form>
+      </details>
       <div className="fc" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))" }}>
         <div><small>Entró</small><b className="pos">{formatMoney(inc, cur)}</b></div>
         <div><small>Salió</small><b className="neg">{formatMoney(out, cur)}</b></div>
         <div><small>Resultado</small><b className={inc.minus(out).isNegative() ? "neg" : ""}>{formatMoney(inc.minus(out), cur, { sign: true })}</b></div>
       </div>
       <div className="seg" style={{ alignSelf: "flex-start" }}>
-        {[["ALL", "Todos"], ["INCOME", "Ingresos"], ["EXPENSE", "Gastos"], ["TRANSFER", "Transferencias"]].map(([k, l]) => <Link key={k} className={`segl ${tipo === k ? "on" : ""}`} href={`/app/movimientos?${new URLSearchParams({ mes: p, ...(k !== "ALL" ? { tipo: k } : {}), ...(q ? { q } : {}) })}`}>{l}</Link>)}
+        {[["ALL", "Todos"], ["INCOME", "Ingresos"], ["EXPENSE", "Gastos"], ["TRANSFER", "Transferencias"]].map(([k, l]) => <Link key={k} className={`segl ${tipo === k ? "on" : ""}`} href={`/app/movimientos?${new URLSearchParams({ ...rangeQ, ...(k !== "ALL" ? { tipo: k } : {}), ...(q ? { q } : {}) })}`}>{l}</Link>)}
       </div>
       <div className="card">
         {rows.length ? (
@@ -76,7 +97,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
           </div>
         ) : (
           <div className="empty">
-            <p style={{ margin: "0 0 12px" }}>{q ? `No encontramos "${sp.q}" en ${fmtPeriod(p).toLowerCase()}.` : `No hay movimientos en ${fmtPeriod(p).toLowerCase()}.`}</p>
+            <p style={{ margin: "0 0 12px" }}>{ranged ? (q ? `No encontramos "${sp.q}" en esas fechas.` : "No hay movimientos en esas fechas.") : q ? `No encontramos "${sp.q}" en ${fmtPeriod(p).toLowerCase()}.` : `No hay movimientos en ${fmtPeriod(p).toLowerCase()}.`}</p>
             <Link className="btn" href="/app/movimientos/nuevo">+ Cargar un gasto</Link>
           </div>
         )}

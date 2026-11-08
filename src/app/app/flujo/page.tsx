@@ -18,6 +18,12 @@ export default async function Flow({ searchParams }: { searchParams: Promise<{ h
   const cur = workspace.baseCurrency;
   const today = todayIn(workspace.timezone);
   const { cashNow, rows } = await forecast(getDb(), workspace.id, { currency: cur, today, months: h, certainty: c });
+  // ¿Hay ingresos que se repiten hasta el final del período? Si no, a futuro solo quedan los gastos y da déficit.
+  const lastP = rows[rows.length - 1].period;
+  const horizonEnd = new Date(Date.UTC(Number(lastP.slice(0, 4)), Number(lastP.slice(5, 7)), 0));
+  const incomeRules = await getDb().recurringRule.findMany({ where: { workspaceId: workspace.id, direction: "RECEIVABLE", currency: cur, pausedAt: null, OR: [{ endDate: null }, { endDate: { gte: today } }] }, select: { description: true, endDate: true } });
+  const lasting = incomeRules.filter((x) => !x.endDate || x.endDate >= horizonEnd);
+  const endsSoon = incomeRules.filter((x) => x.endDate && x.endDate < horizonEnd).sort((a, b) => a.endDate!.getTime() - b.endDate!.getTime());
   const f = (v: Parameters<typeof formatMoney>[0], o?: Parameters<typeof formatMoney>[2]) => formatMoney(v, cur, o);
   const max = rows.reduce((m, r) => (r.end.abs().gt(m) ? r.end.abs() : m), ZERO);
   const red = rows.filter((r) => r.min.lt(0));
@@ -31,6 +37,9 @@ export default async function Flow({ searchParams }: { searchParams: Promise<{ h
         <div className="fsteps">{step("Hoy", cashNow)}<i>→</i>{step("Fin de mes", rows[0].end)}<i>→</i>{step("En 6 meses", rows[Math.min(5, rows.length - 1)].end)}<i>→</i>{step(h === 12 ? "En 1 año" : `En ${h / 12} años`, rows[rows.length - 1].end)}</div>
         <p className="sub" style={{ marginTop: 12 }}>{red.length ? <span className="neg">Ojo: en {fmtPeriod(red[0].period).toLowerCase()} tu saldo baja a {f(red[0].min)}{red[0].minDate ? ` (el ${fmtDate(red[0].minDate)})` : ""}.</span> : <span className="pos">Tu saldo no baja de cero en este período.</span>}</p>
       </div>
+      {c !== "conf" && !lasting.length && (
+        <div className="notice a"><span><b>{incomeRules.length ? `Tus ingresos que se repiten terminan antes (${endsSoon[endsSoon.length - 1]?.description} el ${fmtDate(endsSoon[endsSoon.length - 1].endDate!)})` : "No tenés ingresos que se repitan"}</b>: el flujo solo ve los cobros cargados uno por uno, por eso más adelante da déficit. Cargá tu sueldo, alquileres o cosechas como cobro que se repite (si el monto cambia, marcalo como variable). <Link className="lnk" href="/app/recurrentes?nueva=1">Cargar un cobro que se repite</Link></span></div>
+      )}
       <div className="card">
         <div className="chead"><h3>Mes a mes</h3>
           <div className="acts">

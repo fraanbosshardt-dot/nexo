@@ -76,11 +76,34 @@ export async function createRuleAction(_: FormState, fd: FormData): Promise<Form
 export async function changeRuleAction(_: FormState, fd: FormData): Promise<FormState> {
   const { workspace } = await requireWorkspace();
   try {
-    await changeRuleFrom(getDb(), workspace.id, str(fd, "id"), date(fd, "from", "desde cuándo"), { amount: money(fd, "amount", "el importe nuevo") });
+    const day = int(fd, "dayOfMonth");
+    if (day !== null && !(day >= 1 && day <= 31)) throw new UserError("El día del mes va del 1 al 31.");
+    await changeRuleFrom(getDb(), workspace.id, str(fd, "id"), date(fd, "from", "desde cuándo"), { amount: money(fd, "amount", "el importe nuevo"), ...(day !== null ? { dayOfMonth: day } : {}) });
     await refreshRules(workspace.id, workspace.timezone);
   } catch (e) { return fail(e); }
   revalidatePath("/app", "layout");
   return { ok: "Listo: cambia desde esa fecha. Lo anterior quedó igual." };
+}
+
+export async function setRuleEndAction(_: FormState, fd: FormData): Promise<FormState> {
+  const { workspace } = await requireWorkspace();
+  try {
+    const { setRuleEnd } = await import("@/server/recurring");
+    const raw = str(fd, "endDate");
+    await setRuleEnd(getDb(), workspace.id, str(fd, "id"), raw ? date(fd, "endDate", "la fecha hasta") : null);
+    await refreshRules(workspace.id, workspace.timezone);
+  } catch (e) { return fail(e); }
+  revalidatePath("/app", "layout");
+  return { ok: str(fd, "endDate") ? "Listo: se repite hasta esa fecha." : "Listo: se repite sin fecha de fin." };
+}
+
+export async function deleteRuleAction(fd: FormData) {
+  const { user, workspace } = await requireWorkspace();
+  const { deleteRule } = await import("@/server/recurring");
+  const r = await deleteRule(getDb(), workspace.id, str(fd, "id"));
+  await audit("rule.deleted", { userId: user.id, workspaceId: workspace.id, entityId: str(fd, "id"), meta: r });
+  revalidatePath("/app", "layout");
+  redirect("/app/recurrentes?borrada=1");
 }
 
 export async function pauseRuleAction(fd: FormData) {
@@ -94,6 +117,7 @@ export async function endRuleAction(fd: FormData) {
   const { workspace } = await requireWorkspace();
   await endRule(getDb(), workspace.id, str(fd, "id"), todayIn(workspace.timezone));
   revalidatePath("/app", "layout");
+  redirect("/app/recurrentes?terminada=1");
 }
 
 // ---------- Tarjetas ----------

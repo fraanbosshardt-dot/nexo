@@ -163,7 +163,7 @@ export async function changeRuleFrom(db: Db, ws: string, ruleId: string, from: D
         interval: changes.interval ?? r.interval,
         dayOfMonth: changes.dayOfMonth !== undefined ? changes.dayOfMonth : r.dayOfMonth,
         startDate: from,
-        endDate: changes.endDate !== undefined ? changes.endDate : null,
+        endDate: changes.endDate !== undefined ? changes.endDate : r.endDate, // la fecha "hasta" se mantiene
         weekendRule: changes.weekendRule ?? r.weekendRule,
         variableAmount: changes.variableAmount ?? r.variableAmount,
         increasePct: r.increasePct,
@@ -179,6 +179,30 @@ export async function pauseRule(db: Db, ws: string, ruleId: string, paused: bool
   if (!r) throw new UserError("No encontramos esa regla.");
   if (paused) await dropFuture(db, r.id, today);
   return db.recurringRule.update({ where: { id: r.id }, data: { pausedAt: paused ? new Date() : null } });
+}
+
+// Fecha "hasta": se puede poner, cambiar o sacar. Lo que queda después de esa fecha se borra (si no tiene pagos).
+export async function setRuleEnd(db: Db, ws: string, ruleId: string, endDate: Date | null) {
+  const r = await db.recurringRule.findFirst({ where: { id: ruleId, workspaceId: ws } });
+  if (!r) throw new UserError("No encontramos esa regla.");
+  if (endDate && endDate < r.startDate) throw new UserError("La fecha hasta tiene que ser después de la primera vez.");
+  if (endDate) await dropFuture(db, r.id, new Date(endDate.getTime() + 864e5));
+  return db.recurringRule.update({ where: { id: r.id }, data: { endDate } });
+}
+
+// Borrar del todo: se van los pendientes futuros sin pagos; lo ya pagado o cobrado queda como estaba (suelto).
+export async function deleteRule(db: Db, ws: string, ruleId: string) {
+  const r = await db.recurringRule.findFirst({ where: { id: ruleId, workspaceId: ws } });
+  if (!r) throw new UserError("No encontramos esa regla.");
+  return db.$transaction(async (tx) => {
+    const obs = await tx.obligation.findMany({ where: { recurringRuleId: r.id, workspaceId: ws }, include: { payments: true } });
+    const drop = obs.filter((o) => o.payments.length === 0 && o.status === "PENDING").map((o) => o.id);
+    if (drop.length) await tx.obligation.deleteMany({ where: { id: { in: drop } } });
+    await tx.obligation.updateMany({ where: { recurringRuleId: r.id, workspaceId: ws }, data: { recurringRuleId: null } });
+    await tx.recurringRule.updateMany({ where: { previousVersionId: r.id, workspaceId: ws }, data: { previousVersionId: null } });
+    await tx.recurringRule.delete({ where: { id: r.id } });
+    return { removedPending: drop.length };
+  });
 }
 
 export async function endRule(db: Db, ws: string, ruleId: string, today: Date) {

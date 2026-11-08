@@ -180,7 +180,7 @@ export async function createMovementAction(_: FormState, fd: FormData): Promise<
         const existing = await db.category.findFirst({ where: { workspaceId: workspace.id, kind: k, parentId: null, name: { equals: newCat, mode: "insensitive" } } });
         categoryId = (existing ?? (await db.category.create({ data: { workspaceId: workspace.id, kind: k, name: newCat } }))).id;
       }
-      const economicPeriod = String(fd.get("economicPeriod") ?? "") || undefined;
+      const economicPeriod = /^\d{4}-(0[1-9]|1[0-2])$/.test(String(fd.get("economicPeriod") ?? "")) ? String(fd.get("economicPeriod")) : undefined;
       const res = await recordMovement(db, workspace.id, {
         kind,
         description: String(fd.get("description") ?? ""),
@@ -220,7 +220,8 @@ export async function createMovementAction(_: FormState, fd: FormData): Promise<
     return fail(e);
   }
   revalidatePath("/app", "layout");
-  redirect(String(fd.get("back") || (savedId ? `/app/movimientos?guardado=${savedId}` : "/app/movimientos")));
+  const back = String(fd.get("back") ?? "");
+  redirect(/^\/app(\/|\?|$)/.test(back) ? back : savedId ? `/app/movimientos?guardado=${savedId}` : "/app/movimientos");
 }
 
 export async function payObligationAction(_: FormState, fd: FormData): Promise<FormState> {

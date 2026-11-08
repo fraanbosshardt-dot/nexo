@@ -10,15 +10,6 @@ type Kind = "EXPENSE" | "INCOME" | "TRANSFER";
 type Status = "PAID" | "PARTIAL" | "PENDING";
 export type History = { d: string; c: string }[]; // concepto ya usado → categoría elegida
 
-const MONTHS = (today: string) => {
-  const [y, m] = today.split("-").map(Number);
-  return [-1, 0, 1].map((o) => {
-    const d = new Date(Date.UTC(y, m - 1 + o, 1));
-    const v = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
-    const l = new Intl.DateTimeFormat("es-AR", { month: "long", year: "numeric", timeZone: "UTC" }).format(d);
-    return [v, l] as const;
-  });
-};
 const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
 // Palabras frecuentes → nombre de categoría (se usa si nunca cargaste ese concepto).
 const HINTS: [RegExp, string][] = [
@@ -35,7 +26,7 @@ const HINTS: [RegExp, string][] = [
   [/afip|arba|impuesto|monotributo|abl|patente/, "impuesto"],
 ];
 
-export function MovementForm({ accounts, categories, today, initialKind, initialAccount, initialStatus, baseCurrency, idem, history }: { accounts: Account[]; categories: Category[]; today: string; initialKind: Kind; initialAccount?: string; initialStatus?: Status; baseCurrency: string; idem: string; history: History }) {
+export function MovementForm({ accounts, categories, today, initialKind, initialAccount, initialStatus, baseCurrency, idem, history, back }: { accounts: Account[]; categories: Category[]; today: string; initialKind: Kind; initialAccount?: string; initialStatus?: Status; baseCurrency: string; idem: string; history: History; back?: string }) {
   const [kind, setKind] = useState<Kind>(initialKind);
   const [status, setStatus] = useState<Status>(initialStatus ?? "PAID");
   const [desc, setDesc] = useState("");
@@ -47,6 +38,10 @@ export function MovementForm({ accounts, categories, today, initialKind, initial
   const [repeat, setRepeat] = useState(false);
   const [freq, setFreq] = useState("MONTHLY");
   const [more, setMore] = useState(initialStatus === "PENDING");
+  // "Corresponde al mes": sigue a la fecha (de pago o de vencimiento) hasta que lo cambies a mano.
+  const [period, setPeriod] = useState(today.slice(0, 7));
+  const [periodTouched, setPeriodTouched] = useState(false);
+  const follow = (d: string) => { if (!periodTouched && /^\d{4}-\d{2}/.test(d)) setPeriod(d.slice(0, 7)); };
   const [toAccount, setToAccount] = useState(accounts.find((a) => a.id !== account)?.id ?? "");
   const g = kind === "EXPENSE";
   const cur = accounts.find((a) => a.id === account)?.currency ?? baseCurrency;
@@ -132,11 +127,12 @@ export function MovementForm({ accounts, categories, today, initialKind, initial
               <div className="field">Estado{seg(status, setStatus, [["PAID", g ? "Pagado" : "Cobrado"], ["PARTIAL", "En parte"], ["PENDING", "Pendiente"]])}</div>
               {status !== "PENDING" && (
                 <div className="frow">
-                  <label className="field">{g ? "Fecha de pago" : "Fecha de cobro"}<input name="effectiveDate" type="date" defaultValue={today} /></label>
+                  <label className="field">{g ? "Fecha de pago" : "Fecha de cobro"}<input name="effectiveDate" type="date" defaultValue={today} onChange={(e) => status === "PAID" && follow(e.target.value)} /></label>
                   <label className="field">{status === "PARTIAL" ? (g ? "¿Cuánto pagaste?" : "¿Cuánto cobraste?") : g ? "Pagaste (si fue distinto)" : "Cobraste (si fue distinto)"}<input name="paidAmount" inputMode="decimal" placeholder={amount || "0,00"} value={paid} onChange={(e) => setPaid(e.target.value)} /></label>
                 </div>
               )}
-              {status !== "PAID" && <label className="field">{status === "PARTIAL" ? "El resto vence el" : "Vence el"}<input name="dueDate" type="date" defaultValue={today} /></label>}
+              {status !== "PAID" && <label className="field">{status === "PARTIAL" ? "El resto vence el" : "Vence el"}<input name="dueDate" type="date" defaultValue={today} onChange={(e) => follow(e.target.value)} /></label>}
+              {kind === "INCOME" && !repeat && <p className="hint" style={{ margin: 0 }}>¿Lo cobrás seguido (sueldo, alquiler, cosecha)? Marcá que se repite: así el flujo de caja lo cuenta en los meses y años que vienen.</p>}
               <div className="field">¿Se repite?
                 <div className="seg" style={{ display: "flex" }}>
                   {[["no", "Una sola vez"], ["MONTHLY", "Todos los meses"], ["other", "Otra frecuencia"]].map(([k, l]) => (
@@ -160,7 +156,7 @@ export function MovementForm({ accounts, categories, today, initialKind, initial
                   <label className="simtg"><input type="checkbox" name="variable" /><span>El importe cambia cada vez (por ejemplo, luz o gas)</span></label>
                 </>
               )}
-              <label className="field">Corresponde al mes<select name="economicPeriod" defaultValue={today.slice(0, 7)}>{MONTHS(today).map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></label>
+              <label className="field">Corresponde al mes<input name="economicPeriod" type="month" value={period} onChange={(e) => { setPeriodTouched(true); setPeriod(e.target.value); }} /><span className="hint" style={{ fontWeight: 400 }}>Cualquier mes, también de años que vienen. Se ajusta solo a la fecha.</span></label>
               {kind === "INCOME" && status !== "PAID" && <label className="simtg"><input type="checkbox" name="probable" /><span>No está confirmado (se muestra como probable)</span></label>}
               <label className="field">Notas<input name="notes" /></label>
             </div>
@@ -168,6 +164,7 @@ export function MovementForm({ accounts, categories, today, initialKind, initial
         </>
       )}
       {hint && <div className="calc" aria-live="polite">{hint}</div>}
+      {back && <input type="hidden" name="back" value={back} />}
       <div className="acts" style={{ justifyContent: "flex-end" }}><Submit>Guardar</Submit></div>
     </ActionForm>
   );
