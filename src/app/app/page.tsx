@@ -51,6 +51,11 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ l
   const left = d.cash.minus(owed);
   const days = Math.max(1, Math.round((until.getTime() - today.getTime()) / 864e5));
   const perDay = left.gt(0) ? left.dividedBy(days).round() : ZERO;
+  // Lo que viene: todo lo que hay por cobrar, y cómo terminás el mes con lo que entra y sale.
+  const toCollect = base.filter((o) => o.direction === "RECEIVABLE");
+  const toCollectTotal = toCollect.reduce((s, o) => s.plus(o.remaining), ZERO);
+  const monthEnd = periodEnd(period(today));
+  const endOfMonth = d.cash.plus(base.filter((o) => o.direction === "RECEIVABLE" && o.dueDate <= monthEnd).reduce((s, o) => s.plus(o.remaining), ZERO)).minus(base.filter((o) => o.direction === "PAYABLE" && o.dueDate <= monthEnd).reduce((s, o) => s.plus(o.remaining), ZERO));
   const in7 = new Date(today.getTime() + 7 * 864e5);
   const week = open.filter((o) => o.overdue || o.dueDate <= in7).slice(0, 5);
   const tip = tips.find((t) => t.level === "urgent" || t.level === "warn") ?? tips[0];
@@ -75,6 +80,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ l
           <Link className="hrow" href="/app/cuentas"><span>En tus cuentas</span><b>{fm(d.cash)}</b></Link>
           <Link className="hrow" href="/app/proximos"><span>A pagar antes de esa fecha</span><b>{fm(owed.neg())}</b></Link>
           {nextIn && <Link className="hrow" href="/app/proximos"><span>{nextIn.description}</span><b className="pos">{formatMoney(nextIn.remaining, nextIn.currency, { sign: true })}</b></Link>}
+          {toCollect.length > 0 && <Link className="hrow" href="/app/proximos?ver=cobrar"><span>Por cobrar ({toCollect.length})</span><b className="pos">{formatMoney(toCollectTotal, cur, { sign: true })}</b></Link>}
+          <Link className="hrow" href="/app/flujo"><span>A fin de mes terminás con</span><b className={endOfMonth.isNegative() ? "neg" : ""}>{fm(endOfMonth)}</b></Link>
           {d.cardDebt.gt(0) && <Link className="hrow" href="/app/tarjetas"><span>Debés en tarjetas</span><b>{fm(d.cardDebt.neg())}</b></Link>}
           {d.others.map((o) => <div className="hrow" key={o.id}><span>{o.name}</span><b>{formatMoney(o.balance, o.currency)}</b></div>)}
         </div>

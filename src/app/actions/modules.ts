@@ -308,9 +308,24 @@ export async function grainSaleAction(_: FormState, fd: FormData): Promise<FormS
       priceCurrency: isCurrency(str(fd, "priceCurrency")) ? str(fd, "priceCurrency") : workspace.baseCurrency, fxRate: optMoney(fd, "fxRate", "la cotización"),
       taxPct: optMoney(fd, "taxPct", "el impuesto") ?? "1.2", otherDeductions: optMoney(fd, "other", "otros descuentos") ?? "0",
       collectDate: date(fd, "collectDate", "la fecha de cobro"), accountId: str(fd, "accountId"), collected: fd.get("collected") === "on", userId: user.id,
+      replacePlanned: fd.get("replacePlanned") === "on",
     });
   } catch (e) { return fail(e); }
+  revalidatePath("/app", "layout");
   redirect(done("/app/cereal"));
+}
+
+// Venta mensual prevista: un cobro que se repite todos los meses, con monto aproximado.
+export async function monthlyGrainAction(_: FormState, fd: FormData): Promise<FormState> {
+  const { workspace, plan } = await requireWorkspace();
+  try {
+    if (!(await canUse(plan, "cereal"))) throw new UserError("El módulo Agro es parte de Pro.");
+    const { setupMonthlyGrain } = await import("@/server/grain");
+    await setupMonthlyGrain(getDb(), workspace.id, { day: int(fd, "day") ?? 0, amount: money(fd, "amount", "el monto aproximado"), accountId: str(fd, "accountId"), today: todayIn(workspace.timezone) });
+    await refreshRules(workspace.id, workspace.timezone);
+  } catch (e) { return fail(e); }
+  revalidatePath("/app", "layout");
+  redirect("/app/cereal?mensual=1");
 }
 
 // ---------- Importar ----------
