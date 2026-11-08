@@ -6,6 +6,7 @@ import { fmtDate, isoDate, todayIn } from "@/lib/dates";
 import { nextOccurrence } from "@/server/recurring";
 import { Empty, PageHead, SettingsTabs } from "@/components/page";
 import { ActionForm, Submit } from "@/components/forms";
+import { CloseDetails } from "@/components/close-details";
 import { changeRuleAction, createRuleAction, deleteRuleAction, endRuleAction, pauseRuleAction, setRuleEndAction } from "@/app/actions/modules";
 
 export const metadata: Metadata = { title: "Pagos que se repiten" };
@@ -77,6 +78,7 @@ export default async function Rules({ searchParams }: { searchParams: Promise<{ 
               <p className="sub">Se borra la regla y sus próximos pendientes. Lo que ya pagaste o cobraste queda en tus movimientos.</p>
               <form action={deleteRuleAction}><input type="hidden" name="id" value={r.id} /><button className="btn sm danger" type="submit">Borrar "{r.description}"</button></form>
             </section>
+            <div className="rule-close"><CloseDetails /></div>
           </div>
         </details>
       </div>
