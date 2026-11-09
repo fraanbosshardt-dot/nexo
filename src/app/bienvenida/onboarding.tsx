@@ -119,6 +119,12 @@ export function Onboarding({ firstName, uses, modules, guessCountry, detected }:
       <div className="obx-prog" aria-hidden="true"><i style={{ width: `${((step + 1) / STEPS.length) * 100}%` }} /></div>
       <ActionForm action={finishOnboardingAction}>
         <div className="obx-wrap">
+          <section className="obx-mhero" aria-label="Así va a quedar tu Inicio">
+            <span className="obx-mhero-l">{nextPay ? `Te queda hasta tu próximo cobro, el ${nextPay.date.getDate()} de ${MES[nextPay.date.getMonth()]}` : "Así va a quedar tu Inicio"}</span>
+            <b className="obx-mhero-n">{formatMoney(balance, sumCur, { cents: "auto" })}</b>
+            <span className="obx-mhero-s">{hasAcc ? `En ${acc.name}` : "Cargá dónde tenés la plata y lo ves acá"}{pays.length ? ` · ${pays.length === 1 ? "1 cobro" : `${pays.length} cobros`} por mes` : ""}</span>
+            <span className="obx-mhero-bar" aria-hidden="true"><i style={{ width: `${((step + 1) / STEPS.length) * 100}%` }} /></span>
+          </section>
           <main key={step} className="obx-body obx-step" onKeyDown={(e) => { if (e.key === "Enter" && step < 3 && (e.target as HTMLElement).tagName === "INPUT") { e.preventDefault(); next(); } }}>
             <span className="obx-eyebrow">Paso {step + 1} de {STEPS.length}</span>
             {step === 0 && (
@@ -127,7 +133,7 @@ export function Onboarding({ firstName, uses, modules, guessCountry, detected }:
                   <h1>Hola{firstName ? `, ${firstName}` : ""}</h1>
                   <p className="lead">En dos minutos dejamos NEXO listo para que sepas cuánto podés gastar hasta tu próximo cobro.</p>
                 </div>
-                <div className="obx-card">
+                <div className="obx-card obx-card-b">
                   <span className="obx-ico"><Icon name="wallet" /></span>
                   <div className="grow">
                     <b>Vas a ver todo en {currencyName(currency).toLowerCase()} ({symbolOf(currency)})</b>
@@ -163,7 +169,7 @@ export function Onboarding({ firstName, uses, modules, guessCountry, detected }:
                 <div className="obx-tiles" id="ob-tiles" tabIndex={-1}>
                   {ACC_TYPES.map(([v, l, i, sug]) => (
                     <button type="button" key={v} className={`obx-tile ${acc.type === v && !skipAcc ? "on" : ""}`} aria-pressed={acc.type === v && !skipAcc} onClick={() => pickType(v, sug)}>
-                      <Icon name={i} /><span>{l}</span>
+                      <span className="obx-tile-ic"><Icon name={i} /></span><span>{l}</span>
                     </button>
                   ))}
                 </div>

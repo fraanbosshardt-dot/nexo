@@ -253,3 +253,31 @@
 }
 .nx .obx-mini{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 @media (max-width:640px){ .nx .obx-eyebrow{display:none} }
+
+/* Bienvenida con el mismo lenguaje que la app en el celular */
+.nx .obx-mhero{display:none}
+.nx .obx-tile-ic{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;background:var(--nx-sunk);color:var(--nx-accent)}
+.nx .obx-tile .obx-tile-ic svg{color:inherit}
+.nx .obx-tile.on .obx-tile-ic{background:var(--nx-accent);color:var(--nx-on-accent)}
+.nx .obx-card-b{background:var(--nx-accent-soft);color:var(--nx-accent-ink)}
+.nx .obx-card-b small{color:var(--nx-accent-ink);opacity:.85}
+.nx .obx-card-b .obx-ico{background:var(--nx-bg);color:var(--nx-accent)}
+.nx .obx-choice .obx-ico,.nx .use .obx-ico{background:var(--nx-accent-soft);color:var(--nx-accent-ink)}
+.nx .obx-choice.on .obx-ico{background:var(--nx-accent);color:var(--nx-on-accent)}
+.nx .obx-body,.nx .obx-preview{border-radius:28px}
+.nx .obx-tile,.nx .obx-choice,.nx .use,.nx .obx-inc{border-radius:20px}
+@media (max-width:900px){
+  .nx .obx-mhero{display:flex;flex-direction:column;gap:6px;background:var(--nx-accent);color:var(--nx-on-accent);border-radius:28px;padding:20px 22px 18px}
+  .nx .obx-mhero-l{font-size:14px;opacity:.9}
+  .nx .obx-mhero-n{font-size:36px;font-weight:500;letter-spacing:-.5px;line-height:1.1;overflow-wrap:anywhere}
+  .nx .obx-mhero-s{font-size:13px;opacity:.9}
+  .nx .obx-mhero-bar{height:6px;border-radius:3px;background:rgba(255,255,255,.28);margin-top:8px;overflow:hidden;display:block}
+  .nx .obx-mhero-bar i{display:block;height:100%;border-radius:3px;background:var(--nx-on-accent)}
+  .nx .obx-wrap{gap:14px}
+  .nx .obx-mini{display:none}
+}
+@media (max-width:640px){
+  .nx .obx-card .obx-ico{display:grid}
+  .nx .obx-card-b{gap:12px}
+  .nx .obx-body{padding:22px 20px}
+}
