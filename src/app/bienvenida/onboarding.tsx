@@ -251,7 +251,9 @@ export function Onboarding({ firstName, uses, modules, guessCountry, detected }:
           {/* Vista previa en vivo del Inicio */}
           <aside className="obx-preview" aria-label="Así va a quedar tu Inicio">
             <span className="obx-pv-lbl">Así va a quedar tu Inicio</span>
+            <div className="obx-pv-head"><h2>Tu Inicio, en vivo</h2><p>Se arma con lo que vas cargando. Después podés cambiar todo.</p></div>
             <div className="obx-phone">
+              <div className="obx-phone-hi" aria-hidden="true"><span>{firstName ? `Hola, ${firstName}` : "Hola"}</span><i>{(firstName || "N").slice(0, 1).toUpperCase()}</i></div>
               <small>{nextPay ? `Te queda hasta tu próximo cobro, el ${nextPay.date.getDate()} de ${MES[nextPay.date.getMonth()]}` : "Disponible hoy"}</small>
               <b className="obx-big">{formatMoney(balance, sumCur, { cents: "auto" })}</b>
               <div className="obx-rows">
@@ -261,6 +263,10 @@ export function Onboarding({ firstName, uses, modules, guessCountry, detected }:
               {nextPay?.variable && <p className="obx-note"><Icon name="info" />El {nextPay.date.getDate()} te preguntamos cuánto cobraste y lo ajustás.</p>}
             </div>
             {step === 3 && featureNames.length > 0 && <p className="obx-feats">Vas a tener: {featureNames.join(", ")}.</p>}
+            <ul className="obx-trust">
+              <li><Icon name="lock" />Nunca te pedimos la clave del banco.</li>
+              <li><Icon name="check" />Es gratis y no pide tarjeta.</li>
+            </ul>
           </aside>
         </div>
 
