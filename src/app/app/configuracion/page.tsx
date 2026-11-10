@@ -15,6 +15,7 @@ import { ThemeChoice } from "@/components/theme";
 import { ActionForm, OtpInput, Submit } from "@/components/forms";
 import { deleteMyAccountAction, emailRemindersAction, confirm2faAction, disable2faAction, revokeOtherSessionsAction, saveModulesAction, start2faAction, twoFactorQr, updateProfileAction } from "@/app/actions/app";
 import { ConfirmSubmit } from "@/components/confirm-submit";
+import { ShareLink } from "@/components/referral";
 
 export const metadata: Metadata = { title: "Configuración" };
 
@@ -123,9 +124,13 @@ export default async function Settings({ searchParams }: { searchParams: Promise
   if (t === "plan") {
     const sub = workspace.subscription;
     const bill = billingConfig();
-    const prices = (await planSettings(getDb())).prices;
+    const ps = await planSettings(getDb());
+    const { priceLabel } = await import("@/server/plans");
     const invoices = await getDb().invoice.findMany({ where: { workspaceId: workspace.id }, orderBy: { createdAt: "desc" }, take: 24 });
     const paidPro = sub?.plan === "PRO" && sub.status === "ACTIVE" && sub.provider === "mercadopago";
+    const { ensureReferralCode, referralStats, REFERRAL_DAYS } = await import("@/server/referrals");
+    const { SITE } = await import("@/lib/seo");
+    const [refCode, refStats] = await Promise.all([ensureReferralCode(getDb(), user.id), referralStats(getDb(), user.id)]);
     const trial = sub?.status === "TRIALING" && sub.trialEndsAt && sub.trialEndsAt > new Date();
     body = (
       <>
@@ -145,9 +150,15 @@ export default async function Settings({ searchParams }: { searchParams: Promise
               </div>
             </form>
           ) : (
-            <p className="sub">Pro cuesta US$ {prices.monthly} por mes o US$ {prices.yearly} por año. El cobro con Mercado Pago se activa pronto; mientras tanto podés usar la prueba gratis.</p>
+            <p className="sub">Pro cuesta {priceLabel(ps, "monthly").text} por mes o {priceLabel(ps, "yearly").text} por año. El cobro con Mercado Pago se activa pronto; mientras tanto podés usar la prueba gratis.</p>
           )}
           {!paidPro && !sub?.trialEndsAt && plan !== "PRO" && <form action={startTrialAction} style={{ marginTop: 12 }}><button className="btn ghost" type="submit">Probar Pro gratis 14 días</button></form>}
+        </div>
+        <div className="card">
+          <div className="chead"><div><h3>Invitá y ganá Pro</h3><p className="sub">Cuando alguien se registra con tu link y termina la bienvenida, ustedes dos reciben {REFERRAL_DAYS} días de Pro.</p></div>{refStats.rewarded > 0 && <span className="pill g">{refStats.rewarded} {refStats.rewarded === 1 ? "invitación" : "invitaciones"}</span>}</div>
+          <ShareLink url={`${SITE.url}/?ref=${refCode}`} text="Yo uso NEXO para ordenar mi plata. Probalo gratis:" />
+          {refStats.invited > refStats.rewarded && <p className="sub" style={{ margin: "10px 0 0" }}>{refStats.invited - refStats.rewarded} {refStats.invited - refStats.rewarded === 1 ? "persona se registró y todavía no terminó" : "personas se registraron y todavía no terminaron"} la bienvenida.</p>}
+          {refStats.left === 0 && <p className="sub" style={{ margin: "10px 0 0" }}>Llegaste al máximo de premios por invitar. ¡Gracias por recomendarnos!</p>}
         </div>
         <div className="card"><div className="chead"><h3>Qué suma Pro</h3></div><div className="list">{PLAN_FEATURES.filter((f) => f.plan === "pro").map((f) => <div className="li" key={f.name}><span className="pill b">Pro</span><div className="grow">{f.name}</div>{f.beta && <span className="pill a">Beta</span>}</div>)}</div><p className="foot-note" style={{ marginTop: 10 }}>Beta: en desarrollo. Se suma a Pro sin costo extra apenas esté lista.</p></div>
         {invoices.length > 0 && (

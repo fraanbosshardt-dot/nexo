@@ -12,6 +12,17 @@ export type FormState = { error?: string; ok?: string } | null;
 
 const email = z.string().trim().toLowerCase().email("Revisá el correo: falta algo, como la @.").max(200);
 
+// Si llegó con el link de alguien (?ref=), se anota quién lo invitó. Nunca frena el registro.
+async function linkReferral(userId: string) {
+  try {
+    const { cookies } = await import("next/headers");
+    const jar = await cookies();
+    const { attachReferral, REF_COOKIE } = await import("@/server/referrals");
+    const code = jar.get(REF_COOKIE)?.value;
+    if (code) { await attachReferral(getDb(), userId, code); jar.delete(REF_COOKIE); }
+  } catch (e) { console.error("referido", e); }
+}
+
 export async function signupAction(_: FormState, fd: FormData): Promise<FormState> {
   const parsed = z
     .object({ name: z.string().trim().min(1, "Decinos cómo te llamamos.").max(80), email, password: z.string(), terms: z.literal("on", { error: "Para seguir, aceptá los términos y la política de privacidad." }) })
@@ -27,6 +38,7 @@ export async function signupAction(_: FormState, fd: FormData): Promise<FormStat
   const user = await db.user.create({ data: { email: parsed.data.email, name: parsed.data.name, passwordHash: await hashPassword(parsed.data.password) } });
   const ws = await createWorkspaceForUser(db, user.id, "Personal");
   await audit("auth.signup", { userId: user.id, workspaceId: ws.id, meta: { via: "email" } });
+  await linkReferral(user.id);
   const { applyProGrant } = await import("@/server/grants");
   await applyProGrant(db, user.email, ws.id);
   await createSession(user.id, { twoFactorVerified: true, remember: true });

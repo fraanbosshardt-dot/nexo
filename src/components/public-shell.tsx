@@ -5,6 +5,9 @@ import { BRAND, SOCIALS, type SocialKey } from "@/lib/brand";
 import { getDb } from "@/lib/db";
 import { contactSettings } from "@/server/contact";
 import { inter, tight } from "@/lib/site-fonts";
+// Medición de visitas de Vercel: sin cookies y sin datos personales. Solo en la web pública, nunca en la app.
+import { Analytics } from "@vercel/analytics/next";
+import { RefCapture } from "./referral";
 // Estilos del sitio público: solo se descargan en estas páginas, no en la app.
 import "@/app/site.css";
 import "@/app/landing.css";
@@ -17,6 +20,8 @@ export function PublicShell({ children, logged = false }: { children: React.Reac
       <PublicNav logged={logged} />
       <main id="contenido">{children}</main>
       <SiteFooter />
+      <Analytics />
+      <RefCapture />
     </div>
   );
 }
@@ -30,8 +35,8 @@ const SOCIAL_ICON: Record<SocialKey, React.ReactNode> = {
 };
 
 const COLS: [string, [string, string][]][] = [
-  ["Producto", [["Funciones", "/#funciones"], ["Precios", "/#planes"], ["Seguridad", "/seguridad"], ["Novedades", "/novedades"]]],
-  ["Recursos", [["¿Puedo comprarlo en cuotas?", "/herramientas/cuotas"], ["Calculadora de préstamos", "/herramientas/prestamo"], ["Glosario", "/glosario"], ["Preguntas frecuentes", "/#preguntas"]]],
+  ["Producto", [["Funciones", "/#funciones"], ["Para productores", "/productores"], ["Precios", "/#planes"], ["Seguridad", "/seguridad"], ["Novedades", "/novedades"]]],
+  ["Recursos", [["Herramientas gratis", "/herramientas"], ["Guías", "/guias"], ["Glosario", "/glosario"], ["Preguntas frecuentes", "/#preguntas"]]],
   ["Empresa", [["Quiénes somos", "/quienes-somos"], ["Contacto", "/contacto"], ["Prensa", "/contacto?area=prensa"], ["Alianzas", "/contacto?area=alianzas"]]],
   ["Legales", [["Términos", "/terminos"], ["Privacidad", "/privacidad"], ["Reembolsos", "/reembolsos"], ["Cookies", "/cookies"]]],
 ];

@@ -3,11 +3,13 @@ import { Reveal } from "@/components/landing-fx";
 import { CuotasDemo, PriceSwitch } from "@/components/landing-demo";
 import { LandingMotion, PhoneTour } from "@/components/landing-motion";
 import { PublicShell } from "@/components/public-shell";
+import { AppCta } from "@/components/app-cta";
 import { PLAN_FEATURES } from "@/lib/modules";
 import { getDb } from "@/lib/db";
-import { planSettings, PRICES_DEFAULT } from "@/server/plans";
+import { planSettings, priceLabel, PRICES_DEFAULT } from "@/server/plans";
 import { jsonLd, SITE } from "@/lib/seo";
 import { BRAND } from "@/lib/brand";
+import { Icon, type IconName } from "@/components/icons";
 
 // Se sirve desde caché y se renueva sola cada 10 minutos: abre al instante.
 export const revalidate = 600;
@@ -24,6 +26,28 @@ const FEATS: [React.ReactNode, string, string, ("bars" | null)?][] = [
   [svg("M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 13h6M9 17h4"), "Leé tu resumen en PDF", "Subí el resumen de la tarjeta y se cargan las compras y cuotas. Vos revisás y confirmás."],
   [svg("M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"), "Objetivos de ahorro", "Vacaciones, el auto o un fondo para imprevistos. Ves cuánto te falta y cuánto apartar por mes."],
 ];
+// Para quién es: cada persona se reconoce rápido.
+const WHO: [IconName, string, string][] = [
+  ["wallet", "Si cobrás un sueldo", "Sabé cuánto podés gastar hasta el próximo cobro y que las cuotas no te sorprendan."],
+  ["user", "Si trabajás por tu cuenta", "Cobros que cambian todos los meses: cargás lo estimado y después lo real."],
+  ["home", "Para la familia", "Alquiler, servicios, colegio y tarjetas de todos, ordenados por fecha."],
+  ["tractor", "Si sos productor", "Ventas de cereal mes a mes, gasoil e insumos junto con los gastos de tu casa."],
+];
+// Todo lo que incluye (lista completa, compacta).
+const ALL: [IconName, string][] = [
+  ["wallet", "Cuentas y billeteras"], ["swap", "Ingresos, gastos y transferencias"], ["card", "Tarjetas y cuotas"], ["bank", "Deudas y préstamos"],
+  ["clock", "Próximos pagos"], ["cal", "Calendario"], ["repeat", "Pagos que se repiten"], ["flow", "Flujo de caja"],
+  ["pie", "Presupuestos"], ["target", "Objetivos de ahorro"], ["sliders", "Simulador de compras"], ["scale", "Inversiones y patrimonio"],
+  ["chart", "Informes"], ["bell", "Alertas y avisos por correo"], ["file", "Importar CSV y resumen en PDF"], ["tag", "Dólar y otras monedas"],
+  ["grain", "Ventas de cereal"], ["lock", "Dos pasos y entrar con Google"], ["home", "Se instala como app"], ["gear", "Modo claro y oscuro"],
+];
+const TOOLS: [string, IconName, string, string][] = [
+  ["/herramientas/cuotas", "sliders", "¿Puedo comprarlo en cuotas?", "Te dice si te alcanza todos los meses."],
+  ["/herramientas/prestamo", "bank", "Calculadora de préstamos", "Cuota, intereses y cronograma completo."],
+  ["/glosario", "file", "Glosario financiero", "TNA, TEA, CFT y más, explicados simple."],
+  ["/guias", "help", "Guías", "Cómo ordenar el sueldo, las cuotas y más."],
+];
+
 const VS: [string, string][] = [
   ["Cuotas repartidas mes a mes", "A mano"],
   ["Avisos antes de vencer", "No"],
@@ -49,6 +73,7 @@ const FAQ: [string, string][] = [
   ["¿Las compras con tarjeta se cuentan dos veces?", "No. La compra es el gasto. Pagar el resumen es pasar plata de tu cuenta a la tarjeta, así que no suma otra vez."],
   ["¿Puedo usarlo en el celular?", "Sí. Funciona en cualquier navegador y se instala como app en la pantalla de inicio, sin pasar por la tienda."],
   ["¿Sirve en mi país y con mi moneda?", "Sí. Elegís tu país y tu moneda al registrarte, y podés usar pesos y dólares a la vez. La cotización se actualiza sola."],
+  ["¿Puedo invitar a alguien?", "Sí. Desde Configuración → Plan copiás tu link. Cuando la otra persona se registra y termina la bienvenida, los dos reciben un mes de Pro."],
   ["¿Cómo cancelo Pro?", "Desde Configuración, cuando quieras. Dentro de los 10 días de contratarlo te devolvemos todo."],
 ];
 
@@ -137,23 +162,22 @@ function Phone() {
 }
 
 export default async function Landing() {
-  const logged = false; // la landing es igual para todos; quien ya tiene sesión entra directo desde "Ingresar"
-  const prices = await planSettings(getDb()).then((s) => s.prices, () => PRICES_DEFAULT);
-  const cta = logged ? { href: "/app", label: "Ir a la app" } : { href: "/registro", label: "Empezar gratis" };
+  const ps = await planSettings(getDb()).catch(() => ({ prices: PRICES_DEFAULT, pricesArs: null }));
+  const pm = priceLabel(ps, "monthly"), py = priceLabel(ps, "yearly");
   const free = PLAN_FEATURES.filter((f) => f.plan === "free");
   const pro = PLAN_FEATURES.filter((f) => f.plan === "pro");
-  const plans = (price: number, period: string) => (
+  const plans = (price: string, period: string) => (
     <div className="lx-plans">
       <div className="lx-plan" style={{ "--i": 0 } as React.CSSProperties}>
         <div><h3>Gratis</h3><p>Para ordenar tu plata del día a día.</p></div>
-        <div className="lx-price"><b>US$ 0</b><span>para siempre</span></div>
+        <div className="lx-price"><b>{ps.pricesArs ? "$ 0" : "US$ 0"}</b><span>para siempre</span></div>
         <Link className="ws-btn" href="/registro">Crear cuenta gratis</Link>
         <ul>{free.map((f) => <li key={f.name}>{CHECK}{f.name}</li>)}</ul>
       </div>
       <div className="lx-plan pro" style={{ "--i": 1 } as React.CSSProperties}>
         <span className="lx-reco">Recomendado</span>
         <div><h3>Pro</h3><p>Para planificar todo el año.</p></div>
-        <div className="lx-price"><b>US$ {price}</b><span>por {period}</span></div>
+        <div className="lx-price"><b>{price}</b><span>por {period}</span></div>
         <Link className="ws-btn pri lx-shine" href="/registro">Probar Pro 14 días gratis</Link>
         <ul><li>{CHECK}Todo lo de Gratis</li>{pro.map((f) => <li key={f.name}>{CHECK}<span>{f.name}{f.beta && <> <span className="lx-beta">Beta</span></>}</span></li>)}</ul>
       </div>
@@ -162,11 +186,12 @@ export default async function Landing() {
   const ld = [
     { "@context": "https://schema.org", "@type": "Organization", name: N, url: SITE.url, logo: `${SITE.url}/icon.svg`, founder: { "@type": "Person", name: BRAND.owner }, taxID: BRAND.cuit, contactPoint: { "@type": "ContactPoint", contactType: "customer support", url: `${SITE.url}/contacto`, availableLanguage: "es" } },
     { "@context": "https://schema.org", "@type": "SoftwareApplication", name: N, url: SITE.url, applicationCategory: "FinanceApplication", operatingSystem: "Web, Android, iOS", inLanguage: "es", description: SITE.description,
-      offers: [{ "@type": "Offer", name: "Gratis", price: "0", priceCurrency: "USD" }, { "@type": "Offer", name: "Pro", price: String(prices.monthly), priceCurrency: "USD" }] },
+      offers: [{ "@type": "Offer", name: "Gratis", price: "0", priceCurrency: "USD" }, { "@type": "Offer", name: "Pro", price: String(pm.amount), priceCurrency: pm.currency }] },
     { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: FAQ.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })) },
   ];
   return (
-    <PublicShell logged={logged}>
+    // Igual para todos (sale de caché); "Ir a la app" se decide en el navegador.
+    <PublicShell>
       <LandingMotion />
       {ld.map((d, i) => <script key={i} type="application/ld+json" dangerouslySetInnerHTML={jsonLd(d)} />)}
 
@@ -178,7 +203,7 @@ export default async function Landing() {
             <h1 className="ws-h1 lx-h1">Sabé cuánto podés gastar <em>hasta tu próximo cobro.</em></h1>
             <p className="ws-lead">Tus cuentas, tarjetas en cuotas, deudas y vencimientos en un solo lugar, en pesos y en dólares. {N} te dice hoy con cuánta plata llegás a fin de mes.</p>
             <div className="lx-ctas">
-              <Link className="ws-btn pri lx-big lx-shine" href={cta.href}>{cta.label}</Link>
+              <AppCta className="ws-btn pri lx-big lx-shine" label="Empezar gratis" />
               <a className="ws-btn lx-big" href="#demo">Probalo sin registrarte</a>
             </div>
             <ul className="lx-trust"><li>{CHECK}Gratis para siempre</li><li>{CHECK}Sin tarjeta</li><li>{CHECK}Nunca te pedimos la clave del banco</li></ul>
@@ -189,6 +214,14 @@ export default async function Landing() {
 
       <section className="lx-strip" aria-label="Qué podés ordenar">
         <div className="ws-w"><span>Todo en un lugar:</span>{["Pesos y dólares", "Tarjetas en cuotas", "Préstamos", "Servicios y alquiler", "Sueldo o cobros variables", "Ventas de cereal", "Objetivos de ahorro"].map((t) => <em key={t}>{t}</em>)}</div>
+      </section>
+
+      {/* Para quién es */}
+      <section className="ws-w ws-sec lx-who-sec">
+        <Reveal className="ws-head"><p className="ws-eyebrow">Para quién es</p><h2 className="ws-h2">Hecho para la plata de todos los días.</h2></Reveal>
+        <div className="lx-who">{WHO.map(([ic, t, d], i) => (
+          <Reveal key={t} className="lx-who-card" tilt style={{ "--i": i } as React.CSSProperties}><span className="ws-ic"><Icon name={ic} /></span><h3>{t}</h3><p>{d}</p></Reveal>
+        ))}</div>
       </section>
 
       {/* Funciones */}
@@ -219,6 +252,14 @@ export default async function Landing() {
         <PhoneTour steps={TOUR} screens={[<ScreenHome key="h" />, <ScreenCards key="c" />, <ScreenNext key="n" />, <ScreenFlow key="f" />]} />
       </section>
 
+      {/* Todo lo que incluye */}
+      <section className="ws-soft">
+        <div className="ws-w ws-sec">
+          <Reveal className="ws-head"><p className="ws-eyebrow">Todo lo que incluye</p><h2 className="ws-h2">Una sola app para toda tu plata.</h2></Reveal>
+          <ul className="lx-all">{ALL.map(([ic, t], i) => <Reveal as="li" key={t} style={{ "--i": i % 4 } as React.CSSProperties}><Icon name={ic} /><span>{t}</span></Reveal>)}</ul>
+        </div>
+      </section>
+
       {/* Planilla vs NEXO */}
       <section className="ws-soft">
         <div className="ws-w ws-sec lx-two">
@@ -247,6 +288,17 @@ export default async function Landing() {
         </div>
       </section>
 
+      {/* Herramientas gratis */}
+      <section className="ws-w ws-sec lx-tools-sec">
+        <div className="lx-sec-head">
+          <Reveal className="ws-head"><p className="ws-eyebrow">Gratis y sin registrarte</p><h2 className="ws-h2">Herramientas para decidir mejor.</h2></Reveal>
+          <Link className="lx-link" href="/herramientas">Ver todas →</Link>
+        </div>
+        <div className="lx-tools">{TOOLS.map(([href, ic, t, d], i) => (
+          <Reveal key={href} className="lx-tool" style={{ "--i": i } as React.CSSProperties}><Link href={href}><span className="ws-ic"><Icon name={ic} /></span><b>{t}</b><span>{d}</span><em>Usar →</em></Link></Reveal>
+        ))}</div>
+      </section>
+
       {/* Para el campo */}
       <section className="ws-navy" id="agro">
         <div className="ws-w ws-sec lx-two">
@@ -254,6 +306,7 @@ export default async function Landing() {
             <p className="ws-eyebrow">Para el campo · Pro</p>
             <h2 className="ws-h2">Si vendés cereal todos los meses, {N} ya lo cuenta.</h2>
             <p className="ws-lead">Cargás cuánto pensás vender por mes y lo ves proyectado en tu flujo de caja, aunque todavía no lo hayas cobrado. Cuando liquidás, ponés el monto real.</p>
+            <Link className="lx-link" style={{ color: "#8FB4F5" }} href="/productores">Ver todo para productores →</Link>
             <ul className="lx-ticks">
               <li>{CHECK}Ventas de soja, maíz, trigo o girasol, mes a mes</li>
               <li>{CHECK}Lo que está por cobrar suma en lo proyectado</li>
@@ -282,7 +335,7 @@ export default async function Landing() {
       <section className="ws-soft" id="planes">
         <div className="ws-w ws-sec lx-pricing">
           <Reveal className="ws-head c"><p className="ws-eyebrow">Precios</p><h2 className="ws-h2">Empezá gratis. Pasate a Pro cuando lo necesites.</h2></Reveal>
-          <PriceSwitch monthly={plans(prices.monthly, "mes")} yearly={plans(prices.yearly, "año")} />
+          <PriceSwitch monthly={plans(pm.text, "mes")} yearly={plans(py.text, "año")} />
           <p className="ws-fine" style={{ textAlign: "center" }}>Beta: ya se puede usar y la seguimos mejorando, sin costo extra. Cancelás cuando quieras y tenés 10 días para arrepentirte con <Link href="/reembolsos">devolución total</Link>.</p>
         </div>
       </section>
@@ -298,7 +351,7 @@ export default async function Landing() {
       <section className="ws-w lx-final-wrap">
         <Reveal className="lx-final">
           <div><h2 className="ws-h2">Ordená tu plata hoy. Es gratis.</h2><p>Cinco minutos para empezar. Sin tarjeta.</p></div>
-          <Link className="ws-btn lx-big lx-shine" href={cta.href}>{logged ? "Ir a la app" : "Crear mi cuenta"}</Link>
+          <AppCta className="ws-btn lx-big lx-shine" label="Crear mi cuenta" />
         </Reveal>
       </section>
     </PublicShell>

@@ -7,7 +7,7 @@ import { loginAction } from "@/app/actions/auth";
 import { getSession } from "@/lib/auth/session";
 import { GoogleButton, GoogleNotice } from "@/components/google-button";
 
-export const metadata: Metadata = { title: "Iniciar sesión" };
+export const metadata: Metadata = { title: "Iniciar sesión", alternates: { canonical: "/ingresar" }, robots: { index: false, follow: true } };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ nueva?: string; google?: string }> }) {
   const { nueva, google } = await searchParams;

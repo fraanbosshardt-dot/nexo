@@ -318,8 +318,12 @@ export async function adminSavePlansAction(_: FormState, fd: FormData): Promise<
   if (!(monthly > 0) || !(yearly > 0)) return { error: "Los precios tienen que ser mayores a cero." };
   const keys = new Set(PRO_FEATURES.map((f) => f.key));
   const freeAlso = fd.getAll("freeAlso").map(String).filter((k): k is FeatureKey => keys.has(k as FeatureKey));
-  await savePlanSettings(getDb(), { freeAlso, prices: { monthly, yearly } });
-  await adminAudit(a, "admin.plans_saved", { meta: { monthly, yearly, freeAlso } });
+  // Precio en pesos (opcional): si se completa, es el que se ve en la web y en la app.
+  const arsM = s(fd, "arsMonthly") ? n(fd, "arsMonthly") : 0, arsY = s(fd, "arsYearly") ? n(fd, "arsYearly") : 0;
+  if ((arsM || arsY) && !(arsM > 0 && arsY > 0)) return { error: "Para mostrar el precio en pesos, completá por mes y por año." };
+  const pricesArs = arsM > 0 && arsY > 0 ? { monthly: Math.round(arsM), yearly: Math.round(arsY) } : null;
+  await savePlanSettings(getDb(), { freeAlso, prices: { monthly, yearly }, pricesArs });
+  await adminAudit(a, "admin.plans_saved", { meta: { monthly, yearly, pricesArs, freeAlso } });
   refresh();
   revalidatePath("/");
   return { ok: "Guardado. Ya se ve en la web y en la app." };

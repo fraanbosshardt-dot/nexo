@@ -7,7 +7,11 @@ import { signupAction } from "@/app/actions/auth";
 import { getSession } from "@/lib/auth/session";
 import { GoogleButton, GoogleNotice } from "@/components/google-button";
 
-export const metadata: Metadata = { title: "Crear cuenta" };
+export const metadata: Metadata = {
+  title: "Crear cuenta gratis",
+  description: "Creá tu cuenta gratis en un minuto, con tu correo o con Google. Sin tarjeta y sin conectar tu banco.",
+  alternates: { canonical: "/registro" },
+};
 
 export default async function SignupPage({ searchParams }: { searchParams: Promise<{ google?: string }> }) {
   const { google } = await searchParams;

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { PublicShell, Breadcrumbs } from "@/components/public-shell";
+import { jsonLd, organizationLd } from "@/lib/seo";
 import { Reveal } from "@/components/landing-fx";
 import { BRAND } from "@/lib/brand";
 
@@ -20,6 +21,7 @@ const VALUES: [string, string][] = [
 export default function About() {
   return (
     <PublicShell>
+      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(organizationLd())} />
       <section className="ws-hero">
         <div className="ws-w">
           <Breadcrumbs items={[["Inicio", "/"], ["Quiénes somos"]]} />

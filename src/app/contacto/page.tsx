@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { PublicShell, Breadcrumbs } from "@/components/public-shell";
+import { jsonLd, organizationLd } from "@/lib/seo";
 import { getSession } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
 import { contactSettings } from "@/server/contact";
@@ -21,6 +22,7 @@ export default async function Contact({ searchParams }: { searchParams: Promise<
   const mails = AREAS.filter((a) => cfg.emails[a.key]);
   return (
     <PublicShell logged={!!session}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(organizationLd())} />
       <section className="ws-hero">
         <div className="ws-w">
           <Breadcrumbs items={[["Inicio", "/"], ["Contacto"]]} />

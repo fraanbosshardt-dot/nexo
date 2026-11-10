@@ -31,12 +31,20 @@ export const FREE_INCLUDES = [
 export const PRICES_DEFAULT = { monthly: 5, yearly: 48 };
 export const FREE_LIMITS = { accounts: 5, goals: 3 };
 
-type PlanSettings = { freeAlso: FeatureKey[]; prices: { monthly: number; yearly: number } };
+// pricesArs: el precio en pesos que se muestra en la web y en la app (si está cargado, reemplaza al de dólares).
+type PlanSettings = { freeAlso: FeatureKey[]; prices: { monthly: number; yearly: number }; pricesArs?: { monthly: number; yearly: number } | null };
 
 export async function planSettings(db: Db): Promise<PlanSettings> {
   const s = await db.appSetting.findUnique({ where: { key: "plans" } });
   const v = (s?.value ?? {}) as Partial<PlanSettings>;
-  return { freeAlso: Array.isArray(v.freeAlso) ? v.freeAlso : [], prices: { ...PRICES_DEFAULT, ...(v.prices ?? {}) } };
+  const ars = v.pricesArs && v.pricesArs.monthly > 0 && v.pricesArs.yearly > 0 ? v.pricesArs : null;
+  return { freeAlso: Array.isArray(v.freeAlso) ? v.freeAlso : [], prices: { ...PRICES_DEFAULT, ...(v.prices ?? {}) }, pricesArs: ars };
+}
+
+// Precio para mostrar: en pesos si está cargado; si no, en dólares.
+export function priceLabel(s: Pick<PlanSettings, "prices" | "pricesArs">, cycle: "monthly" | "yearly") {
+  if (s.pricesArs) return { text: `$ ${s.pricesArs[cycle].toLocaleString("es-AR")}`, amount: s.pricesArs[cycle], currency: "ARS" };
+  return { text: `US$ ${s.prices[cycle].toLocaleString("es-AR")}`, amount: s.prices[cycle], currency: "USD" };
 }
 
 export async function savePlanSettings(db: Db, value: PlanSettings) {

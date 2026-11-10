@@ -12,6 +12,10 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 - [ ] Z5. Cargar los correos de contacto por área y los links de redes en Panel → Ajustes → Contacto y redes.
 - [ ] Z6. Nombre y dominio nuevos: avisar y se cambian (el nombre y los datos del titular están en src/lib/brand.ts).
 - [ ] Z7. Que un abogado revise los legales (términos, privacidad, reembolsos, cookies, arrepentimiento) antes de hacer publicidad, incluido si alcanza con no tener domicilio físico.
+- [ ] Z9. Activar la medición de visitas en Vercel (proyecto → Analytics → Enable). El código ya está puesto; sin activarlo no mide nada.
+- [ ] Z10. Cargar el precio de Pro en pesos en Panel → Ajustes → Precio de Pro (por mes y por año). Mientras esté vacío, la web muestra el de dólares.
+- [ ] Z11. Activar copias automáticas de la base en Railway (con el plan Hobby). Hoy se hacen a mano antes de cada cambio.
+- [ ] Z12. Con el dominio nuevo: dar de alta Search Console y enviar /sitemap.xml.
 - [ ] Z8. Decidir cómo mostrar el flujo de caja cuando los ingresos no se repiten: "Estimar con mi promedio", "Simular un ingreso" o las dos.
 
 ### Probar con una persona real
@@ -35,12 +39,12 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 - [ ] P14. Facturas de AFIP para los cobros de Pro.
 
 ### Sitio: marketing y SEO (etapa 3)
-- [ ] M1. Guías o blog con artículos que la gente busca en Google.
-- [ ] M2. Newsletter y programa de referidos.
-- [ ] M3. Medición de visitas sin cookies de publicidad.
+- [ ] M1. Escribir más guías (hay 4): fondo de emergencia, plazo fijo, presupuesto 50/30/20, aguinaldo.
+- [ ] M2. Newsletter.
 - [ ] M4. Testimonios de usuarios reales, cuando los haya (nunca inventados).
 
 ## Completado
+- [x] 10/11/2026 — Revisión de la landing (reporte) y todo lo que se podía hacer sin claves: Ingresar fuera de Google y Crear cuenta con su dirección, imágenes para compartir en calculadoras y páginas clave, descripciones completas, datos de la empresa para Google, "Ir a la app" si hay sesión (sin perder velocidad), precio en pesos desde el panel, secciones "Para quién es", "Todo lo que incluye" y "Herramientas gratis", Herramientas/Glosario/Novedades con el diseño nuevo, página Para productores, 4 guías (/guias), medición de visitas sin cookies (Vercel) y programa de referidos (1 mes de Pro para los dos, tope de 12).
 - [x] 09/11/2026 — Categorías editables (nombre y dónde van), botón ☰ que oculta o muestra el menú en la compu, "Para confirmar" ordenado, landing desde caché y estilos del sitio fuera de la app, pantallas recién vistas al instante, calendario con 7 días en el celular y revisión responsive de 31 páginas.
 - [x] 09/11/2026 — Landing con animaciones al bajar: cascada, celular con profundidad, números que cuentan, recorrido del celular por cada función, tabla con tildes, línea de pasos, barra de lectura, brillo en botones e inclinación de tarjetas.
 - [x] 09/11/2026 — Landing nueva (diseño aprobado en artefacto), Contacto por 7 áreas con número de trámite, "Consultas del sitio" en el panel, correos por área y redes en Ajustes, legales con datos del titular, reembolsos, cookies y aviso de que no es asesoramiento financiero, Quiénes somos, Seguridad y pie nuevo con Defensa del Consumidor.

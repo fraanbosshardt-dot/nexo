@@ -8,7 +8,6 @@ export const metadata: Metadata = {
   title: "Calculadora de préstamos: cuota, intereses y cronograma",
   description: "Calculá la cuota de un préstamo con sistema francés, alemán o americano. Cronograma completo con capital e intereses, total a pagar y TEA equivalente. Gratis.",
   alternates: { canonical: "/herramientas/prestamo" },
-  openGraph: { title: "Calculadora de préstamos", description: "Cuota, intereses y cronograma con sistema francés, alemán o americano.", url: "/herramientas/prestamo" },
 };
 
 const FAQ: [string, string][] = [
@@ -32,7 +31,7 @@ export default function PrestamoPage() {
       <section className="lp-band"><div className="lp-w lp-sec">
         <h2>Preguntas frecuentes</h2>
         <div className="lp-faq">{FAQ.map(([q, a]) => <details key={q}><summary>{q}</summary><p>{a}</p></details>)}</div>
-        <div className="acts" style={{ marginTop: 28 }}><Link className="btn pri lp-big" href="/registro">Seguir mis deudas en NEXO</Link><Link className="btn lp-big" href="/glosario">Ver el glosario</Link></div>
+        <div className="acts" style={{ marginTop: 28, display: "flex", flexWrap: "wrap", gap: 12 }}><Link className="ws-btn pri" href="/registro">Seguir mis deudas en NEXO</Link><Link className="ws-btn" href="/glosario">Ver el glosario</Link></div>
       </div></section>
     </PublicShell>
   );

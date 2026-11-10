@@ -51,6 +51,11 @@ export async function finishOnboardingAction(_: FormState, fd: FormData): Promis
     const extraCurrencies = [...new Set(fd.getAll("extraCurrencies").map(String).filter((c) => isCurrency(c) && c !== currency))];
     const db = getDb();
     await db.workspace.update({ where: { id: workspace.id }, data: { modules: mods, country, baseCurrency: currency, extraCurrencies, timezone, onboardedAt: new Date() } });
+    try {
+      const { rewardReferral } = await import("@/server/referrals");
+      const r = await rewardReferral(db, user.id);
+      if (r.rewarded) await audit("referral.rewarded", { userId: user.id, workspaceId: workspace.id, meta: { referrerId: r.referrerId, referrerGets: r.referrerGets } });
+    } catch (e) { console.error("referido", e); }
     const accName = String(fd.get("accountName") ?? "").trim();
     if (accName) {
       const type = z.enum(ACCOUNT_TYPES).catch("SAVINGS").parse(fd.get("accountType"));

@@ -3,12 +3,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Brand } from "./brand";
+import { useHasSession } from "./app-cta";
 
 const LINKS: [string, string][] = [["funciones", "Funciones"], ["como", "Cómo funciona"], ["agro", "Para el campo"], ["planes", "Precios"], ["preguntas", "Preguntas"]];
 
 // Barra de la parte pública: acompaña al bajar y se vuelve semitransparente.
 // En la landing, los enlaces bajan suave hasta cada sección; desde otras páginas, llevan a la landing.
-export function PublicNav({ logged }: { logged: boolean }) {
+export function PublicNav({ logged: loggedServer }: { logged: boolean }) {
+  const logged = useHasSession() || loggedServer;
   const path = usePathname();
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {

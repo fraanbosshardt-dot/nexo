@@ -5,7 +5,7 @@ import { PublicShell } from "@/components/public-shell";
 
 export const metadata: Metadata = {
   title: "Novedades",
-  description: "Lo nuevo de NEXO, la app para ordenar tu plata mes a mes.",
+  description: "Todo lo nuevo de NEXO, mes a mes: funciones que se suman, mejoras en el celular y cambios que nos pidieron quienes la usan todos los días.",
   alternates: { canonical: "/novedades" },
 };
 export const revalidate = 300;
@@ -14,9 +14,14 @@ export default async function News() {
   const news = await getDb().productNews.findMany({ orderBy: { publishedAt: "desc" }, take: 50 });
   return (
     <PublicShell>
-      <section className="lp-w" style={{ paddingBlock: "48px 72px", maxWidth: 760 }}>
-        <h1 style={{ fontWeight: 400, fontSize: 36, margin: "0 0 8px" }}>Novedades</h1>
-        <p className="sub" style={{ margin: "0 0 32px" }}>Lo que fuimos sumando a NEXO.</p>
+      <section className="ws-hero">
+        <div className="ws-w">
+          <p className="ws-eyebrow">Novedades</p>
+          <h1 className="ws-h1">Lo nuevo, <em>mes a mes.</em></h1>
+          <p className="ws-lead">Funciones que se suman y mejoras que nos pidieron quienes la usan todos los días.</p>
+        </div>
+      </section>
+      <section className="ws-w news-w" style={{ paddingBottom: "clamp(64px,8vw,112px)", maxWidth: 820 }}>
         {news.length ? news.map((n) => (
           <article key={n.id} className="news-item">
             <time dateTime={n.publishedAt.toISOString()}>{fmtDate(n.publishedAt)}</time>

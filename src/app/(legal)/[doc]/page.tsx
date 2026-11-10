@@ -11,7 +11,7 @@ export const generateStaticParams = () => Object.keys(LEGAL).map((doc) => ({ doc
 export async function generateMetadata({ params }: { params: Promise<{ doc: string }> }): Promise<Metadata> {
   const { doc } = await params;
   const d = LEGAL[doc];
-  return d ? { title: d.title, description: d.intro, alternates: { canonical: `/${doc}` } } : {};
+  return d ? { title: d.title, description: `${d.title} de ${BRAND.name}. ${d.intro} Titular: ${BRAND.owner}, CUIT ${BRAND.cuit}.`, alternates: { canonical: `/${doc}` } } : {};
 }
 
 export default async function LegalPage({ params }: { params: Promise<{ doc: string }> }) {

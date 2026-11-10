@@ -8,6 +8,7 @@ import { readModules } from "@/lib/modules";
 import { effectivePlan, hasFeature, type FeatureKey } from "@/server/plans";
 
 const COOKIE = "nexo_session";
+export const HINT_COOKIE = "nexo_in"; // solo dice "hay sesión" (sin datos), para que la web pública muestre "Ir a la app"
 const LONG = 30 * 24 * 3600 * 1000;
 const SHORT = 12 * 3600 * 1000;
 
@@ -32,6 +33,7 @@ export async function createSession(userId: string, opts: { twoFactorVerified: b
     path: "/",
     expires: expiresAt,
   });
+  (await cookies()).set(HINT_COOKIE, "1", { httpOnly: false, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", expires: expiresAt });
 }
 
 // Una sola búsqueda de la sesión por pedido, aunque la pidan el marco de la app y la pantalla.
@@ -52,6 +54,7 @@ export async function destroySession() {
   const token = jar.get(COOKIE)?.value;
   if (token) await getDb().session.updateMany({ where: { tokenHash: sha256(token) }, data: { revokedAt: new Date() } });
   jar.delete(COOKIE);
+  jar.delete(HINT_COOKIE);
 }
 
 // Exige sesión completa (con el segundo paso hecho si está activado).

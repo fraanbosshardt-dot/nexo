@@ -61,6 +61,11 @@ export async function GET(req: NextRequest) {
   if (r.created) {
     await audit("auth.signup", { userId: r.userId, workspaceId: r.workspaceId, meta: { via: "google" } });
     if (r.workspaceId) await applyProGrant(db, profile.email, r.workspaceId);
+    try {
+      const { attachReferral, REF_COOKIE } = await import("@/server/referrals");
+      const code = jar.get(REF_COOKIE)?.value;
+      if (code) { await attachReferral(db, r.userId, code); jar.delete(REF_COOKIE); }
+    } catch (e) { console.error("referido", e); }
   }
   if (r.linked) await audit("auth.google_linked", { userId: r.userId, meta: { passwordCleared: r.passwordCleared } });
 
