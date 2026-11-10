@@ -208,3 +208,13 @@
   .lx-grain-r>span:nth-child(2){flex:1 1 140px}
   .lx-grain-r>b{margin-left:54px;flex-basis:100%}
 }
+
+/* Tabla planilla vs app en celulares chicos */
+@media (max-width:520px){
+  .lx-vs table{table-layout:fixed}
+  .lx-vs thead th:first-child,.lx-vs tbody th{width:46%}
+  .lx-vs th,.lx-vs td{padding:12px 8px;font-size:13.5px;overflow-wrap:anywhere}
+  .lx-vs tbody th{padding-left:14px}
+  .lx-yes{gap:4px}.lx-yes svg{width:14px;height:14px}
+}
+.lx-vs th,.lx-vs td{white-space:normal}

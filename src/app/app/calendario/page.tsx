@@ -34,7 +34,7 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
       <Tabs current="cal" items={[{ key: "lista", label: "Lista", href: "/app/proximos" }, { key: "cal", label: "Calendario", href: "/app/calendario" }]} />
       <div className="legend"><span><i style={{ background: "var(--green-soft)", border: "1px solid var(--green)" }} />Cobros</span><span><i style={{ background: "var(--slate-soft)" }} />Pagos</span><span><i style={{ background: "var(--red-soft)" }} />Atrasados</span><span><i style={{ background: "var(--surface-2)", opacity: 0.6 }} />Ya pagados</span><span><i style={{ background: "transparent", border: "1px dashed var(--line-2)" }} />Proyectados (se repiten)</span></div>
       <div className="tw" style={{ margin: 0, padding: 0 }}>
-        <div className="cal cal-real" style={{ minWidth: 640 }}>
+        <div className="cal cal-real">
           {["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"].map((d) => <div className="hd" key={d}>{d}</div>)}
           {days.slice(0, weeks * 7).map((d) => {
             const k = d.toISOString().slice(0, 10), items = byDay.get(k) ?? [], pitems = projByDay.get(k) ?? [];

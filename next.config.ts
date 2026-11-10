@@ -28,7 +28,7 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   serverExternalPackages: ["pg"],
   // Para subir el CSV de importación y el PDF del resumen (cada uno se valida hasta 5 MB).
-  experimental: { serverActions: { bodySizeLimit: "6mb" } },
+  experimental: { serverActions: { bodySizeLimit: "6mb" }, staleTimes: { dynamic: 30, static: 300 } },
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },

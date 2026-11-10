@@ -869,3 +869,41 @@ html[data-big] body{zoom:1.15}
 .grp:not([open])>summary .grp-chev{transform:rotate(0)}
 .grp[open]>summary{margin-bottom:8px}
 :root[data-theme="light"]{color-scheme:light}
+
+/* Menú lateral que se oculta con el botón ☰ en la compu */
+@media (min-width:901px){
+  .app.side-off{grid-template-columns:0 minmax(0,1fr)}
+  .app.side-off .side{visibility:hidden;padding:0;overflow:hidden}
+  .app.side-off .top .brand{width:auto;margin-right:12px}
+}
+
+/* Tarjeta "Para confirmar" */
+.cf-card .chead{align-items:flex-start}
+.cf-li{gap:14px;align-items:center}
+.cf-ic{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;flex-shrink:0}
+.cf-ic svg{width:20px;height:20px}
+.cf-ic.in{background:var(--green-soft);color:var(--green)}
+.cf-ic.out{background:var(--red-soft);color:var(--red)}
+.cf-li .t{font-weight:500}
+.cf-acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.cf-acts form{display:contents}
+@media (max-width:640px){
+  .cf-li{flex-wrap:wrap}
+  .cf-li .grow{flex:1 1 0;min-width:0}
+  .cf-acts{flex-basis:100%;justify-content:stretch}
+  .cf-acts>*{flex:1 1 0}
+  .cf-acts .btn{width:100%;justify-content:center;min-height:44px}
+}
+@media (max-width:640px){.cf-acts .btn{flex:1 1 0}}
+
+/* Categorías: Editar y Borrar uno al lado del otro */
+.cat-acts{margin-top:10px;border-top:1px solid var(--line);padding-top:8px;display:flex;flex-wrap:wrap;gap:4px 18px}
+.cat-acts .cat-del{margin:0;border:0;padding:0}
+.cat-acts .cat-del[open]{flex-basis:100%}
+.grid:has(>.catc){align-items:start}
+.cat-edit summary{color:var(--ink)!important}
+.cat-acts summary{min-height:32px;display:flex;align-items:center}
+
+/* Calendario: los 7 días entran en cualquier celular */
+@media (max-width:640px){.cal .hd{font-size:11px;letter-spacing:0}.cal .d .dn{width:22px;height:22px;font-size:11.5px}}
+@media (max-width:360px){.cal .hd{font-size:10px}}

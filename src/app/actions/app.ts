@@ -420,3 +420,17 @@ export async function deleteMyAccountAction(_: FormState, fd: FormData): Promise
   redirect("/?cuenta-borrada=1");
 }
 
+
+export async function updateCategoryAction(_: FormState, fd: FormData): Promise<FormState> {
+  const { user, workspace } = await requireWorkspace();
+  try {
+    const { updateCategory } = await import("@/server/categories");
+    const id = String(fd.get("id") ?? "");
+    const c = await updateCategory(getDb(), workspace.id, id, { name: String(fd.get("name") ?? ""), parentId: String(fd.get("parentId") ?? "") || null });
+    await audit("category.updated", { userId: user.id, workspaceId: workspace.id, entityId: id, meta: { name: c.name, parentId: c.parentId } });
+  } catch (e) {
+    return fail(e);
+  }
+  revalidatePath("/app", "layout");
+  return { ok: "Listo, categoría actualizada." };
+}

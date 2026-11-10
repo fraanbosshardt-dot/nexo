@@ -4,13 +4,13 @@ import { CuotasDemo, PriceSwitch } from "@/components/landing-demo";
 import { LandingMotion, PhoneTour } from "@/components/landing-motion";
 import { PublicShell } from "@/components/public-shell";
 import { PLAN_FEATURES } from "@/lib/modules";
-import { getSession } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
 import { planSettings, PRICES_DEFAULT } from "@/server/plans";
 import { jsonLd, SITE } from "@/lib/seo";
 import { BRAND } from "@/lib/brand";
 
-export const dynamic = "force-dynamic";
+// Se sirve desde caché y se renueva sola cada 10 minutos: abre al instante.
+export const revalidate = 600;
 
 const N = BRAND.name;
 const svg = (d: string, extra?: React.ReactNode) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={d} />{extra}</svg>;
@@ -137,7 +137,7 @@ function Phone() {
 }
 
 export default async function Landing() {
-  const logged = await getSession().then(Boolean, () => false); // sin base, la landing igual se muestra
+  const logged = false; // la landing es igual para todos; quien ya tiene sesión entra directo desde "Ingresar"
   const prices = await planSettings(getDb()).then((s) => s.prices, () => PRICES_DEFAULT);
   const cta = logged ? { href: "/app", label: "Ir a la app" } : { href: "/registro", label: "Empezar gratis" };
   const free = PLAN_FEATURES.filter((f) => f.plan === "free");

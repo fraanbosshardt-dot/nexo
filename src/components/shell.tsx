@@ -50,6 +50,14 @@ export function Shell({ children, modules, overdue, userName, plan, isAdmin, log
   const path = usePathname();
   const [open, setOpen] = useState(false);
   const [menu, setMenu] = useState(false);
+  const [sideOff, setSideOff] = useState(false);
+  useEffect(() => { try { setSideOff(localStorage.getItem("nexo-side") === "off"); } catch { /* sin almacenamiento */ } }, []);
+  const toggleMenu = () => {
+    if (window.matchMedia("(max-width: 900px)").matches) { setOpen(!open); return; }
+    const v = !sideOff;
+    setSideOff(v);
+    try { localStorage.setItem("nexo-side", v ? "off" : "on"); } catch { /* sin almacenamiento */ }
+  };
   // Esc cierra el menú del celular y el de tu cuenta; al abrir el de tu cuenta, el foco va adentro.
   useEffect(() => {
     if (!open && !menu) return;
@@ -76,9 +84,9 @@ export function Shell({ children, modules, overdue, userName, plan, isAdmin, log
     return <Link href={href} className={on ? "on" : ""}><Icon name={icon} />{label}</Link>;
   };
   return (
-    <div className="app">
+    <div className={`app ${sideOff ? "side-off" : ""}`}>
       <header className="top">
-        <button className="ibtn menu-btn" aria-label={open ? "Cerrar menú" : "Abrir menú"} aria-expanded={open} onClick={() => setOpen(!open)}><Icon name="menu" /></button>
+        <button className="ibtn menu-btn" aria-label={open || !sideOff ? "Ocultar menú" : "Mostrar menú"} aria-expanded={open || !sideOff} onClick={toggleMenu}><Icon name="menu" /></button>
         <Link href="/app" className="brand" aria-label="NEXO, ir al inicio"><Mark /><b>NEXO</b></Link>
         <form action="/app/buscar" className="search top-search" role="search"><input name="q" placeholder="Buscar movimientos, cuentas, categorías…" aria-label="Buscar" /></form>
         <span style={{ flex: 1 }} />

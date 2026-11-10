@@ -4,7 +4,7 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import { createWorkspaceForUser } from "@/server/workspace";
 import { createAccount, payObligation, recordMovement } from "@/server/ledger";
 import { createRule, materialize } from "@/server/recurring";
-import { categoryUsage, deleteCategory } from "@/server/categories";
+import { categoryUsage, deleteCategory, updateCategory } from "@/server/categories";
 import { saveBudget } from "@/server/planning";
 
 let t: Awaited<ReturnType<typeof startTestDb>>;
@@ -71,5 +71,19 @@ describe("borrar categorías", () => {
     const tx = id ? await db.transaction.findUnique({ where: { id } }) : await db.transaction.findFirst({ where: { workspaceId: ws, description: "Cosa" } });
     expect(tx).not.toBeNull();
     expect(tx!.categoryId).toBeNull();
+  });
+});
+
+describe("editar categorías", () => {
+  it("cambia el nombre, la mueve y frena casos inválidos", async () => {
+    const a = await db.category.create({ data: { workspaceId: ws, kind: "EXPENSE", name: "Auto" } });
+    const b = await db.category.create({ data: { workspaceId: ws, kind: "EXPENSE", name: "Nafta" } });
+    const inc = await db.category.create({ data: { workspaceId: ws, kind: "INCOME", name: "Extras" } });
+    expect((await updateCategory(db, ws, b.id, { name: "Combustible", parentId: a.id })).parentId).toBe(a.id);
+    await expect(updateCategory(db, ws, a.id, { name: "Auto", parentId: inc.id })).rejects.toThrow(/mismo tipo/);
+    await expect(updateCategory(db, ws, a.id, { name: "Auto", parentId: b.id })).rejects.toThrow(/principal|subcategorías/);
+    await expect(updateCategory(db, ws, a.id, { name: "  ", parentId: null })).rejects.toThrow(/nombre/);
+    await expect(updateCategory(db, "otro", a.id, { name: "X", parentId: null })).rejects.toThrow(/No encontramos/);
+    expect((await updateCategory(db, ws, a.id, { name: "Vehículo", parentId: null })).name).toBe("Vehículo");
   });
 });

@@ -109,18 +109,19 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ l
       <QuickButtons cereal={!!modules.cereal} />
       {listo && <p className="notice g" role="status">{listo === "cobro" ? "Listo, registramos el cobro." : "Listo, registramos el pago."}</p>}
       {toConfirm.length > 0 && (
-        <div className="card confirm">
-          <div className="chead"><h3>Para confirmar</h3><span className="sub">Tocá cuando ya esté hecho</span></div>
+        <div className="card cf-card">
+          <div className="chead"><div><h3>Para confirmar</h3><p className="sub">Tocá cuando ya esté hecho</p></div><span className="pill b">{toConfirm.length}</span></div>
           <div className="list">{toConfirm.map((o) => {
             const rec = o.direction === "RECEIVABLE";
             const isToday = o.dueDate.getTime() === today.getTime();
             return (
-              <div className="li" key={o.id}>
+              <div className="li cf-li" key={o.id}>
+                <span className={`cf-ic ${rec ? "in" : "out"}`} aria-hidden="true"><Icon name={rec ? "plus" : "minus"} /></span>
                 <div className="grow">
                   <div className="t">{rec ? (isToday ? `Hoy cobrás ${o.description}` : `¿Ya cobraste ${o.description}?`) : (isToday ? `Hoy vence ${o.description}` : `¿Ya pagaste ${o.description}?`)}</div>
                   <div className="s">{rec ? "Esperabas" : "Son"} {formatMoney(o.remaining, o.currency)}{isToday ? "" : ` · era el ${fmtDayMonth(o.dueDate)}`}</div>
                 </div>
-                <div className="li-acts">
+                <div className="cf-acts">
                   <form action={quickConfirmAction}><input type="hidden" name="obligationId" value={o.id} /><button className="btn pri sm" type="submit">{rec ? "Sí, lo cobré" : "Sí, lo pagué"}</button></form>
                   <Link className="btn sm" href={`/app/proximos/${o.id}`}>Otro monto o fecha</Link>
                 </div>

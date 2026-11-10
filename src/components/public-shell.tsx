@@ -4,11 +4,16 @@ import { PublicNav } from "./public-nav";
 import { BRAND, SOCIALS, type SocialKey } from "@/lib/brand";
 import { getDb } from "@/lib/db";
 import { contactSettings } from "@/server/contact";
+import { inter, tight } from "@/lib/site-fonts";
+// Estilos del sitio público: solo se descargan en estas páginas, no en la app.
+import "@/app/site.css";
+import "@/app/landing.css";
+import "@/app/motion.css";
 
 // Encabezado y pie de las páginas públicas (landing, herramientas, glosario, contacto, legales).
 export function PublicShell({ children, logged = false }: { children: React.ReactNode; logged?: boolean }) {
   return (
-    <div className="lp site">
+    <div className={`lp site ${inter.variable} ${tight.variable}`}>
       <PublicNav logged={logged} />
       <main id="contenido">{children}</main>
       <SiteFooter />

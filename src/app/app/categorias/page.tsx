@@ -5,6 +5,7 @@ import { PageHead, Tabs, SettingsTabs } from "@/components/page";
 import { ActionForm, Submit } from "@/components/forms";
 import { createCategoryAction, deleteCategoryAction } from "@/app/actions/app";
 import { ConfirmSubmit } from "@/components/confirm-submit";
+import { CategoryEdit } from "./category-edit";
 
 export const metadata: Metadata = { title: "Categorías" };
 
@@ -21,7 +22,7 @@ export default async function Categories({ searchParams }: { searchParams: Promi
   const parents = cats.filter((c) => !c.parentId);
   return (
     <>
-      <PageHead crumb="Configuración" title="Categorías" desc="También podés crear una categoría desde el formulario de un gasto o un ingreso." />
+      <PageHead crumb="Configuración" title="Categorías" desc="Creá, cambiá el nombre, mové o borrá categorías. También podés crear una desde el formulario de un gasto o un ingreso." />
       <SettingsTabs current="categorias" />
       <Tabs current={kind} items={[{ key: "EXPENSE", label: "Gastos", href: "/app/categorias" }, { key: "INCOME", label: "Ingresos", href: "/app/categorias?tipo=INCOME" }]} />
       {sp.borrada && <p className="notice g" role="status">Categoría borrada. Sus movimientos quedaron donde elegiste.</p>}
@@ -36,6 +37,11 @@ export default async function Categories({ searchParams }: { searchParams: Promi
                 <div style={{ display: "flex", gap: 10, alignItems: "center", minWidth: 0 }}><span className="cav">{p.name.slice(0, 2)}</span><div style={{ minWidth: 0 }}><h3>{p.name}</h3><p className="sub">{subs.length ? `${subs.length} ${subs.length === 1 ? "subcategoría" : "subcategorías"}` : "Sin subcategorías"} · {n} {n === 1 ? "movimiento" : "movimientos"}</p></div></div>
               </div>
               {subs.length > 0 && <div className="chips">{subs.map((s) => <span className="tag" key={s.id}>{s.name}</span>)}</div>}
+              <div className="cat-acts">
+              <details className="cat-del cat-edit">
+                <summary>Editar</summary>
+                <CategoryEdit items={[{ id: p.id, name: p.name, parentId: null, hasChildren: subs.length > 0 }, ...subs.map((x) => ({ id: x.id, name: x.name, parentId: x.parentId, hasChildren: false }))]} parents={parents.map((x) => ({ id: x.id, name: x.name }))} />
+              </details>
               <details className="cat-del">
                 <summary>Borrar</summary>
                 <ActionForm action={deleteCategoryAction} style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 10 }}>
@@ -53,6 +59,7 @@ export default async function Categories({ searchParams }: { searchParams: Promi
                   <div><ConfirmSubmit className="btn danger" question={`¿Borrar ${p.name}?`} yes="Sí, borrar">Borrar</ConfirmSubmit></div>
                 </ActionForm>
               </details>
+              </div>
             </div>
           );
         })}
