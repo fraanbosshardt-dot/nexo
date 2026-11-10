@@ -281,3 +281,28 @@
   .nx .obx-card-b{gap:12px}
   .nx .obx-body{padding:22px 20px}
 }
+
+/* Bienvenida: los pasos van dentro de la tarjeta, como cuatro tramos que se llenan */
+.nx .obx-top{justify-content:center;height:56px;background:transparent}
+.nx .obx-mhero-bar{display:none!important}
+.nx .obx-track{display:flex;flex-direction:column;gap:10px;margin-bottom:4px}
+.nx .obx-track-now{font-size:13px;color:var(--nx-ink3)}
+.nx .obx-track-now b{color:var(--nx-accent-ink);font-weight:600}
+.nx .obx-track ol{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.nx .obx-track li{display:flex;flex-direction:column;gap:7px;min-width:0;font-size:12.5px;color:var(--nx-ink3)}
+.nx .obx-track li>button{display:flex;flex-direction:column;gap:7px;background:none;border:0;padding:0;margin:0;font:inherit;color:inherit;text-align:left;cursor:pointer;min-width:0}
+.nx .obx-track i{display:block;height:6px;border-radius:999px;background:var(--nx-line);position:relative;overflow:hidden}
+.nx .obx-track i::after{content:"";position:absolute;inset:0;border-radius:999px;background:var(--nx-accent);transform:scaleX(0);transform-origin:left;transition:transform .45s cubic-bezier(.2,.7,.2,1)}
+.nx .obx-track li.done i::after,.nx .obx-track li.on i::after{transform:scaleX(1)}
+.nx .obx-track li.done i::after{opacity:.45}
+.nx .obx-track li span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nx .obx-track li.on{color:var(--nx-ink);font-weight:600}
+.nx .obx-track li.done{color:var(--nx-accent-ink)}
+.nx .obx-track li.done button:hover span{text-decoration:underline}
+.nx .obx-track li.done button:focus-visible{outline:2px solid var(--nx-accent);outline-offset:4px;border-radius:6px}
+@media (max-width:640px){
+  .nx .obx-track li span{display:none}
+  .nx .obx-track ol{gap:6px}
+  .nx .obx-track li>button{padding:8px 0;margin:-8px 0}
+}
+@media (prefers-reduced-motion:reduce){.nx .obx-track i::after{transition:none}}

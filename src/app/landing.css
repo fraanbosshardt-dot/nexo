@@ -239,3 +239,38 @@
 @media (max-width:980px){.lx-who,.lx-all,.lx-tools{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:520px){.lx-who,.lx-tools{grid-template-columns:minmax(0,1fr)}.lx-all li{padding:12px;font-size:14px;gap:10px}}
 .ws-foot .lp-brand b{color:#fff!important}
+
+/* Barra de arriba: al bajar queda flotando, suelta, con el fondo desenfocado */
+.site .lp-nav{background:transparent!important;box-shadow:none!important;border:0!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;padding:0;transition:padding .35s cubic-bezier(.2,.7,.2,1)!important}
+.site .lp-nav .lp-navin{border:1px solid transparent;border-radius:999px;transition:background-color .35s ease,box-shadow .35s ease,border-color .35s ease,height .35s ease,padding .35s ease}
+.site .lp-nav.scrolled{padding:10px 12px 0}
+.site .lp-nav.scrolled .lp-navin{height:56px;padding-inline:18px;background:color-mix(in srgb,var(--bg) 62%,transparent);-webkit-backdrop-filter:saturate(180%) blur(18px);backdrop-filter:saturate(180%) blur(18px);border-color:color-mix(in srgb,var(--line) 85%,transparent);box-shadow:0 12px 32px rgba(11,18,32,.12),0 1px 0 rgba(255,255,255,.4) inset}
+@supports not (backdrop-filter:blur(1px)){.site .lp-nav.scrolled .lp-navin{background:var(--bg)}}
+
+/* "Todo en un lugar" en una sola línea */
+.lx-strip .ws-w{display:block;overflow:hidden;padding-block:20px}
+.lx-strip-track{display:flex;flex-wrap:nowrap;gap:10px;align-items:center;width:max-content;margin-inline:auto}
+.lx-strip-track>*{flex-shrink:0;white-space:nowrap}
+.lx-strip-track span{margin-right:2px}
+.lx-strip-track em{padding:7px 13px;font-size:13.5px}
+.lx-strip .dup{display:none}
+/* Si no entra, se desliza sola de costado (sin cortar nada) */
+@media (max-width:1279px){
+  .lx-strip .ws-w{padding-inline:0;max-width:none;-webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
+  .lx-strip-track{margin:0;animation:lx-marquee 30s linear infinite}
+  .lx-strip-track:hover{animation-play-state:paused}
+  .lx-strip span.dup{display:inline}
+  .lx-strip em.dup{display:inline-block}
+}
+@keyframes lx-marquee{to{transform:translateX(calc(-50% - 5px))}}
+@media (prefers-reduced-motion:reduce){
+  .lx-strip-track{animation:none!important}
+  .lx-strip .ws-w{overflow-x:auto}
+  .lx-strip .dup{display:none!important}
+  .site .lp-nav,.site .lp-nav .lp-navin{transition:none!important}
+}
+/* Ajuste para que la franja entre completa en una línea en compu */
+.lx-strip-track{gap:8px}
+.lx-strip-track em{padding:7px 11px;font-size:13px}
+.lx-strip-track span{font-size:13px}
+@keyframes lx-marquee{to{transform:translateX(calc(-50% - 4px))}}

@@ -34,7 +34,7 @@ export function PublicNav({ logged: loggedServer }: { logged: boolean }) {
     history.replaceState(null, "", `#${id}`);
   };
   return (
-    <header className={`lp-nav ${scrolled ? "scrolled" : ""}`} style={scrolled ? { backdropFilter: "saturate(180%) blur(14px)", WebkitBackdropFilter: "saturate(180%) blur(14px)" } : undefined}>
+    <header className={`lp-nav ${scrolled ? "scrolled" : ""}`}>
       <div className="lp-w lp-navin">
         <Brand />
         <nav className="lp-links" aria-label="Secciones">

@@ -107,16 +107,7 @@ export function Onboarding({ firstName, uses, modules, guessCountry, detected }:
     <div className="nx obx">
       <header className="obx-top">
         <span className="lp-brand"><span className="brand-mark">N</span><b>NEXO</b></span>
-        <ol className="obx-steps" aria-label="Pasos">
-          {STEPS.map((s, i) => (
-            <li key={s} className={i === step ? "on" : i < step ? "done" : ""} aria-current={i === step ? "step" : undefined}>
-              {i < step ? <button type="button" onClick={() => go(i)} aria-label={`Volver a ${s}`}><i><Icon name="check" /></i><span>{s}</span></button> : <><i>{i + 1}</i><span>{s}</span></>}
-            </li>
-          ))}
-        </ol>
-        <span className="obx-count">Paso {step + 1} de {STEPS.length}</span>
       </header>
-      <div className="obx-prog" aria-hidden="true"><i style={{ width: `${((step + 1) / STEPS.length) * 100}%` }} /></div>
       <ActionForm action={finishOnboardingAction}>
         <div className="obx-wrap">
           <section className="obx-mhero" aria-label="Así va a quedar tu Inicio">
@@ -126,7 +117,18 @@ export function Onboarding({ firstName, uses, modules, guessCountry, detected }:
             <span className="obx-mhero-bar" aria-hidden="true"><i style={{ width: `${((step + 1) / STEPS.length) * 100}%` }} /></span>
           </section>
           <main key={step} className="obx-body obx-step" onKeyDown={(e) => { if (e.key === "Enter" && step < 3 && (e.target as HTMLElement).tagName === "INPUT") { e.preventDefault(); next(); } }}>
-            <span className="obx-eyebrow">Paso {step + 1} de {STEPS.length}</span>
+            <nav className="obx-track" aria-label="Pasos de la bienvenida">
+              <span className="obx-track-now">Paso {step + 1} de {STEPS.length} · <b>{STEPS[step]}</b></span>
+              <ol>
+                {STEPS.map((s, i) => (
+                  <li key={s} className={i === step ? "on" : i < step ? "done" : ""} aria-current={i === step ? "step" : undefined}>
+                    {i < step
+                      ? <button type="button" onClick={() => go(i)} aria-label={`Volver a ${s}`}><i /><span>{s}</span></button>
+                      : <><i /><span>{s}</span></>}
+                  </li>
+                ))}
+              </ol>
+            </nav>
             {step === 0 && (
               <>
                 <div>

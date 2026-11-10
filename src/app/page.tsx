@@ -48,6 +48,8 @@ const TOOLS: [string, IconName, string, string][] = [
   ["/guias", "help", "Guías", "Cómo ordenar el sueldo, las cuotas y más."],
 ];
 
+const STRIP = ["Pesos y dólares", "Tarjetas en cuotas", "Préstamos", "Servicios y alquiler", "Sueldo o cobros variables", "Ventas de cereal", "Objetivos de ahorro"];
+
 const VS: [string, string][] = [
   ["Cuotas repartidas mes a mes", "A mano"],
   ["Avisos antes de vencer", "No"],
@@ -213,7 +215,10 @@ export default async function Landing() {
       </section>
 
       <section className="lx-strip" aria-label="Qué podés ordenar">
-        <div className="ws-w"><span>Todo en un lugar:</span>{["Pesos y dólares", "Tarjetas en cuotas", "Préstamos", "Servicios y alquiler", "Sueldo o cobros variables", "Ventas de cereal", "Objetivos de ahorro"].map((t) => <em key={t}>{t}</em>)}</div>
+        <div className="ws-w"><div className="lx-strip-track">
+          <span>Todo en un lugar:</span>{STRIP.map((t) => <em key={t}>{t}</em>)}
+          <span className="dup" aria-hidden="true">Todo en un lugar:</span>{STRIP.map((t) => <em key={"d" + t} className="dup" aria-hidden="true">{t}</em>)}
+        </div></div>
       </section>
 
       {/* Para quién es */}
