@@ -6,6 +6,7 @@ import "./globals.css";
 import "./nx.css";
 import "./site.css";
 import "./landing.css";
+import "./motion.css";
 import Script from "next/script";
 
 const roboto = Roboto({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-roboto", display: "swap" });

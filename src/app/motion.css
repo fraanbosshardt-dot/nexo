@@ -1,0 +1,106 @@
+/* Movimiento de la landing (ver src/components/landing-motion.tsx). Con "reducir movimiento" queda todo quieto. */
+
+/* Barra de lectura */
+.lx-progress{position:fixed;top:0;left:0;right:0;height:3px;z-index:60;pointer-events:none}
+.lx-progress i{display:block;height:100%;background:linear-gradient(90deg,#1A5FD0,#5B8EF0);transform-origin:left;transform:scaleX(0)}
+
+/* Aparición en cascada: cada tarjeta entra un poco después que la anterior */
+.site .rv.in{transition-delay:calc(var(--i,0) * 110ms)}
+.site .rv.in:hover,.site .rv.tilt{transition-delay:0s}
+
+/* Celular de la portada con profundidad al bajar */
+.lx-phone-wrap>.lx-phone{translate:0 calc(var(--sy,0) * -0.08px)}
+.lx-float.a{translate:calc(var(--sy,0) * -0.05px) calc(var(--sy,0) * -0.17px)}
+.lx-float.b{translate:calc(var(--sy,0) * 0.05px) calc(var(--sy,0) * -0.03px)}
+.lx-halo{translate:0 calc(var(--sy,0) * 0.06px)}
+
+/* Tarjetas que se inclinan con el mouse, con un brillo que sigue al puntero */
+[data-tilt]{position:relative;transform-style:preserve-3d;will-change:transform}
+[data-tilt].tilt{transition:transform .15s ease-out,box-shadow .25s!important}
+[data-tilt]::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .3s;background:radial-gradient(420px circle at var(--mx,50%) var(--my,50%),rgba(26,95,208,.10),transparent 45%)}
+[data-tilt]:hover::after{opacity:1}
+
+/* Botones con un reflejo que los cruza cada tanto */
+.lx-shine{position:relative;overflow:hidden;isolation:isolate}
+.lx-shine::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.5) 50%,transparent 70%);transform:translateX(-130%);animation:lx-shine 5s 2s ease-in-out infinite}
+.lx-final .lx-shine::after{background:linear-gradient(110deg,transparent 30%,rgba(26,95,208,.22) 50%,transparent 70%)}
+@keyframes lx-shine{0%{transform:translateX(-130%)}28%,100%{transform:translateX(130%)}}
+
+/* Tabla planilla vs app: filas de a una y tilde que se dibuja */
+.lx-yes{display:inline-flex;align-items:center;gap:6px}
+.lx-yes svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.lx-vs.pre tbody tr,.lx-grain.pre .lx-grain-r{opacity:0}
+.lx-vs.in tbody tr{animation:lx-row .55s calc(.15s + var(--r,0) * .12s) cubic-bezier(.2,.7,.2,1) both}
+.lx-vs.in .lx-yes path{stroke-dasharray:1;animation:lx-draw .5s calc(.45s + var(--r,0) * .12s) ease-out both}
+@keyframes lx-row{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:none}}
+@keyframes lx-draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+
+/* Pasos: una línea que se completa mientras bajás */
+.lx-track{height:4px;border-radius:2px;background:var(--line);margin:0 0 24px;overflow:hidden}
+.lx-track i{display:block;height:100%;border-radius:2px;background:#1A5FD0;transform-origin:left;transform:scaleX(var(--prog,1))}
+.lx-steps li>span{transition:color .4s}
+.lx-track[data-step="0"]+.lx-steps li:nth-child(n+2)>span,.lx-track[data-step="1"]+.lx-steps li:nth-child(n+3)>span{color:var(--line-2)}
+
+/* Ventas de cereal: filas de a una y lo pendiente late suave */
+.lx-grain.in .lx-grain-r{animation:lx-row .55s calc(.2s + var(--r,0) * .15s) cubic-bezier(.2,.7,.2,1) both}
+.lx-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#FDD663;margin-right:7px;vertical-align:middle;animation:lx-pulse 1.8s ease-out infinite}
+@keyframes lx-pulse{0%{box-shadow:0 0 0 0 rgba(253,214,99,.55)}100%{box-shadow:0 0 0 9px rgba(253,214,99,0)}}
+
+/* Recorrido: el celular queda fijo y cambia de pantalla */
+.lx-tour{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:64px}
+.lx-tour-phone{position:sticky;top:110px;align-self:start;display:flex;flex-direction:column;align-items:center;gap:18px}
+.lx-phone.lx-phone-static{animation:none}
+.lx-tour-screen{position:relative;height:560px}
+.lx-tour-pane{position:absolute;left:0;right:0;top:30px;bottom:0;opacity:0;transform:translateY(16px) scale(.98);transition:opacity .45s,transform .55s cubic-bezier(.2,.7,.2,1);pointer-events:none}
+.lx-tour-pane.on{opacity:1;transform:none}
+.lx-tour-dots{display:flex;gap:8px}
+.lx-tour-dots i{width:8px;height:8px;border-radius:999px;background:var(--line-2);transition:width .3s,background .3s}
+.lx-tour-dots i.on{width:26px;background:#1A5FD0}
+.lx-tour-steps{list-style:none;margin:0;padding:0}
+.lx-tour-steps li{min-height:62vh;display:flex;flex-direction:column;justify-content:center;gap:12px;opacity:.32;transition:opacity .4s}
+.lx-tour-steps li.on{opacity:1}
+.lx-tour-steps h3{margin:0;font-family:var(--font-tight),"Inter Tight",sans-serif;font-size:clamp(26px,3vw,38px);font-weight:600;letter-spacing:-.025em;line-height:1.1}
+.lx-tour-steps p{margin:0;color:var(--muted);font-size:18px;max-width:30em}
+.lx-tour-tag{align-self:flex-start;font-size:13px;font-weight:600;color:var(--ink-txt);background:var(--ink-soft);padding:5px 12px;border-radius:999px}
+.lx-tour-inline{display:none}
+.lx-pane{display:flex;flex-direction:column;gap:2px;padding-bottom:12px}
+.lx-pane .lx-list{margin-top:8px}
+.lx-red{color:#B42318}
+.lx-card-vis{margin:8px 12px;padding:18px;border-radius:20px;color:#fff;background:linear-gradient(135deg,#0B1220,#24304C);display:flex;flex-direction:column;gap:4px}
+.lx-card-vis small{font-size:11.5px;opacity:.8}
+.lx-card-vis b{font-family:var(--font-tight),"Inter Tight",sans-serif;font-size:28px;font-weight:600;letter-spacing:-.02em}
+.lx-flow{margin:8px 12px;background:#fff;border-radius:18px;padding:16px 12px 12px;display:flex;flex-direction:column;gap:14px}
+.lx-flow-bars{display:flex;align-items:flex-end;gap:8px;height:190px}
+.lx-flow-bars span{flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:6px}
+.lx-flow-bars i{width:100%;border-radius:6px;background:#C7D8F6}
+.lx-flow-bars i.r{background:#F4A7A0}
+.lx-flow-bars small{font-size:10px;color:#5B6475}
+.lx-tour-pane.on .lx-flow-bars i{animation:lx-bar .7s cubic-bezier(.2,.7,.2,1) both;transform-origin:bottom}
+.lx-tour-pane.on .lx-flow-bars span:nth-child(2) i{animation-delay:.06s}
+.lx-tour-pane.on .lx-flow-bars span:nth-child(3) i{animation-delay:.12s}
+.lx-tour-pane.on .lx-flow-bars span:nth-child(4) i{animation-delay:.18s}
+.lx-tour-pane.on .lx-flow-bars span:nth-child(5) i{animation-delay:.24s}
+.lx-tour-pane.on .lx-flow-bars span:nth-child(6) i{animation-delay:.3s}
+.lx-flow-alert{background:#FCE8E6;color:#8C1D18;border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.lx-flow-alert small{color:#5B1712}
+
+@media (max-width:980px){
+  .lx-tour{grid-template-columns:minmax(0,1fr);gap:0}
+  .lx-tour-phone{display:none}
+  .lx-tour-steps{display:flex;flex-direction:column;gap:44px}
+  .lx-tour-steps li{min-height:0;opacity:1}
+  .lx-tour-inline{display:block;margin-top:10px;width:min(300px,100%);align-self:center;border-radius:30px;padding:9px;background:#0B1220;box-shadow:0 24px 50px rgba(11,18,32,.18)}
+  .lx-tour-inline .lx-screen{border-radius:22px;padding-top:12px}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .lx-progress{display:none}
+  .site .rv.in{transition-delay:0s}
+  .lx-phone-wrap>.lx-phone,.lx-float.a,.lx-float.b,.lx-halo{translate:none}
+  .lx-shine::after,.lx-dot,.lx-vs.in tbody tr,.lx-vs.in .lx-yes path,.lx-grain.in .lx-grain-r,.lx-tour-pane.on .lx-flow-bars i{animation:none!important}
+  .lx-tour-pane{transition:none}
+  [data-tilt]::after{display:none}
+}
+.lx-tour-tabs{position:absolute;left:0;right:0;bottom:0;margin:0;z-index:2}
+.lx-tour-tabs span{transition:color .3s}
+.lx-tour-pane{bottom:60px}

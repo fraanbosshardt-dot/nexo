@@ -18,7 +18,7 @@ function check() {
   if (!pending.size && listening) { window.removeEventListener("scroll", check); window.removeEventListener("resize", check); listening = false; }
 }
 
-export function Reveal({ children, className = "", as: Tag = "div" }: { children: React.ReactNode; className?: string; as?: "div" | "h2" | "li" | "details" }) {
+export function Reveal({ children, className = "", as: Tag = "div", style, tilt }: { children: React.ReactNode; className?: string; as?: "div" | "h2" | "li" | "details"; style?: React.CSSProperties; tilt?: boolean }) {
   const ref = useRef<HTMLElement>(null);
   useEffect(() => {
     const el = ref.current;
@@ -35,7 +35,7 @@ export function Reveal({ children, className = "", as: Tag = "div" }: { children
     return () => { io?.disconnect(); pending.delete(el); };
   }, []);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return <Tag ref={ref as any} className={"rv " + className}>{children}</Tag>;
+  return <Tag ref={ref as any} className={"rv " + className} style={style} data-tilt={tilt ? "" : undefined}>{children}</Tag>;
 }
 
 export function ScrollTo({ id, children }: { id: string; children: React.ReactNode }) {

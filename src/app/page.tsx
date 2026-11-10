@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Reveal } from "@/components/landing-fx";
 import { CuotasDemo, PriceSwitch } from "@/components/landing-demo";
+import { LandingMotion, PhoneTour } from "@/components/landing-motion";
 import { PublicShell } from "@/components/public-shell";
 import { PLAN_FEATURES } from "@/lib/modules";
 import { getSession } from "@/lib/auth/session";
@@ -51,6 +52,60 @@ const FAQ: [string, string][] = [
   ["¿Cómo cancelo Pro?", "Desde Configuración, cuando quieras. Dentro de los 10 días de contratarlo te devolvemos todo."],
 ];
 
+const TOUR = [
+  { tag: "Inicio", title: "Tu número del día", text: "Apenas abrís la app ves cuánto podés gastar hasta tu próximo cobro y cuánto te queda por día." },
+  { tag: "Tarjetas", title: "Las cuotas, en su mes", text: "Cada compra en cuotas se reparte sola. Ves cuánto te llega en cada resumen, sin sumar a mano." },
+  { tag: "Próximos pagos", title: "Lo que vence, por fecha", text: "Atrasado, esta semana y los meses que vienen. Pagás o cobrás con un toque y se descuenta solo." },
+  { tag: "Flujo de caja", title: "Cómo terminan los próximos meses", text: "Lo que entra, lo que sale y lo comprometido, mes por mes. Si alguno va a quedar en rojo, te avisa antes." },
+];
+
+function ScreenHome() {
+  return (<div className="lx-pane">
+    <div className="lx-hi"><div><small>Lunes 9 de noviembre</small><b>Hola, Martín</b></div><span>M</span></div>
+    <div className="lx-hero-card"><small>Te queda hasta tu cobro del 1 de dic.</small><b>$ 184.250</b><small>Podés gastar $ 8.010 por día</small><i><i /></i></div>
+    <div className="lx-list"><b>Esta semana</b>
+      <div><span><b>12</b>nov</span><span>Visa · cuota 3 de 12</span><b className="n">−$ 48.300</b></div>
+      <div><span><b>15</b>nov</span><span>Alquiler</span><b className="n">−$ 420.000</b></div>
+    </div>
+  </div>);
+}
+function ScreenCards() {
+  return (<div className="lx-pane">
+    <div className="lx-hi"><div><small>Tarjetas</small><b>Visa · cierra el 5</b></div><span>V</span></div>
+    <div className="lx-card-vis"><small>Próximo resumen</small><b>$ 312.480</b><small>Vence el 12 de diciembre</small></div>
+    <div className="lx-list"><b>Cuotas que vienen</b>
+      <div><span><b>3/12</b></span><span>Heladera</span><b>$ 48.300</b></div>
+      <div><span><b>2/6</b></span><span>Zapatillas</span><b>$ 21.500</b></div>
+      <div><span><b>5/18</b></span><span>Celular</span><b>$ 39.900</b></div>
+    </div>
+  </div>);
+}
+function ScreenNext() {
+  return (<div className="lx-pane">
+    <div className="lx-hi"><div><small>Pagos y deudas</small><b>Próximos pagos</b></div><span>P</span></div>
+    <div className="lx-list"><b className="lx-red">Atrasado</b>
+      <div><span><b>3</b>nov</span><span>Luz</span><b className="n">−$ 38.900</b></div>
+    </div>
+    <div className="lx-list"><b>Esta semana</b>
+      <div><span><b>12</b>nov</span><span>Visa</span><b className="n">−$ 312.480</b></div>
+      <div><span><b>15</b>nov</span><span>Alquiler</span><b className="n">−$ 420.000</b></div>
+    </div>
+    <div className="lx-list"><b>Diciembre</b>
+      <div><span><b>1</b>dic</span><span>Sueldo</span><b className="p">+$ 1.250.000</b></div>
+    </div>
+  </div>);
+}
+function ScreenFlow() {
+  const m: [string, number, boolean][] = [["nov", 46, false], ["dic", 72, false], ["ene", 30, true], ["feb", 58, false], ["mar", 64, false], ["abr", 80, false]];
+  return (<div className="lx-pane">
+    <div className="lx-hi"><div><small>Proyección</small><b>Flujo de caja</b></div><span>F</span></div>
+    <div className="lx-flow">
+      <div className="lx-flow-bars">{m.map(([l, h, r]) => <span key={l}><i className={r ? "r" : ""} style={{ height: `${h}%` }} /><small>{l}</small></span>)}</div>
+      <div className="lx-flow-alert"><b>Enero viene justo</b><small>Te faltarían $ 62.000. Mirá qué podés mover.</small></div>
+    </div>
+  </div>);
+}
+
 function Phone() {
   return (
     <div className="lx-phone-wrap">
@@ -61,7 +116,7 @@ function Phone() {
           <div className="lx-hi"><div><small>Lunes 9 de noviembre</small><b>Hola, Martín</b></div><span>M</span></div>
           <div className="lx-hero-card">
             <small>Te queda hasta tu cobro del 1 de dic.</small>
-            <b>$ 184.250</b>
+            <b data-count="184250" data-prefix="$ ">$ 184.250</b>
             <small>Podés gastar $ 8.010 por día</small>
             <i><i /></i>
           </div>
@@ -89,17 +144,17 @@ export default async function Landing() {
   const pro = PLAN_FEATURES.filter((f) => f.plan === "pro");
   const plans = (price: number, period: string) => (
     <div className="lx-plans">
-      <div className="lx-plan">
+      <div className="lx-plan" style={{ "--i": 0 } as React.CSSProperties}>
         <div><h3>Gratis</h3><p>Para ordenar tu plata del día a día.</p></div>
         <div className="lx-price"><b>US$ 0</b><span>para siempre</span></div>
         <Link className="ws-btn" href="/registro">Crear cuenta gratis</Link>
         <ul>{free.map((f) => <li key={f.name}>{CHECK}{f.name}</li>)}</ul>
       </div>
-      <div className="lx-plan pro">
+      <div className="lx-plan pro" style={{ "--i": 1 } as React.CSSProperties}>
         <span className="lx-reco">Recomendado</span>
         <div><h3>Pro</h3><p>Para planificar todo el año.</p></div>
         <div className="lx-price"><b>US$ {price}</b><span>por {period}</span></div>
-        <Link className="ws-btn pri" href="/registro">Probar Pro 14 días gratis</Link>
+        <Link className="ws-btn pri lx-shine" href="/registro">Probar Pro 14 días gratis</Link>
         <ul><li>{CHECK}Todo lo de Gratis</li>{pro.map((f) => <li key={f.name}>{CHECK}<span>{f.name}{f.beta && <> <span className="lx-beta">Beta</span></>}</span></li>)}</ul>
       </div>
     </div>
@@ -112,6 +167,7 @@ export default async function Landing() {
   ];
   return (
     <PublicShell logged={logged}>
+      <LandingMotion />
       {ld.map((d, i) => <script key={i} type="application/ld+json" dangerouslySetInnerHTML={jsonLd(d)} />)}
 
       {/* Portada */}
@@ -122,7 +178,7 @@ export default async function Landing() {
             <h1 className="ws-h1 lx-h1">Sabé cuánto podés gastar <em>hasta tu próximo cobro.</em></h1>
             <p className="ws-lead">Tus cuentas, tarjetas en cuotas, deudas y vencimientos en un solo lugar, en pesos y en dólares. {N} te dice hoy con cuánta plata llegás a fin de mes.</p>
             <div className="lx-ctas">
-              <Link className="ws-btn pri lx-big" href={cta.href}>{cta.label}</Link>
+              <Link className="ws-btn pri lx-big lx-shine" href={cta.href}>{cta.label}</Link>
               <a className="ws-btn lx-big" href="#demo">Probalo sin registrarte</a>
             </div>
             <ul className="lx-trust"><li>{CHECK}Gratis para siempre</li><li>{CHECK}Sin tarjeta</li><li>{CHECK}Nunca te pedimos la clave del banco</li></ul>
@@ -142,19 +198,25 @@ export default async function Landing() {
           <Reveal className="lx-big-card">
             <div><h3>Cuánto podés gastar, hoy</h3><p>Suma lo que tenés, resta lo que vence antes de tu próximo cobro y te dice cuánto te queda por día. Sin cuentas a mano.</p></div>
             <div className="lx-calc" aria-label="Ejemplo del cálculo">
-              <div><span>En tus cuentas</span><span>$ 612.900</span></div>
-              <div><span>Vence antes del cobro</span><span className="n">−$ 428.650</span></div>
+              <div><span>En tus cuentas</span><span data-count="612900" data-prefix="$ ">$ 612.900</span></div>
+              <div><span>Vence antes del cobro</span><span className="n" data-count="428650" data-prefix="−$ ">−$ 428.650</span></div>
               <hr />
-              <div><span>Te queda</span><b>$ 184.250</b></div>
+              <div><span>Te queda</span><b data-count="184250" data-prefix="$ ">$ 184.250</b></div>
             </div>
           </Reveal>
-          {FEATS.map(([ic, t, d, extra]) => (
-            <Reveal key={t} className="lx-feat">
+          {FEATS.map(([ic, t, d, extra], i) => (
+            <Reveal key={t} className="lx-feat" tilt style={{ "--i": i % 3 } as React.CSSProperties}>
               <span className="ws-ic">{ic}</span><h3>{t}</h3><p>{d}</p>
               {extra === "bars" && <div className="lx-bars" aria-hidden="true">{[40, 55, 35, 70, 62, 85].map((h, i) => <i key={i} style={{ "--h": `${h}%`, "--d": `${i * 70}ms` } as React.CSSProperties} className={i === 3 ? "on" : ""} />)}</div>}
             </Reveal>
           ))}
         </div>
+      </section>
+
+      {/* Recorrido del celular */}
+      <section className="ws-w ws-sec lx-tour-sec" id="recorrido">
+        <Reveal className="ws-head"><p className="ws-eyebrow">Por dentro</p><h2 className="ws-h2">Así se ve {N} en tu celular.</h2></Reveal>
+        <PhoneTour steps={TOUR} screens={[<ScreenHome key="h" />, <ScreenCards key="c" />, <ScreenNext key="n" />, <ScreenFlow key="f" />]} />
       </section>
 
       {/* Planilla vs NEXO */}
@@ -164,7 +226,7 @@ export default async function Landing() {
           <Reveal className="lx-vs">
             <table>
               <thead><tr><th scope="col"><span className="sr-only">Qué</span></th><th scope="col">Planilla</th><th scope="col">{N}</th></tr></thead>
-              <tbody>{VS.map(([t, x]) => <tr key={t}><th scope="row">{t}</th><td>{x}</td><td>{t.startsWith("Cuotas") ? "Solas" : "Sí"}</td></tr>)}</tbody>
+              <tbody>{VS.map(([t, x], i) => <tr key={t} style={{ "--r": i } as React.CSSProperties}><th scope="row">{t}</th><td>{x}</td><td><span className="lx-yes"><svg viewBox="0 0 24 24" aria-hidden="true"><path pathLength={1} d="M5 12l5 5L20 7" /></svg>{t.startsWith("Cuotas") ? "Solas" : "Sí"}</span></td></tr>)}</tbody>
             </table>
           </Reveal>
         </div>
@@ -173,7 +235,8 @@ export default async function Landing() {
       {/* Cómo funciona */}
       <section className="ws-w ws-sec" id="como">
         <Reveal className="ws-head"><p className="ws-eyebrow">Cómo funciona</p><h2 className="ws-h2">Listo en cinco minutos.</h2></Reveal>
-        <ol className="lx-steps">{STEPS.map(([t, d], i) => <Reveal as="li" key={t}><span>0{i + 1}</span><h3>{t}</h3><p>{d}</p></Reveal>)}</ol>
+        <div className="lx-track" data-progress=""><i /></div>
+        <ol className="lx-steps">{STEPS.map(([t, d], i) => <Reveal as="li" key={t} style={{ "--i": i } as React.CSSProperties}><span>0{i + 1}</span><h3>{t}</h3><p>{d}</p></Reveal>)}</ol>
       </section>
 
       {/* Demo */}
@@ -199,8 +262,8 @@ export default async function Landing() {
           </Reveal>
           <Reveal className="lx-grain">
             <div className="lx-grain-h"><b>Ventas de cereal</b><small>Datos de ejemplo</small></div>
-            {[["10", "nov", "Soja · 70 t", "Cobrado", "+$ 2.380.000", "ok"], ["10", "dic", "Soja · 72 t", "Por cobrar · proyectado", "+$ 2.450.000", "wait"], ["10", "ene", "Maíz · 110 t", "Por cobrar · proyectado", "+$ 2.090.000", "wait"]].map(([d, m, t, s, v, k]) => (
-              <div key={t + m} className={`lx-grain-r ${k}`}><span><b>{d}</b>{m}</span><span><b>{t}</b><small>{s}</small></span><b>{v}</b></div>
+            {[["10", "nov", "Soja · 70 t", "Cobrado", "+$ 2.380.000", "ok"], ["10", "dic", "Soja · 72 t", "Por cobrar · proyectado", "+$ 2.450.000", "wait"], ["10", "ene", "Maíz · 110 t", "Por cobrar · proyectado", "+$ 2.090.000", "wait"]].map(([d, m, t, s, v, k], i) => (
+              <div key={t + m} className={`lx-grain-r ${k}`} style={{ "--r": i } as React.CSSProperties}><span><b>{d}</b>{m}</span><span><b>{t}</b><small>{k === "wait" && <i className="lx-dot" aria-hidden="true" />}{s}</small></span><b>{v}</b></div>
             ))}
           </Reveal>
         </div>
@@ -212,7 +275,7 @@ export default async function Landing() {
           <Reveal className="ws-head" ><p className="ws-eyebrow">Seguridad</p><h2 className="ws-h2">Tus datos, cuidados como corresponde.</h2></Reveal>
           <Link className="lx-link" href="/seguridad">Cómo protegemos tu información →</Link>
         </div>
-        <div className="ws-grid">{SAFE.map(([ic, t, d]) => <Reveal key={t} className="ws-card"><span className="ws-ic">{ic}</span><h3>{t}</h3><p>{d}</p></Reveal>)}</div>
+        <div className="ws-grid">{SAFE.map(([ic, t, d], i) => <Reveal key={t} className="ws-card" tilt style={{ "--i": i } as React.CSSProperties}><span className="ws-ic">{ic}</span><h3>{t}</h3><p>{d}</p></Reveal>)}</div>
       </section>
 
       {/* Precios */}
@@ -235,7 +298,7 @@ export default async function Landing() {
       <section className="ws-w lx-final-wrap">
         <Reveal className="lx-final">
           <div><h2 className="ws-h2">Ordená tu plata hoy. Es gratis.</h2><p>Cinco minutos para empezar. Sin tarjeta.</p></div>
-          <Link className="ws-btn lx-big" href={cta.href}>{logged ? "Ir a la app" : "Crear mi cuenta"}</Link>
+          <Link className="ws-btn lx-big lx-shine" href={cta.href}>{logged ? "Ir a la app" : "Crear mi cuenta"}</Link>
         </Reveal>
       </section>
     </PublicShell>
