@@ -297,22 +297,73 @@ export async function rateAction(_: FormState, fd: FormData): Promise<FormState>
 
 // ---------- Ventas de cereal ----------
 
+// Lee el formulario de una venta (el mismo para cargar y para editar).
+function grainForm(fd: FormData, baseCurrency: string, userId: string) {
+  const qty = money(fd, "quantity", "la cantidad");
+  const tonnes = fd.get("unit") === "qq" ? qty.dividedBy(10) : qty;
+  return {
+    saleDate: date(fd, "saleDate", "la fecha de venta"), grain: str(fd, "grain") || "Soja", tonnes, pricePerTonne: money(fd, "price", "el precio por tonelada"),
+    priceCurrency: isCurrency(str(fd, "priceCurrency")) ? str(fd, "priceCurrency") : baseCurrency, fxRate: optMoney(fd, "fxRate", "la cotización"),
+    taxPct: optMoney(fd, "taxPct", "el impuesto") ?? "1.2", otherDeductions: optMoney(fd, "other", "otros descuentos") ?? "0",
+    collectDate: date(fd, "collectDate", "la fecha de cobro"), accountId: str(fd, "accountId"), collected: fd.get("collected") === "on", userId,
+  };
+}
+
 export async function grainSaleAction(_: FormState, fd: FormData): Promise<FormState> {
   const { user, workspace, plan } = await requireWorkspace();
   try {
     if (!(await canUse(plan, "cereal"))) throw new UserError("El módulo Agro es parte de Pro.");
-    const qty = money(fd, "quantity", "la cantidad");
-    const tonnes = fd.get("unit") === "qq" ? qty.dividedBy(10) : qty;
-    await createGrainSale(getDb(), workspace.id, {
-      saleDate: date(fd, "saleDate", "la fecha de venta"), grain: str(fd, "grain") || "Soja", tonnes, pricePerTonne: money(fd, "price", "el precio por tonelada"),
-      priceCurrency: isCurrency(str(fd, "priceCurrency")) ? str(fd, "priceCurrency") : workspace.baseCurrency, fxRate: optMoney(fd, "fxRate", "la cotización"),
-      taxPct: optMoney(fd, "taxPct", "el impuesto") ?? "1.2", otherDeductions: optMoney(fd, "other", "otros descuentos") ?? "0",
-      collectDate: date(fd, "collectDate", "la fecha de cobro"), accountId: str(fd, "accountId"), collected: fd.get("collected") === "on", userId: user.id,
-      replacePlanned: fd.get("replacePlanned") === "on",
-    });
+    await createGrainSale(getDb(), workspace.id, { ...grainForm(fd, workspace.baseCurrency, user.id), replacePlanned: fd.get("replacePlanned") === "on" });
   } catch (e) { return fail(e); }
   revalidatePath("/app", "layout");
   redirect(done("/app/cereal"));
+}
+
+export async function updateGrainSaleAction(_: FormState, fd: FormData): Promise<FormState> {
+  const { user, workspace, plan } = await requireWorkspace();
+  const id = str(fd, "id");
+  try {
+    if (!(await canUse(plan, "cereal"))) throw new UserError("El módulo Agro es parte de Pro.");
+    const { updateGrainSale } = await import("@/server/grain");
+    await updateGrainSale(getDb(), workspace.id, id, grainForm(fd, workspace.baseCurrency, user.id));
+    await audit("grain.updated", { userId: user.id, workspaceId: workspace.id, entity: "grainSale", entityId: id });
+  } catch (e) { return fail(e); }
+  revalidatePath("/app", "layout");
+  redirect("/app/cereal?listo=editada");
+}
+
+export async function deleteGrainSaleAction(fd: FormData) {
+  const { user, workspace, plan } = await requireWorkspace();
+  if (!(await canUse(plan, "cereal"))) redirect("/app/cereal");
+  const id = str(fd, "id");
+  const { deleteGrainSale } = await import("@/server/grain");
+  const r = await deleteGrainSale(getDb(), workspace.id, id, user.id);
+  await audit("grain.deleted", { userId: user.id, workspaceId: workspace.id, entity: "grainSale", entityId: id, meta: { reversed: r.reversed.toFixed(2) } });
+  revalidatePath("/app", "layout");
+  redirect(`/app/cereal?listo=${r.reversed.gt(0) ? "borrada-cobrada" : "borrada"}`);
+}
+
+export async function changeMonthlyGrainAction(_: FormState, fd: FormData): Promise<FormState> {
+  const { user, workspace, plan } = await requireWorkspace();
+  try {
+    if (!(await canUse(plan, "cereal"))) throw new UserError("El módulo Agro es parte de Pro.");
+    const { changeMonthlyGrain } = await import("@/server/grain");
+    await changeMonthlyGrain(getDb(), workspace.id, str(fd, "ruleId"), { day: int(fd, "day") ?? 0, amount: money(fd, "amount", "el monto aproximado"), accountId: str(fd, "accountId"), today: todayIn(workspace.timezone) });
+    await refreshRules(workspace.id, workspace.timezone);
+    await audit("grain.monthly_changed", { userId: user.id, workspaceId: workspace.id });
+  } catch (e) { return fail(e); }
+  revalidatePath("/app", "layout");
+  redirect("/app/cereal?listo=mensual-cambiada");
+}
+
+export async function stopMonthlyGrainAction(fd: FormData) {
+  const { user, workspace, plan } = await requireWorkspace();
+  if (!(await canUse(plan, "cereal"))) redirect("/app/cereal");
+  const { stopMonthlyGrain } = await import("@/server/grain");
+  await stopMonthlyGrain(getDb(), workspace.id, str(fd, "ruleId"), todayIn(workspace.timezone));
+  await audit("grain.monthly_stopped", { userId: user.id, workspaceId: workspace.id });
+  revalidatePath("/app", "layout");
+  redirect("/app/cereal?listo=mensual-terminada");
 }
 
 // Venta mensual prevista: un cobro que se repite todos los meses, con monto aproximado.

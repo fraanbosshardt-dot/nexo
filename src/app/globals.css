@@ -907,3 +907,22 @@ html[data-big] body{zoom:1.15}
 /* Calendario: los 7 días entran en cualquier celular */
 @media (max-width:640px){.cal .hd{font-size:11px;letter-spacing:0}.cal .d .dn{width:22px;height:22px;font-size:11.5px}}
 @media (max-width:360px){.cal .hd{font-size:10px}}
+
+/* Ventas de cereal: botones por venta y tarjetas en el celular */
+.gr-acts{display:flex;gap:6px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+.gr-acts form{display:contents}
+.gr-cards{display:none}
+.gr-month-acts{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:flex-start;margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
+.gr-month-acts details{flex:1 1 320px}
+.gr-month-acts details[open]{flex-basis:100%}
+@media (max-width:640px){
+  .gr-table{display:none}
+  .gr-cards{display:flex;flex-direction:column}
+  .gr-card{display:flex;flex-direction:column;gap:10px;padding:14px 0;border-bottom:1px solid var(--line)}
+  .gr-card:last-child{border-bottom:0}
+  .gr-card-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+  .gr-card-top small{display:block;color:var(--muted);font-size:13px;margin-top:2px}
+  .gr-card-top .num{white-space:nowrap}
+  .gr-card-bot{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+  .gr-card-bot .btn{min-height:40px}
+}

@@ -8,6 +8,16 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 ### Necesitan algo tuyo
 - [ ] Z2. Cargar las claves reales para activar lo que ya está programado: RESEND_API_KEY y EMAIL_FROM (emails), CRON_SECRET (tarea diaria), MP_ACCESS_TOKEN, MP_WEBHOOK_SECRET y precios (Mercado Pago). Están explicadas en .env.example.
 - [ ] Z3. Decidir el precio de Pro en pesos (u otra moneda) para Mercado Pago.
+- [ ] Z4. Pasar la base de Railway al plan Hobby.
+- [ ] Z5. Cargar los correos de contacto por área y los links de redes en Panel → Ajustes → Contacto y redes.
+- [ ] Z6. Nombre y dominio nuevos: avisar y se cambian (el nombre y los datos del titular están en src/lib/brand.ts).
+- [ ] Z7. Que un abogado revise los legales (términos, privacidad, reembolsos, cookies, arrepentimiento) antes de hacer publicidad, incluido si alcanza con no tener domicilio físico.
+- [ ] Z8. Decidir cómo mostrar el flujo de caja cuando los ingresos no se repiten: "Estimar con mi promedio", "Simular un ingreso" o las dos.
+
+### Probar con una persona real
+- [ ] T1. Ingreso al panel interno con Google, con tu cuenta.
+- [ ] T2. La bienvenida nueva, de punta a punta.
+- [ ] T3. Consultas del sitio: abrirla desde el panel y responder una consulta.
 
 ### Para la próxima vuelta
 - [ ] P7. Publicar en Play Store y App Store (con Capacitor, la misma app empaquetada). Necesita tus cuentas de desarrollador: Google US$25 una vez, Apple US$99 por año.
@@ -17,8 +27,23 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 - [ ] P5. Más herramientas gratis que atraen búsquedas: plazo fijo, conversor de monedas, fondo de emergencia, presupuesto 50/30/20.
 - [ ] P1. Asistente con IA (Pro): hoy figura como "próximamente".
 - [ ] P2. Espacio compartido (Pro): invitar hasta 3 personas.
+- [ ] P9. Funciones Pro en Beta que faltan terminar: exportar a Excel y PDF, importar Excel y OFX, saldo día a día en el flujo de caja.
+- [ ] P10. Gestos en el celular: deslizar un movimiento para pagarlo o borrarlo.
+- [ ] P11. Modo sin conexión para ver los datos sin internet.
+- [ ] P12. "Letra más grande" guardada en la cuenta (hoy queda solo en el dispositivo).
+- [ ] P13. Movimientos: "Listo, quedó guardado" aparece dos veces (cartel y aviso de abajo); dejar uno solo.
+- [ ] P14. Facturas de AFIP para los cobros de Pro.
+
+### Sitio: marketing y SEO (etapa 3)
+- [ ] M1. Guías o blog con artículos que la gente busca en Google.
+- [ ] M2. Newsletter y programa de referidos.
+- [ ] M3. Medición de visitas sin cookies de publicidad.
+- [ ] M4. Testimonios de usuarios reales, cuando los haya (nunca inventados).
 
 ## Completado
+- [x] 09/11/2026 — Categorías editables (nombre y dónde van), botón ☰ que oculta o muestra el menú en la compu, "Para confirmar" ordenado, landing desde caché y estilos del sitio fuera de la app, pantallas recién vistas al instante, calendario con 7 días en el celular y revisión responsive de 31 páginas.
+- [x] 09/11/2026 — Landing con animaciones al bajar: cascada, celular con profundidad, números que cuentan, recorrido del celular por cada función, tabla con tildes, línea de pasos, barra de lectura, brillo en botones e inclinación de tarjetas.
+- [x] 09/11/2026 — Landing nueva (diseño aprobado en artefacto), Contacto por 7 áreas con número de trámite, "Consultas del sitio" en el panel, correos por área y redes en Ajustes, legales con datos del titular, reembolsos, cookies y aviso de que no es asesoramiento financiero, Quiénes somos, Seguridad y pie nuevo con Defensa del Consumidor.
 - [x] 08/11/2026 — Revisión general (A1 a A19): confirmar antes de borrar o cancelar; movimientos con totales exactos y "Ver más"; próximo cobro después de hoy; pantalla amable ante errores; título "Registrar cobro"; sesión una vez por pantalla; Inicio calcula una vez y muestra primero lo principal; índice para categorías; próximos pagos en paralelo; letra mínima 12 px y "Letra más grande"; menús con Esc; foco visible; botones de 44 px en el celular; palabras más claras (corrección de saldo); "Listo, guardado" con cargar otro y ver o anular; primeros pasos en Inicio; ayuda "?" en proyectado, fue el total, por cobrar y flujo; buscador sin acentos que encuentra deudas y ventas de cereal.
 - [x] 08/11/2026 — Revisión de tu papá (R1 a R9): aviso en el flujo cuando los ingresos no se repiten (por eso daba déficit desde 2027), "Corresponde al mes" con cualquier mes y que sigue a la fecha, movimientos entre dos fechas, fecha hasta en pagos que se repiten (al crear y al editar), volver a Próximos pagos después de guardar, consejo para cargar la soja como cobro que se repite, borrar pagos que se repiten, "Terminar" explicado y con sección Terminadas, "Cambiar desde una fecha" ahora cambia también el día.
 - [x] 08/11/2026 — Panel interno completo con ingreso propio (Google + lista blanca, roles Dueño/Soporte/Solo mirar): resumen con gráficos, clientes y ficha (sin montos), Pro regalado o reservado por correo, cobros y cupones, soporte con prioridades y respuestas guardadas, avisos en la app, correos masivos, novedades (/novedades), finanzas (ingresos contra gastos), sistema y seguridad, actividad, equipo, ajustes y mantenimiento, descargas para el contador.
