@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { canUse, requireWorkspace } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
 import { coverOlderSales, grainSales, monthlyGrainRules } from "@/server/grain";
-import { nextOccurrence } from "@/server/recurring";
+import { occurrences } from "@/server/recurring";
 import { dec, formatMoney, ZERO } from "@/lib/money";
 import { fmtDate, fmtPeriod, isoDate, period, todayIn } from "@/lib/dates";
 import { PageHead, Stat } from "@/components/page";
@@ -34,12 +34,14 @@ export default async function Grain({ searchParams }: { searchParams: Promise<{ 
   await coverOlderSales(db, workspace.id, today);
   const [sales, accounts, monthly] = await Promise.all([grainSales(db, workspace.id), db.account.findMany({ where: { workspaceId: workspace.id, active: true, type: { notIn: ["CREDIT_CARD", "INVESTMENT"] } } }), monthlyGrainRules(db, workspace.id, today)]);
   const plan0 = monthly[0];
-  const nextPlanned = plan0 ? nextOccurrence(plan0, today) : null;
   const cur = workspace.baseCurrency;
   const qty = (t: unknown) => `${dec(t as string).times(unit === "qq" ? 10 : 1).toDecimalPlaces(2).toNumber().toLocaleString("es-AR")} ${unit}`;
   const sold = sales.reduce((s, x) => s.plus(x.sale.tonnes.toString()), ZERO);
   const collected = sales.reduce((a, s) => a.plus(s.status === "SETTLED" ? s.net : s.paid), ZERO);
   const pending = sales.reduce((a, s) => a.plus(s.status === "SETTLED" ? ZERO : s.net.minus(s.paid)), ZERO);
+  // Próxima venta prevista: se saltean los meses que ya tienen una venta real.
+  const realMonths = new Set(sales.map((s) => period(s.sale.collectDate)));
+  const nextPlanned = plan0 ? occurrences(plan0, today, new Date(today.getTime() + 400 * 864e5)).find((o) => !realMonths.has(period(o))) ?? null : null;
   const accOpts = accounts.map((a) => ({ id: a.id, name: a.name, currency: a.currency }));
 
   const stateOf = (s: (typeof sales)[number]) => s.status === "SETTLED" ? <span className="pill g">Cobrada</span>
@@ -104,15 +106,15 @@ export default async function Grain({ searchParams }: { searchParams: Promise<{ 
         <div className="card">
           {/* Compu: tabla. Celular: una tarjeta por venta. */}
           <div className="tw gr-table"><table>
-            <thead><tr><th>Mes</th><th>Cereal</th><th className="n">{unit === "qq" ? "Quintales" : "Toneladas"}</th><th className="n">Precio por tonelada</th><th className="n">Precio por quintal</th><th className="n">Impuesto al cheque</th><th className="n">Neto</th><th>Estado</th><th><span className="sr-only">Acciones</span></th></tr></thead>
+            <thead><tr><th>Mes</th><th>Cereal</th><th className="n">{unit === "qq" ? "Quintales" : "Toneladas"}</th><th className="n">Precio por tonelada</th><th className="n pq">Precio por quintal</th><th className="n">Impuesto al cheque</th><th className="n">Neto</th><th>Estado</th><th><span className="sr-only">Acciones</span></th></tr></thead>
             <tbody>{sales.map((s) => {
               const pt = dec(s.sale.pricePerTonne).times(s.sale.fxRate ? dec(s.sale.fxRate) : 1);
               return (
-                <tr key={s.sale.id}><td style={{ whiteSpace: "nowrap" }}>{fmtPeriod(period(s.sale.saleDate))}</td><td>{s.sale.grain}</td><td className="n">{qty(s.sale.tonnes)}</td><td className="n">{formatMoney(pt, cur)}</td><td className="n">{formatMoney(pt.dividedBy(10), cur)}</td><td className="n">{formatMoney(s.tax.neg(), cur)}</td><td className="n"><b>{formatMoney(s.net, cur)}</b></td>
+                <tr key={s.sale.id}><td style={{ whiteSpace: "nowrap" }}>{fmtPeriod(period(s.sale.saleDate))}</td><td>{s.sale.grain}</td><td className="n">{qty(s.sale.tonnes)}</td><td className="n">{formatMoney(pt, cur)}</td><td className="n pq">{formatMoney(pt.dividedBy(10), cur)}</td><td className="n">{formatMoney(s.tax.neg(), cur)}</td><td className="n"><b>{formatMoney(s.net, cur)}</b></td>
                   <td>{stateOf(s)}</td><td>{actions(s)}</td></tr>
               );
             })}
-              <tr className="tot"><td>Total</td><td /><td className="n">{qty(sold)}</td><td /><td /><td className="n">{formatMoney(sales.reduce((a, s) => a.plus(s.tax), ZERO).neg(), cur)}</td><td className="n">{formatMoney(collected.plus(pending), cur)}</td><td /><td /></tr>
+              <tr className="tot"><td>Total</td><td /><td className="n">{qty(sold)}</td><td /><td className="pq" /><td className="n">{formatMoney(sales.reduce((a, s) => a.plus(s.tax), ZERO).neg(), cur)}</td><td className="n">{formatMoney(collected.plus(pending), cur)}</td><td /><td /></tr>
             </tbody>
           </table></div>
           <div className="list gr-cards">{sales.map((s) => (

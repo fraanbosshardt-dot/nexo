@@ -926,3 +926,8 @@ html[data-big] body{zoom:1.15}
   .gr-card-bot{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
   .gr-card-bot .btn{min-height:40px}
 }
+.gr-table .gr-acts{flex-wrap:nowrap}
+.gr-table td:last-child{width:1%;white-space:nowrap}
+.gr-table th,.gr-table td{padding-left:8px;padding-right:8px}
+@media (max-width:1500px){.gr-table .pq{display:none}}
+.gr-table .gr-acts .btn{padding:0 12px}
