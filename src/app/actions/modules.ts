@@ -85,6 +85,39 @@ export async function changeRuleAction(_: FormState, fd: FormData): Promise<Form
   return { ok: "Listo: cambia desde esa fecha. Lo anterior quedó igual." };
 }
 
+export async function saveRuleAction(_: FormState, fd: FormData): Promise<FormState> {
+  const { user, workspace } = await requireWorkspace();
+  try {
+    const db = getDb();
+    const r = await db.recurringRule.findFirst({ where: { id: str(fd, "id"), workspaceId: workspace.id } });
+    if (!r) throw new UserError("No encontramos ese pago que se repite.");
+    const amount = money(fd, "amount", "el importe");
+    if (!amount.gt(0)) throw new UserError("El importe tiene que ser mayor a cero.");
+    const day = int(fd, "dayOfMonth");
+    if (day !== null && !(day >= 1 && day <= 31)) throw new UserError("El día del mes va del 1 al 31.");
+    const rawEnd = str(fd, "endDate");
+    const endDate = rawEnd ? date(fd, "endDate", "la fecha hasta") : null;
+    const oldDay = r.dayOfMonth ?? r.startDate.getUTCDate();
+    const amountChanged = !amount.eq(r.amount.toString());
+    const dayChanged = day !== null && day !== oldDay;
+    const endChanged = (endDate?.getTime() ?? null) !== (r.endDate?.getTime() ?? null);
+    if (!amountChanged && !dayChanged && !endChanged) return { ok: "No había nada para cambiar." };
+    let ruleId = r.id;
+    if (amountChanged || dayChanged) {
+      const next = await changeRuleFrom(db, workspace.id, r.id, date(fd, "from", "desde cuándo"), { amount, ...(dayChanged ? { dayOfMonth: day } : {}) });
+      ruleId = next.id;
+    }
+    if (endChanged) {
+      const { setRuleEnd } = await import("@/server/recurring");
+      await setRuleEnd(db, workspace.id, ruleId, endDate);
+    }
+    await refreshRules(workspace.id, workspace.timezone);
+    await audit("rule.saved", { userId: user.id, workspaceId: workspace.id, entityId: ruleId, meta: { amountChanged, dayChanged, endChanged } });
+  } catch (e) { return fail(e); }
+  revalidatePath("/app", "layout");
+  redirect("/app/recurrentes?guardada=1");
+}
+
 export async function setRuleEndAction(_: FormState, fd: FormData): Promise<FormState> {
   const { workspace } = await requireWorkspace();
   try {

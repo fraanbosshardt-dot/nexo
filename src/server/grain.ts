@@ -139,10 +139,11 @@ async function grainCategory(db: Db, ws: string) {
     ?? (await db.category.create({ data: { workspaceId: ws, kind: "INCOME", name: "Venta de cereal" } }));
 }
 
+// Ventas mensuales vigentes después de "today". Si se terminó hoy ("Dejar de proyectar"), ya no cuenta.
 export async function monthlyGrainRules(db: Db, ws: string, today: Date) {
   const cat = await db.category.findFirst({ where: { workspaceId: ws, kind: "INCOME", name: "Venta de cereal", parentId: null } });
   if (!cat) return [];
-  return db.recurringRule.findMany({ where: { workspaceId: ws, direction: "RECEIVABLE", categoryId: cat.id, OR: [{ endDate: null }, { endDate: { gte: today } }] }, orderBy: { createdAt: "asc" } });
+  return db.recurringRule.findMany({ where: { workspaceId: ws, direction: "RECEIVABLE", categoryId: cat.id, OR: [{ endDate: null }, { endDate: { gt: today } }] }, orderBy: { createdAt: "asc" } });
 }
 
 export async function setupMonthlyGrain(db: Db, ws: string, input: { day: number; amount: MoneyValue; accountId: string; today: Date }) {

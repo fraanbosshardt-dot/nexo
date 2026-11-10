@@ -7,8 +7,10 @@ import { nextOccurrence } from "@/server/recurring";
 import { Empty, PageHead, SettingsTabs } from "@/components/page";
 import { ActionForm, Submit } from "@/components/forms";
 import { CloseDetails } from "@/components/close-details";
-import { changeRuleAction, createRuleAction, deleteRuleAction, endRuleAction, pauseRuleAction, setRuleEndAction } from "@/app/actions/modules";
+import { createRuleAction, deleteRuleAction, endRuleAction, pauseRuleAction, saveRuleAction } from "@/app/actions/modules";
 import { ConfirmSubmit } from "@/components/confirm-submit";
+import { ListSearch } from "@/components/list-search";
+import { searchText } from "@/lib/search-text";
 
 export const metadata: Metadata = { title: "Pagos que se repiten" };
 
@@ -17,7 +19,7 @@ const MONTHLY_LIKE = ["MONTHLY", "BIMONTHLY", "QUARTERLY", "SEMIANNUAL", "ANNUAL
 
 export default async function Rules({ searchParams }: { searchParams: Promise<{ nueva?: string; borrada?: string; terminada?: string }> }) {
   const { workspace } = await requireWorkspace();
-  const sp = await searchParams;
+  const sp = await searchParams as { nueva?: string; borrada?: string; terminada?: string; guardada?: string };
   const db = getDb();
   const today = todayIn(workspace.timezone);
   const [all, accounts, cats] = await Promise.all([
@@ -34,7 +36,7 @@ export default async function Rules({ searchParams }: { searchParams: Promise<{ 
   const row = (r: (typeof all)[number], active: boolean) => {
     const next = active ? nextOccurrence(r, today) : null;
     return (
-      <div className="li" key={r.id} style={{ flexWrap: "wrap" }}>
+      <div className="li" key={r.id} style={{ flexWrap: "wrap" }} data-q={searchText(r.description, FREQ[r.frequency], r.direction === "RECEIVABLE" ? "cobro ingreso" : "pago gasto", r.amount.toString())}>
         <div className="grow" style={{ minWidth: 200 }}>
           <div className="t">{r.description} {r.pausedAt && <span className="pill">Pausada</span>}{!active && <span className="pill">Terminada</span>}</div>
           <div className="s">{FREQ[r.frequency]}{r.dayOfMonth ? ` · día ${r.dayOfMonth}` : ""}{r.variableAmount ? " · importe variable" : ""}{next ? ` · próxima: ${fmtDate(next)}` : ""}{r.endDate ? ` · ${active ? "hasta" : "terminó el"} ${fmtDate(r.endDate)}` : " · sin fecha de fin"}</div>
@@ -45,25 +47,22 @@ export default async function Rules({ searchParams }: { searchParams: Promise<{ 
           <div className="rule-opts">
             {active && (
               <>
-                <section>
-                  <h4>Cambiar desde una fecha</h4>
-                  <p className="sub">Desde esa fecha cambia el importe y, si querés, el día. Lo anterior queda como estaba.</p>
-                  <ActionForm action={changeRuleAction} className="frow" style={{ flexWrap: "wrap", alignItems: "flex-end" }}>
-                    <input type="hidden" name="id" value={r.id} />
-                    <label className="field" style={{ flex: "1 1 140px" }}>Importe<input name="amount" inputMode="decimal" defaultValue={r.amount.toFixed(2).replace(".", ",")} /></label>
-                    {MONTHLY_LIKE.includes(r.frequency) && <label className="field" style={{ flex: "0 1 120px" }}>Día del mes<input name="dayOfMonth" inputMode="numeric" defaultValue={r.dayOfMonth ?? r.startDate.getUTCDate()} /></label>}
-                    <label className="field" style={{ flex: "1 1 150px" }}>Desde<input name="from" type="date" defaultValue={isoDate(next ?? today)} /></label>
-                    <Submit className="btn">Cambiar</Submit>
-                  </ActionForm>
-                </section>
-                <section>
-                  <h4>Hasta cuándo se repite</h4>
-                  <ActionForm action={setRuleEndAction} className="frow" style={{ flexWrap: "wrap", alignItems: "flex-end" }}>
-                    <input type="hidden" name="id" value={r.id} />
-                    <label className="field" style={{ flex: "1 1 160px" }}>Hasta (vacío = sin fin)<input name="endDate" type="date" defaultValue={r.endDate ? isoDate(r.endDate) : ""} /></label>
-                    <Submit className="btn">Guardar</Submit>
-                  </ActionForm>
-                </section>
+                <ActionForm action={saveRuleAction} id={`rule-${r.id}`} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+                  <input type="hidden" name="id" value={r.id} />
+                  <section>
+                    <h4>Importe y día</h4>
+                    <p className="sub">Si cambiás el importe o el día, vale desde la fecha que elijas. Lo anterior queda como estaba.</p>
+                    <div className="frow" style={{ flexWrap: "wrap", alignItems: "flex-end" }}>
+                      <label className="field" style={{ flex: "1 1 140px" }}>Importe<input name="amount" inputMode="decimal" defaultValue={r.amount.toFixed(2).replace(".", ",")} /></label>
+                      {MONTHLY_LIKE.includes(r.frequency) && <label className="field" style={{ flex: "0 1 120px" }}>Día del mes<input name="dayOfMonth" inputMode="numeric" defaultValue={r.dayOfMonth ?? r.startDate.getUTCDate()} /></label>}
+                      <label className="field" style={{ flex: "1 1 150px" }}>Desde<input name="from" type="date" defaultValue={isoDate(next ?? today)} /></label>
+                    </div>
+                  </section>
+                  <section>
+                    <h4>Hasta cuándo se repite</h4>
+                    <label className="field" style={{ maxWidth: 260 }}>Hasta (vacío = sin fin)<input name="endDate" type="date" defaultValue={r.endDate ? isoDate(r.endDate) : ""} /></label>
+                  </section>
+                </ActionForm>
                 <section>
                   <h4>Pausar o terminar</h4>
                   <p className="sub"><b>Pausar</b>: deja de aparecer hasta que la reanudes. <b>Terminar</b>: deja de repetirse desde hoy y pasa a "Terminadas"; lo que ya pagaste o cobraste queda igual.</p>
@@ -79,7 +78,7 @@ export default async function Rules({ searchParams }: { searchParams: Promise<{ 
               <p className="sub">Se borra la regla y sus próximos pendientes. Lo que ya pagaste o cobraste queda en tus movimientos.</p>
               <form action={deleteRuleAction}><input type="hidden" name="id" value={r.id} /><ConfirmSubmit className="btn sm danger" question={`¿Borrar "${r.description}" y sus próximos pendientes?`} yes="Sí, borrar">Borrar "{r.description}"</ConfirmSubmit></form>
             </section>
-            <div className="rule-close"><CloseDetails /></div>
+            <div className="rule-close">{active && <button className="btn pri sm" type="submit" form={`rule-${r.id}`}>Guardar cambios</button>}<CloseDetails /></div>
           </div>
         </details>
       </div>
@@ -91,7 +90,10 @@ export default async function Rules({ searchParams }: { searchParams: Promise<{ 
       <PageHead crumb="Configuración" title="Pagos que se repiten" desc="Sueldos, servicios, cuotas y cosechas que se repiten solos. Son los que el flujo de caja proyecta a futuro." />
       <SettingsTabs current="recurrentes" />
       {sp.borrada && <p className="notice g" role="status">Listo, se borró. Lo ya pagado o cobrado quedó en tus movimientos.</p>}
+      {sp.guardada && <p className="notice g" role="status">Listo, se guardaron los cambios. Lo anterior quedó como estaba.</p>}
       {sp.terminada && <p className="notice g" role="status">Listo, dejó de repetirse desde hoy. La ves abajo, en Terminadas.</p>}
+      <div id="rec-list" style={{ display: "contents" }}>
+      {all.length > 0 && <ListSearch scope="rec-list" placeholder="Buscar un pago que se repite: alquiler, sueldo, luz…" label="Buscar en pagos que se repiten" />}
       <div className="card">
         {rules.length ? <div className="list">{rules.map((r) => row(r, true))}</div> : <Empty>Todavía no tenés pagos que se repiten. Creá el primero abajo.</Empty>}
       </div>
@@ -116,11 +118,12 @@ export default async function Rules({ searchParams }: { searchParams: Promise<{ 
       </div>
       {ended.length > 0 && (
         <div className="card">
-          <details className="more"><summary>Terminadas ({ended.length})</summary>
+          <details className="more" data-group=""><summary>Terminadas ({ended.length})</summary>
             <div className="list" style={{ marginTop: 8 }}>{ended.map((r) => row(r, false))}</div>
           </details>
         </div>
       )}
+      </div>
     </>
   );
 }

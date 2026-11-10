@@ -8,10 +8,11 @@ const Pending = createContext(false);
 
 // Formulario que muestra el error o la confirmación que devuelve la acción del servidor.
 // Se envía con onSubmit (y no con action=) para que, si hay un error, no se borre lo escrito.
-export function ActionForm({ action, children, className, style }: { action: Action; children: ReactNode; className?: string; style?: React.CSSProperties }) {
+export function ActionForm({ action, children, className, style, id }: { action: Action; children: ReactNode; className?: string; style?: React.CSSProperties; id?: string }) {
   const [state, run, pending] = useActionState(action, null);
   return (
     <form
+      id={id}
       className={className}
       style={style}
       // Si se envía antes de que cargue la página, que nunca mande los datos en la dirección (ni la contraseña).

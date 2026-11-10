@@ -86,5 +86,9 @@ describe("editar y borrar ventas de cereal", () => {
     await expect(changeMonthlyGrain(db, ws, next.id, { day: 40, amount: "1", accountId: acc, today })).rejects.toThrow(/día/);
     await stopMonthlyGrain(db, ws, next.id, today);
     expect(await plannedMonths()).toEqual([]);
+    expect(await monthlyGrainRules(db, ws, today)).toEqual([]); // la pantalla ya no la muestra
+    // y se puede volver a proyectar el mismo día
+    const again = await setupMonthlyGrain(db, ws, { day: 10, amount: "100000", accountId: acc, today });
+    expect(again.id).not.toBe(next.id);
   });
 });

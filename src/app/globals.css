@@ -931,3 +931,13 @@ html[data-big] body{zoom:1.15}
 .gr-table th,.gr-table td{padding-left:8px;padding-right:8px}
 @media (max-width:1500px){.gr-table .pq{display:none}}
 .gr-table .gr-acts .btn{padding:0 12px}
+
+/* Buscador de listas (Pagos que se repiten, Categorías) */
+.lsearch{position:relative;display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line-2);border-radius:999px;padding:0 16px;min-height:46px;max-width:560px}
+.lsearch:focus-within{border-color:var(--ink);box-shadow:0 0 0 3px var(--ink-soft)}
+.lsearch svg{width:18px;height:18px;flex-shrink:0;fill:none;stroke:var(--muted);stroke-width:2;stroke-linecap:round}
+.lsearch input{flex:1;min-width:0;border:0;outline:0;background:transparent;font:inherit;font-size:16px;color:var(--fg);padding:10px 0}
+.lsearch-n{font-size:13px;color:var(--muted);white-space:nowrap}
+[data-q][hidden],details[data-group][hidden]{display:none!important}
+.card:has(> details[data-group][hidden]){display:none}
+.rule-close{gap:8px;align-items:center}

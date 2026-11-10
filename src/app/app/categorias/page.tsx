@@ -6,6 +6,8 @@ import { ActionForm, Submit } from "@/components/forms";
 import { createCategoryAction, deleteCategoryAction } from "@/app/actions/app";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { CategoryEdit } from "./category-edit";
+import { ListSearch } from "@/components/list-search";
+import { searchText } from "@/lib/search-text";
 
 export const metadata: Metadata = { title: "Categorías" };
 
@@ -26,13 +28,14 @@ export default async function Categories({ searchParams }: { searchParams: Promi
       <SettingsTabs current="categorias" />
       <Tabs current={kind} items={[{ key: "EXPENSE", label: "Gastos", href: "/app/categorias" }, { key: "INCOME", label: "Ingresos", href: "/app/categorias?tipo=INCOME" }]} />
       {sp.borrada && <p className="notice g" role="status">Categoría borrada. Sus movimientos quedaron donde elegiste.</p>}
-      <div className="grid g3">
+      {parents.length > 0 && <ListSearch scope="cat-list" placeholder="Buscar una categoría o subcategoría…" label="Buscar categorías" />}
+      <div className="grid g3" id="cat-list">
         {parents.map((p) => {
           const subs = cats.filter((c) => c.parentId === p.id);
           const n = count(p.id) + subs.reduce((t, s) => t + count(s.id), 0);
           const others = cats.filter((c) => c.id !== p.id && c.parentId !== p.id);
           return (
-            <div className="card catc" key={p.id}>
+            <div className="card catc" key={p.id} data-q={searchText(p.name, ...subs.map((x) => x.name))}>
               <div className="chead" style={{ marginBottom: 8 }}>
                 <div style={{ display: "flex", gap: 10, alignItems: "center", minWidth: 0 }}><span className="cav">{p.name.slice(0, 2)}</span><div style={{ minWidth: 0 }}><h3>{p.name}</h3><p className="sub">{subs.length ? `${subs.length} ${subs.length === 1 ? "subcategoría" : "subcategorías"}` : "Sin subcategorías"} · {n} {n === 1 ? "movimiento" : "movimientos"}</p></div></div>
               </div>
