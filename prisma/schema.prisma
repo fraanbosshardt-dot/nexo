@@ -760,3 +760,23 @@ model EmailCampaign {
   createdBy String
   createdAt DateTime @default(now())
 }
+
+// Consultas que llegan desde el formulario de Contacto del sitio (cualquier persona, con o sin cuenta).
+model ContactMessage {
+  id        String   @id @default(cuid())
+  code      String   @unique // número de trámite que ve la persona
+  area      String // soporte | pagos | arrepentimiento | privacidad | reclamos | prensa | alianzas
+  name      String
+  email     String
+  subject   String
+  body      String
+  status    String   @default("OPEN") // OPEN | ANSWERED | CLOSED
+  reply     String?
+  userId    String?
+  ip        String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([area, createdAt])
+}

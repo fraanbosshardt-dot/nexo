@@ -1,49 +1,112 @@
 import Link from "next/link";
-import { Icon, type IconName } from "@/components/icons";
-import { PlanToggle, Reveal } from "@/components/landing-fx";
+import { Reveal } from "@/components/landing-fx";
+import { CuotasDemo, PriceSwitch } from "@/components/landing-demo";
 import { PublicShell } from "@/components/public-shell";
-import { CuotasCalc } from "@/components/tools/cuotas-calc";
 import { PLAN_FEATURES } from "@/lib/modules";
 import { getSession } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
 import { planSettings, PRICES_DEFAULT } from "@/server/plans";
 import { jsonLd, SITE } from "@/lib/seo";
+import { BRAND } from "@/lib/brand";
 
 export const dynamic = "force-dynamic";
 
-const FEATS: [IconName, string, string][] = [
-  ["wallet", "Cuánto podés gastar", "Lo que tenés menos lo que vence antes de tu próximo cobro, y cuánto te queda por día."],
-  ["clock", "Qué tenés que pagar", "Vencimientos y cobros en una sola lista por fecha. Lo atrasado no se borra solo."],
-  ["card", "Tarjetas en cuotas", "Cada compra cuenta como gasto una sola vez. Las cuotas aparecen en el mes en que vencen."],
-  ["bank", "Deudas y préstamos", "Cronograma francés, alemán o americano, y cuánto ahorrás si cancelás antes."],
-  ["flow", "Cuánto vas a tener", "Con cuánto terminás cada mes, con lo que se repite y lo que ya sabés que viene."],
-  ["bell", "Avisos a tiempo", "Un email antes de cada vencimiento y alertas si un mes va a quedar en rojo."],
+const N = BRAND.name;
+const svg = (d: string, extra?: React.ReactNode) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={d} />{extra}</svg>;
+const CHECK = svg("M5 12l5 5L20 7");
+
+const FEATS: [React.ReactNode, string, string, ("bars" | null)?][] = [
+  [svg("M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM3 10h18"), "Tarjetas y cuotas", "Cada compra en cuotas se reparte sola en los meses que vienen y cuenta como gasto una sola vez."],
+  [svg("M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM3 9h18M8 2v4M16 2v4"), "Próximos pagos y avisos", "Alquiler, servicios, préstamos y cobros, ordenados por fecha. Te avisamos antes de que venzan."],
+  [svg("M3 17l5-5 4 3 8-8M15 7h5v5"), "Flujo de caja a 12 meses", "Mirá cómo termina cada mes con lo que entra, lo que sale y lo que ya está comprometido.", "bars"],
+  [svg("M4 21V10M10 21V4M16 21v-7M22 21H2"), "Deudas y préstamos", "Cronograma francés, alemán o americano, y cuánto ahorrás si cancelás antes."],
+  [svg("M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 13h6M9 17h4"), "Leé tu resumen en PDF", "Subí el resumen de la tarjeta y se cargan las compras y cuotas. Vos revisás y confirmás."],
+  [svg("M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"), "Objetivos de ahorro", "Vacaciones, el auto o un fondo para imprevistos. Ves cuánto te falta y cuánto apartar por mes."],
+];
+const VS: [string, string][] = [
+  ["Cuotas repartidas mes a mes", "A mano"],
+  ["Avisos antes de vencer", "No"],
+  ["Pesos y dólares juntos", "Con fórmulas"],
+  ["Cuánto podés gastar hoy", "No"],
+  ["Desde el celular, en segundos", "Incómodo"],
+];
+const STEPS: [string, string][] = [
+  ["Contanos dónde tenés la plata", "Tu cuenta del banco, la billetera virtual o el efectivo. Solo el saldo: nunca la clave."],
+  ["Sumá lo que cobrás y lo que pagás", "Sueldo, alquiler, servicios y tarjetas. Lo cargás una vez y se repite solo cada mes."],
+  ["Mirá cómo termina el mes", "Cuánto podés gastar hoy, qué vence esta semana y cómo vienen los próximos 12 meses."],
+];
+const SAFE: [React.ReactNode, string, string][] = [
+  [svg("M6 10V7a6 6 0 0 1 12 0v3M5 10h14v11H5z"), "Sin claves del banco", "No nos conectamos a tu banco ni te pedimos sus contraseñas. Nunca."],
+  [svg("M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6zM9 12l2 2 4-4"), "Verificación en dos pasos", "Sumá un código del celular a tu contraseña, o ingresá con Google."],
+  [svg("M4 12h16M12 4a12 12 0 0 1 0 16M12 4a12 12 0 0 0 0 16"), "Conexión cifrada", "Todo viaja cifrado y cada acceso del equipo queda registrado."],
+  [svg("M12 3v12M7 10l5 5 5-5M5 21h14"), "Tus datos son tuyos", "Descargalos o borrá tu cuenta cuando quieras. No los vendemos."],
 ];
 const FAQ: [string, string][] = [
-  ["¿Es gratis?", "Sí. El plan Gratis incluye casi todo y no vence. Pro suma funciones avanzadas y lo podés probar gratis 14 días."],
-  ["¿Tengo que conectar mi banco?", "No. Cargás tus movimientos o importás el extracto en CSV. NEXO nunca te pide la contraseña de tu banco."],
-  ["¿Sirve en mi país y con mi moneda?", "Sí. Elegís tu país y tu moneda al registrarte, y podés usar varias monedas a la vez. Las cotizaciones se actualizan solas."],
-  ["¿Puedo usarlo en el celular?", "Sí. Funciona en cualquier navegador y lo podés instalar como app en la pantalla de inicio de tu celular."],
+  [`¿${N} se conecta con mi banco?`, "No. Cargás tus saldos y movimientos, importás un CSV o subís el resumen en PDF. Nunca te pedimos la contraseña de tu banco."],
+  ["¿Es gratis de verdad?", "Sí. El plan Gratis incluye casi todo, no vence y no pide tarjeta. Pro suma funciones avanzadas y lo probás 14 días gratis."],
+  ["¿Sirve si mis ingresos cambian todos los meses?", "Sí. Cargás un monto estimado y, cuando cobrás, ponés lo que realmente entró y la fecha."],
   ["¿Las compras con tarjeta se cuentan dos veces?", "No. La compra es el gasto. Pagar el resumen es pasar plata de tu cuenta a la tarjeta, así que no suma otra vez."],
-  ["¿Mis datos están seguros?", "Tu contraseña se guarda cifrada, podés activar la verificación en dos pasos y descargar o eliminar tus datos cuando quieras."],
+  ["¿Puedo usarlo en el celular?", "Sí. Funciona en cualquier navegador y se instala como app en la pantalla de inicio, sin pasar por la tienda."],
+  ["¿Sirve en mi país y con mi moneda?", "Sí. Elegís tu país y tu moneda al registrarte, y podés usar pesos y dólares a la vez. La cotización se actualiza sola."],
+  ["¿Cómo cancelo Pro?", "Desde Configuración, cuando quieras. Dentro de los 10 días de contratarlo te devolvemos todo."],
 ];
+
+function Phone() {
+  return (
+    <div className="lx-phone-wrap">
+      <span className="lx-halo" aria-hidden="true" />
+      <div className="lx-phone" role="img" aria-label={`La pantalla de Inicio de ${N} en un celular, con datos de ejemplo`}>
+        <div className="lx-screen">
+          <div className="lx-notch"><span /></div>
+          <div className="lx-hi"><div><small>Lunes 9 de noviembre</small><b>Hola, Martín</b></div><span>M</span></div>
+          <div className="lx-hero-card">
+            <small>Te queda hasta tu cobro del 1 de dic.</small>
+            <b>$ 184.250</b>
+            <small>Podés gastar $ 8.010 por día</small>
+            <i><i /></i>
+          </div>
+          <div className="lx-quick">{[["−", "Gasto"], ["+", "Ingreso"], ["⇄", "Pasar"], ["▤", "Cuotas"]].map(([s, l]) => <span key={l}><em>{s}</em>{l}</span>)}</div>
+          <div className="lx-list">
+            <b>Próximos pagos</b>
+            {[["12", "nov", "Visa · cuota 3 de 12", "−$ 48.300", "n"], ["15", "nov", "Alquiler", "−$ 420.000", "n"], ["1", "dic", "Sueldo", "+$ 1.250.000", "p"]].map(([d, m, t, v, c]) => (
+              <div key={t}><span><b>{d}</b>{m}</span><span>{t}</span><b className={c}>{v}</b></div>
+            ))}
+          </div>
+          <div className="lx-tabs"><span className="on">Inicio</span><span>Movimientos</span><span>Pagos</span><span>Más</span></div>
+        </div>
+      </div>
+      <div className="lx-float a" aria-hidden="true"><span className="w">!</span><span><b>Vence en 3 días</b><small>Visa · $ 48.300</small></span></div>
+      <div className="lx-float b" aria-hidden="true"><span className="g">{svg("M12 21V9M12 9c0-3 2-5 6-5 0 4-2 6-6 6zM12 13c0-3-2-5-6-5 0 4 2 6 6 6z")}</span><span><b>Venta de soja · por cobrar</b><small className="p">+$ 2.450.000 · 10 dic</small></span></div>
+    </div>
+  );
+}
 
 export default async function Landing() {
   const logged = await getSession().then(Boolean, () => false); // sin base, la landing igual se muestra
   const prices = await planSettings(getDb()).then((s) => s.prices, () => PRICES_DEFAULT);
-  const plan = (price: number, period: string) => (
-    <div className="lp-plans">
-      <Reveal className="lp-plan"><h3>Gratis</h3><div className="lp-price">US$ 0</div><p className="sub">Para ordenar tus finanzas, sin límite de tiempo.</p>
-        <ul>{PLAN_FEATURES.filter((f) => f.plan === "free").map((f) => <li key={f.name}>{f.name}</li>)}</ul><Link className="btn" href="/registro">Empezar gratis</Link></Reveal>
-      <Reveal className="lp-plan pro"><h3>Pro</h3><div className="lp-price">US$ {price}<small> / {period}</small></div><p className="sub">Todo lo de Gratis, más:</p>
-        <ul>{PLAN_FEATURES.filter((f) => f.plan === "pro").map((f) => <li key={f.name}>{f.name}{f.beta && <> <span className="pill a beta">Beta</span></>}</li>)}</ul>
-        <p className="lp-beta-note">Beta: en desarrollo. Se suma a Pro sin costo extra apenas esté lista.</p>
-        <Link className="btn pri" href="/registro">Probar 14 días gratis</Link></Reveal>
+  const cta = logged ? { href: "/app", label: "Ir a la app" } : { href: "/registro", label: "Empezar gratis" };
+  const free = PLAN_FEATURES.filter((f) => f.plan === "free");
+  const pro = PLAN_FEATURES.filter((f) => f.plan === "pro");
+  const plans = (price: number, period: string) => (
+    <div className="lx-plans">
+      <div className="lx-plan">
+        <div><h3>Gratis</h3><p>Para ordenar tu plata del día a día.</p></div>
+        <div className="lx-price"><b>US$ 0</b><span>para siempre</span></div>
+        <Link className="ws-btn" href="/registro">Crear cuenta gratis</Link>
+        <ul>{free.map((f) => <li key={f.name}>{CHECK}{f.name}</li>)}</ul>
+      </div>
+      <div className="lx-plan pro">
+        <span className="lx-reco">Recomendado</span>
+        <div><h3>Pro</h3><p>Para planificar todo el año.</p></div>
+        <div className="lx-price"><b>US$ {price}</b><span>por {period}</span></div>
+        <Link className="ws-btn pri" href="/registro">Probar Pro 14 días gratis</Link>
+        <ul><li>{CHECK}Todo lo de Gratis</li>{pro.map((f) => <li key={f.name}>{CHECK}<span>{f.name}{f.beta && <> <span className="lx-beta">Beta</span></>}</span></li>)}</ul>
+      </div>
     </div>
   );
   const ld = [
-    { "@context": "https://schema.org", "@type": "Organization", name: "NEXO", url: SITE.url, logo: `${SITE.url}/icon.svg` },
-    { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "NEXO", url: SITE.url, applicationCategory: "FinanceApplication", operatingSystem: "Web, Android, iOS", inLanguage: "es", description: SITE.description,
+    { "@context": "https://schema.org", "@type": "Organization", name: N, url: SITE.url, logo: `${SITE.url}/icon.svg`, founder: { "@type": "Person", name: BRAND.owner }, taxID: BRAND.cuit, contactPoint: { "@type": "ContactPoint", contactType: "customer support", url: `${SITE.url}/contacto`, availableLanguage: "es" } },
+    { "@context": "https://schema.org", "@type": "SoftwareApplication", name: N, url: SITE.url, applicationCategory: "FinanceApplication", operatingSystem: "Web, Android, iOS", inLanguage: "es", description: SITE.description,
       offers: [{ "@type": "Offer", name: "Gratis", price: "0", priceCurrency: "USD" }, { "@type": "Offer", name: "Pro", price: String(prices.monthly), priceCurrency: "USD" }] },
     { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: FAQ.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })) },
   ];
@@ -51,43 +114,130 @@ export default async function Landing() {
     <PublicShell logged={logged}>
       {ld.map((d, i) => <script key={i} type="application/ld+json" dangerouslySetInnerHTML={jsonLd(d)} />)}
 
-      <section className="lp-w lp-hero">
-        <div className="lp-copy">
-          <p className="lp-eyebrow">Finanzas personales, en tu moneda</p>
-          <h1>Sabé cuánto podés gastar hasta tu próximo cobro.</h1>
-          <p className="lp-lead">NEXO junta tus cuentas, tarjetas, deudas y vencimientos, y te dice qué te queda sin comprometer lo que viene. Gratis, en tu moneda y sin conectar tu banco.</p>
-          <div className="acts"><Link className="btn pri lp-big" href={logged ? "/app" : "/registro"}>{logged ? "Ir a la app" : "Crear cuenta gratis"}</Link><Link className="btn lp-big" href="/herramientas">Ver herramientas gratis</Link></div>
-          <p className="sub">Gratis para siempre · Sin tarjeta · Verificación en dos pasos</p>
-        </div>
-        <div className="lp-tool">
-          <p className="lp-tool-lbl">Probalo ahora: ¿puedo comprarlo en cuotas?</p>
-          <CuotasCalc compact />
+      {/* Portada */}
+      <section className="lx-top">
+        <div className="ws-w lx-hero">
+          <div className="lx-copy">
+            <a className="lx-news" href="#agro"><span>Nuevo</span>Ventas de cereal mes a mes, proyectadas<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg></a>
+            <h1 className="ws-h1 lx-h1">Sabé cuánto podés gastar <em>hasta tu próximo cobro.</em></h1>
+            <p className="ws-lead">Tus cuentas, tarjetas en cuotas, deudas y vencimientos en un solo lugar, en pesos y en dólares. {N} te dice hoy con cuánta plata llegás a fin de mes.</p>
+            <div className="lx-ctas">
+              <Link className="ws-btn pri lx-big" href={cta.href}>{cta.label}</Link>
+              <a className="ws-btn lx-big" href="#demo">Probalo sin registrarte</a>
+            </div>
+            <ul className="lx-trust"><li>{CHECK}Gratis para siempre</li><li>{CHECK}Sin tarjeta</li><li>{CHECK}Nunca te pedimos la clave del banco</li></ul>
+          </div>
+          <Phone />
         </div>
       </section>
 
-      <section className="lp-w lp-sec" id="funciones"><Reveal as="h2">Todo tu dinero, en un lugar</Reveal>
-        <div className="lp-grid">{FEATS.map(([i, t, d]) => <Reveal key={t} className="lp-feat"><Icon name={i} /><h3>{t}</h3><p>{d}</p></Reveal>)}</div></section>
+      <section className="lx-strip" aria-label="Qué podés ordenar">
+        <div className="ws-w"><span>Todo en un lugar:</span>{["Pesos y dólares", "Tarjetas en cuotas", "Préstamos", "Servicios y alquiler", "Sueldo o cobros variables", "Ventas de cereal", "Objetivos de ahorro"].map((t) => <em key={t}>{t}</em>)}</div>
+      </section>
 
-      <section className="lp-band"><div className="lp-w lp-sec"><Reveal as="h2">Empezás en tres pasos</Reveal>
-        <ol className="lp-steps">{[["Creá tu cuenta", "Con tu correo, en un minuto. Elegís tu país y tu moneda."], ["Cargá tu cuenta y tus ingresos fijos", "El sueldo, la jubilación o un alquiler que cobrás se repiten solos."], ["Mirá cuánto te queda", "Desde ahí, NEXO calcula todo con tus datos."]].map(([t, d]) => <Reveal as="li" key={t}><b>{t}</b><span>{d}</span></Reveal>)}</ol></div></section>
-
-      <section className="lp-w lp-sec" id="herramientas"><Reveal as="h2">Herramientas gratis, sin registrarte</Reveal>
-        <div className="lp-grid">
-          {[["/herramientas/cuotas", "sliders", "¿Puedo comprarlo en cuotas?", "Te dice si te alcanza todos los meses y cuál sería tu mes más justo."], ["/herramientas/prestamo", "bank", "Calculadora de préstamos", "Cuota, intereses y cronograma con sistema francés, alemán o americano."], ["/glosario", "file", "Glosario financiero", "TNA, TEA, CFT, pago mínimo y más, explicados simple."]].map(([href, ic, t, d]) => (
-            <Reveal key={href} className="lp-feat"><Link href={href} style={{ color: "inherit", display: "flex", flexDirection: "column", gap: 6 }}><Icon name={ic as IconName} /><h3>{t}</h3><p>{d}</p><span className="lk">Usar ahora →</span></Link></Reveal>
+      {/* Funciones */}
+      <section className="ws-w ws-sec" id="funciones">
+        <Reveal className="ws-head"><p className="ws-eyebrow">Funciones</p><h2 className="ws-h2">Todo lo que hoy anotás en papel o en Excel, pero que se calcula solo.</h2></Reveal>
+        <div className="lx-bento">
+          <Reveal className="lx-big-card">
+            <div><h3>Cuánto podés gastar, hoy</h3><p>Suma lo que tenés, resta lo que vence antes de tu próximo cobro y te dice cuánto te queda por día. Sin cuentas a mano.</p></div>
+            <div className="lx-calc" aria-label="Ejemplo del cálculo">
+              <div><span>En tus cuentas</span><span>$ 612.900</span></div>
+              <div><span>Vence antes del cobro</span><span className="n">−$ 428.650</span></div>
+              <hr />
+              <div><span>Te queda</span><b>$ 184.250</b></div>
+            </div>
+          </Reveal>
+          {FEATS.map(([ic, t, d, extra]) => (
+            <Reveal key={t} className="lx-feat">
+              <span className="ws-ic">{ic}</span><h3>{t}</h3><p>{d}</p>
+              {extra === "bars" && <div className="lx-bars" aria-hidden="true">{[40, 55, 35, 70, 62, 85].map((h, i) => <i key={i} style={{ "--h": `${h}%`, "--d": `${i * 70}ms` } as React.CSSProperties} className={i === 3 ? "on" : ""} />)}</div>}
+            </Reveal>
           ))}
-        </div></section>
+        </div>
+      </section>
 
-      <section className="lp-band"><div className="lp-w lp-sec lp-sec2"><Reveal><h2>Tus datos, cuidados</h2><p className="lp-lead">Nunca te pedimos la clave de tu banco. Activás la verificación en dos pasos con Google Authenticator, y podés descargar o eliminar todo cuando quieras.</p></Reveal>
-        <div className="lp-sgrid">{[["Verificación en dos pasos", "Un código de tu celular además de la contraseña."], ["Contraseña cifrada", "Nadie, ni nosotros, puede leerla."], ["Tus datos son tuyos", "Descargalos en CSV o en un respaldo completo."]].map(([t, d]) => <Reveal key={t} className="lp-feat"><h3>{t}</h3><p>{d}</p></Reveal>)}</div></div></section>
+      {/* Planilla vs NEXO */}
+      <section className="ws-soft">
+        <div className="ws-w ws-sec lx-two">
+          <Reveal className="lx-two-copy"><p className="ws-eyebrow">Por qué {N}</p><h2 className="ws-h2">La planilla te muestra el pasado. {N} te muestra lo que viene.</h2><p className="ws-lead">Una planilla depende de que te acuerdes de todo. {N} repite tus pagos fijos, reparte las cuotas y te avisa antes de que un mes quede en rojo.</p></Reveal>
+          <Reveal className="lx-vs">
+            <table>
+              <thead><tr><th scope="col"><span className="sr-only">Qué</span></th><th scope="col">Planilla</th><th scope="col">{N}</th></tr></thead>
+              <tbody>{VS.map(([t, x]) => <tr key={t}><th scope="row">{t}</th><td>{x}</td><td>{t.startsWith("Cuotas") ? "Solas" : "Sí"}</td></tr>)}</tbody>
+            </table>
+          </Reveal>
+        </div>
+      </section>
 
-      <section className="lp-w lp-sec" id="planes"><Reveal as="h2">Planes simples</Reveal>
-        <PlanToggle monthly={plan(prices.monthly, "mes")} yearly={plan(prices.yearly, "año")} /></section>
+      {/* Cómo funciona */}
+      <section className="ws-w ws-sec" id="como">
+        <Reveal className="ws-head"><p className="ws-eyebrow">Cómo funciona</p><h2 className="ws-h2">Listo en cinco minutos.</h2></Reveal>
+        <ol className="lx-steps">{STEPS.map(([t, d], i) => <Reveal as="li" key={t}><span>0{i + 1}</span><h3>{t}</h3><p>{d}</p></Reveal>)}</ol>
+      </section>
 
-      <section className="lp-band" id="preguntas"><div className="lp-w lp-sec"><Reveal as="h2">Preguntas frecuentes</Reveal>
-        <div className="lp-faq">{FAQ.map(([q, a]) => <details key={q}><summary>{q}</summary><p>{a}</p></details>)}</div></div></section>
+      {/* Demo */}
+      <section className="lx-demo-sec" id="demo">
+        <div className="ws-w ws-sec lx-two">
+          <Reveal className="lx-two-copy"><p className="ws-eyebrow">Probalo ahora</p><h2 className="ws-h2">¿Te alcanza para comprarlo en cuotas?</h2><p className="ws-lead">Mové los valores y mirá la respuesta. Sin registrarte. En {N} esta cuenta se hace sola con tus datos reales.</p></Reveal>
+          <CuotasDemo />
+        </div>
+      </section>
 
-      <section className="lp-w lp-final"><Reveal as="h2">Empezá hoy. Es gratis.</Reveal><div className="acts" style={{ justifyContent: "center" }}><Link className="btn pri lp-big" href="/registro">Crear cuenta</Link><Link className="btn lp-big" href="/herramientas/cuotas">Probar la calculadora</Link></div></section>
+      {/* Para el campo */}
+      <section className="ws-navy" id="agro">
+        <div className="ws-w ws-sec lx-two">
+          <Reveal className="lx-two-copy">
+            <p className="ws-eyebrow">Para el campo · Pro</p>
+            <h2 className="ws-h2">Si vendés cereal todos los meses, {N} ya lo cuenta.</h2>
+            <p className="ws-lead">Cargás cuánto pensás vender por mes y lo ves proyectado en tu flujo de caja, aunque todavía no lo hayas cobrado. Cuando liquidás, ponés el monto real.</p>
+            <ul className="lx-ticks">
+              <li>{CHECK}Ventas de soja, maíz, trigo o girasol, mes a mes</li>
+              <li>{CHECK}Lo que está por cobrar suma en lo proyectado</li>
+              <li>{CHECK}Gasoil, insumos y arrendamientos junto con los gastos de tu casa</li>
+            </ul>
+          </Reveal>
+          <Reveal className="lx-grain">
+            <div className="lx-grain-h"><b>Ventas de cereal</b><small>Datos de ejemplo</small></div>
+            {[["10", "nov", "Soja · 70 t", "Cobrado", "+$ 2.380.000", "ok"], ["10", "dic", "Soja · 72 t", "Por cobrar · proyectado", "+$ 2.450.000", "wait"], ["10", "ene", "Maíz · 110 t", "Por cobrar · proyectado", "+$ 2.090.000", "wait"]].map(([d, m, t, s, v, k]) => (
+              <div key={t + m} className={`lx-grain-r ${k}`}><span><b>{d}</b>{m}</span><span><b>{t}</b><small>{s}</small></span><b>{v}</b></div>
+            ))}
+          </Reveal>
+        </div>
+      </section>
+
+      {/* Seguridad */}
+      <section className="ws-w ws-sec" id="seguridad">
+        <div className="lx-sec-head">
+          <Reveal className="ws-head" ><p className="ws-eyebrow">Seguridad</p><h2 className="ws-h2">Tus datos, cuidados como corresponde.</h2></Reveal>
+          <Link className="lx-link" href="/seguridad">Cómo protegemos tu información →</Link>
+        </div>
+        <div className="ws-grid">{SAFE.map(([ic, t, d]) => <Reveal key={t} className="ws-card"><span className="ws-ic">{ic}</span><h3>{t}</h3><p>{d}</p></Reveal>)}</div>
+      </section>
+
+      {/* Precios */}
+      <section className="ws-soft" id="planes">
+        <div className="ws-w ws-sec lx-pricing">
+          <Reveal className="ws-head c"><p className="ws-eyebrow">Precios</p><h2 className="ws-h2">Empezá gratis. Pasate a Pro cuando lo necesites.</h2></Reveal>
+          <PriceSwitch monthly={plans(prices.monthly, "mes")} yearly={plans(prices.yearly, "año")} />
+          <p className="ws-fine" style={{ textAlign: "center" }}>Beta: ya se puede usar y la seguimos mejorando, sin costo extra. Cancelás cuando quieras y tenés 10 días para arrepentirte con <Link href="/reembolsos">devolución total</Link>.</p>
+        </div>
+      </section>
+
+      {/* Preguntas */}
+      <section className="ws-w ws-sec lx-faq" id="preguntas">
+        <Reveal className="ws-head c"><h2 className="ws-h2">Preguntas frecuentes</h2></Reveal>
+        <div>{FAQ.map(([q, a], i) => <details key={q} open={i === 0}><summary>{q}<span aria-hidden="true">+</span></summary><p>{a}</p></details>)}</div>
+        <p className="ws-fine" style={{ textAlign: "center", marginTop: 24 }}>¿Otra duda? <Link href="/contacto">Escribinos</Link>.</p>
+      </section>
+
+      {/* Cierre */}
+      <section className="ws-w lx-final-wrap">
+        <Reveal className="lx-final">
+          <div><h2 className="ws-h2">Ordená tu plata hoy. Es gratis.</h2><p>Cinco minutos para empezar. Sin tarjeta.</p></div>
+          <Link className="ws-btn lx-big" href={cta.href}>{logged ? "Ir a la app" : "Crear mi cuenta"}</Link>
+        </Reveal>
+      </section>
     </PublicShell>
   );
 }

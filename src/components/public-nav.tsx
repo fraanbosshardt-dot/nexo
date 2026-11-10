@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Brand } from "./brand";
 
-const LINKS: [string, string][] = [["funciones", "Funciones"], ["herramientas", "Herramientas gratis"], ["planes", "Planes"], ["preguntas", "Preguntas"]];
+const LINKS: [string, string][] = [["funciones", "Funciones"], ["como", "Cómo funciona"], ["agro", "Para el campo"], ["planes", "Precios"], ["preguntas", "Preguntas"]];
 
 // Barra de la parte pública: acompaña al bajar y se vuelve semitransparente.
 // En la landing, los enlaces bajan suave hasta cada sección; desde otras páginas, llevan a la landing.

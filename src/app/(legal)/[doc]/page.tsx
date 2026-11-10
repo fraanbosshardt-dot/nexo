@@ -2,13 +2,16 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { LEGAL } from "@/content/legal";
-import { Brand } from "@/components/brand";
+import { BRAND } from "@/lib/brand";
+import { PublicShell, Breadcrumbs } from "@/components/public-shell";
 
 export const dynamicParams = false;
 export const generateStaticParams = () => Object.keys(LEGAL).map((doc) => ({ doc }));
 
 export async function generateMetadata({ params }: { params: Promise<{ doc: string }> }): Promise<Metadata> {
-  return { title: LEGAL[(await params).doc]?.title };
+  const { doc } = await params;
+  const d = LEGAL[doc];
+  return d ? { title: d.title, description: d.intro, alternates: { canonical: `/${doc}` } } : {};
 }
 
 export default async function LegalPage({ params }: { params: Promise<{ doc: string }> }) {
@@ -16,15 +19,35 @@ export default async function LegalPage({ params }: { params: Promise<{ doc: str
   const d = LEGAL[doc];
   if (!d) notFound();
   return (
-    <div className="lp">
-      <header className="lp-nav"><div className="lp-w lp-navin"><Brand /><span style={{ flex: 1 }} /><Link className="btn" href="/">Volver</Link></div></header>
-      <main className="lp-w legal">
-        <p className="lp-eyebrow">Legales</p>
-        <h1>{d.title}</h1>
-        <p className="sub">Última actualización: 06/11/2026 · Borrador para revisar con un abogado antes de publicar.</p>
-        <nav className="legal-tabs">{Object.entries(LEGAL).map(([k, v]) => <Link key={k} className={`chip ${k === doc ? "on" : ""}`} href={`/${k}`}>{v.title}</Link>)}</nav>
-        {d.sections.map(([h, p], i) => <section key={h}><h2>{i + 1}. {h}</h2><p>{p}</p></section>)}
-      </main>
-    </div>
+    <PublicShell>
+      <section className="ws-hero">
+        <div className="ws-w">
+          <Breadcrumbs items={[["Inicio", "/"], ["Legales"], [d.title]]} />
+          <p className="ws-eyebrow">Legales</p>
+          <h1 className="ws-h1" style={{ fontSize: "clamp(34px,4.6vw,56px)" }}>{d.title}</h1>
+          <p className="ws-lead">{d.intro}</p>
+          <div className="ws-meta"><span>Última actualización: {BRAND.legalUpdated}</span><span>Titular: {BRAND.owner} · CUIT {BRAND.cuit}</span></div>
+        </div>
+      </section>
+      <section className="ws-w" style={{ paddingBottom: "clamp(64px,8vw,112px)" }}>
+        <div className="ws-legal">
+          <nav className="ws-toc" aria-label="Documentos legales">
+            {Object.entries(LEGAL).map(([k, v]) => <Link key={k} href={`/${k}`} aria-current={k === doc ? "page" : undefined}>{v.short}</Link>)}
+          </nav>
+          <article className="ws-doc">
+            {d.sections.map(([h, p], i) => <section key={h}><span>{String(i + 1).padStart(2, "0")}</span><h2>{h}</h2><p>{p}</p></section>)}
+            {doc === "arrepentimiento" && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 12, paddingTop: 20 }}>
+                <Link className="ws-btn pri" href="/contacto?area=arrepentimiento">Quiero arrepentirme de mi compra</Link>
+                <Link className="ws-btn" href="/reembolsos">Ver política de reembolsos</Link>
+              </div>
+            )}
+            {doc !== "arrepentimiento" && (
+              <p className="ws-fine" style={{ paddingTop: 20 }}>¿Dudas sobre este documento? <Link href="/contacto">Escribinos</Link>. Si tenés un reclamo, también podés acudir a <a href={BRAND.consumerUrl} target="_blank" rel="noopener noreferrer">Defensa del Consumidor</a>.</p>
+            )}
+          </article>
+        </div>
+      </section>
+    </PublicShell>
   );
 }

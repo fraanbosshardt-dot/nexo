@@ -381,3 +381,44 @@ export async function adminRevokeSessionAction(fd: FormData) {
   await adminAudit(a, "admin.session_revoked", { entityId: id });
   refresh();
 }
+
+// ---------- Consultas del sitio (formulario de Contacto) ----------
+export async function adminReplyContactAction(_: FormState, fd: FormData): Promise<FormState> {
+  const a = await requireAdmin("support");
+  const id = s(fd, "id"), reply = s(fd, "reply");
+  if (!reply) return { error: "Escribí la respuesta." };
+  const db = getDb();
+  const m = await db.contactMessage.update({ where: { id }, data: { reply: reply.slice(0, 5000), status: "ANSWERED" } });
+  const mail = await sendEmail({
+    to: m.email,
+    subject: `Re: ${m.subject} (${m.code})`,
+    text: `Hola ${m.name.split(" ")[0]}:\n\n${reply}\n\n—\nTu consulta (${m.code}): "${m.subject}"\nSi necesitás algo más, respondé desde ${appUrl()}/contacto indicando este número.`,
+  });
+  await adminAudit(a, "admin.contact_answered", { entity: "contact", entityId: id, meta: { emailed: mail.sent, area: m.area } });
+  refresh();
+  return { ok: mail.sent ? "Respuesta enviada por correo." : "Respuesta guardada, pero el correo no salió (falta la clave de Resend). Respondé a mano a " + m.email + "." };
+}
+
+export async function adminContactStatusAction(fd: FormData) {
+  const a = await requireAdmin("support");
+  const id = s(fd, "id");
+  const st = s(fd, "status");
+  const status = st === "CLOSED" || st === "ANSWERED" ? st : "OPEN";
+  await getDb().contactMessage.update({ where: { id }, data: { status } });
+  await adminAudit(a, "admin.contact_status", { entity: "contact", entityId: id, meta: { status } });
+  refresh();
+}
+
+export async function adminSaveContactAction(_: FormState, fd: FormData): Promise<FormState> {
+  const a = await requireAdmin("owner");
+  const { AREAS, SOCIALS } = await import("@/lib/brand");
+  const { saveContactSettings } = await import("@/server/contact");
+  const emails = Object.fromEntries(AREAS.map((x) => [x.key, s(fd, `email_${x.key}`)]));
+  const socials = Object.fromEntries(SOCIALS.map((x) => [x.key, s(fd, `social_${x.key}`)]));
+  const r = await saveContactSettings(getDb(), { emails, socials });
+  if ("error" in r) return { error: r.error };
+  await adminAudit(a, "admin.contact_settings", { meta: { emails: Object.keys(emails).filter((k) => emails[k]), socials: Object.keys(socials).filter((k) => socials[k]) } });
+  refresh();
+  revalidatePath("/", "layout");
+  return { ok: "Guardado. Los correos y redes ya se usan en el sitio." };
+}

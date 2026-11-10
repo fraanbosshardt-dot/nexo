@@ -5,14 +5,16 @@ import { planSettings, PRO_FEATURES } from "@/server/plans";
 import { systemSettings } from "@/server/settings";
 import { PageHead } from "@/components/page";
 import { ActionForm, Submit } from "@/components/forms";
-import { adminSavePlansAction, adminSaveSystemAction } from "@/app/actions/admin";
+import { adminSaveContactAction, adminSavePlansAction, adminSaveSystemAction } from "@/app/actions/admin";
+import { contactSettings } from "@/server/contact";
+import { AREAS, SOCIALS } from "@/lib/brand";
 
 export const metadata: Metadata = { title: "Ajustes" };
 
 export default async function AdminSettings() {
   await requireAdmin("owner");
   const db = getDb();
-  const [settings, sys] = await Promise.all([planSettings(db), systemSettings(db)]);
+  const [settings, sys, contact] = await Promise.all([planSettings(db), systemSettings(db), contactSettings(db)]);
   return (
     <>
       <PageHead title="Ajustes" desc="Precios, qué incluye cada plan y cómo funciona la app, sin tocar código." />
@@ -35,6 +37,16 @@ export default async function AdminSettings() {
         <div className="chead" style={{ marginTop: 8 }}><h3>Funciones Pro</h3><span className="sub">Marcá las que también querés dar gratis</span></div>
         <div className="list">{PRO_FEATURES.map((f) => (
           <label className="li" key={f.key} style={{ cursor: "pointer" }}><div className="grow"><div className="t">{f.name}{f.beta && <> <span className="pill a">Beta</span></>}</div><div className="s">{settings.freeAlso.includes(f.key) ? "Incluida en Gratis" : "Solo Pro"}</div></div><span className="sw-t"><input type="checkbox" name="freeAlso" value={f.key} defaultChecked={settings.freeAlso.includes(f.key)} aria-label={`Dar gratis: ${f.name}`} /><span /></span></label>
+        ))}</div>
+        <div><Submit>Guardar</Submit></div>
+      </ActionForm>
+      <ActionForm action={adminSaveContactAction} className="card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <div className="chead" id="contacto"><div><h3>Contacto y redes</h3><p className="sub">Cada consulta del sitio avisa al correo de su área (si un área no tiene, va al de Soporte). Las redes aparecen en el pie del sitio solo si cargás el link.</p></div></div>
+        <div className="frow" style={{ flexWrap: "wrap" }}>{AREAS.map((a) => (
+          <label className="field" key={a.key} style={{ minWidth: 240, flex: "1 1 240px" }}>{a.name}<input name={`email_${a.key}`} type="email" defaultValue={contact.emails[a.key] ?? ""} placeholder="correo@tudominio.com" /></label>
+        ))}</div>
+        <div className="frow" style={{ flexWrap: "wrap" }}>{SOCIALS.map((r) => (
+          <label className="field" key={r.key} style={{ minWidth: 240, flex: "1 1 240px" }}>{r.name}<input name={`social_${r.key}`} type="url" defaultValue={contact.socials[r.key] ?? ""} placeholder="https://" /></label>
         ))}</div>
         <div><Submit>Guardar</Submit></div>
       </ActionForm>

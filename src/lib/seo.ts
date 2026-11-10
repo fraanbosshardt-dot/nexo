@@ -16,8 +16,14 @@ export const PUBLIC_PAGES: { path: string; priority: number }[] = [
   { path: "/glosario", priority: 0.7 },
   { path: "/novedades", priority: 0.5 },
   { path: "/registro", priority: 0.6 },
+  { path: "/quienes-somos", priority: 0.6 },
+  { path: "/seguridad", priority: 0.6 },
+  { path: "/contacto", priority: 0.5 },
   { path: "/terminos", priority: 0.2 },
   { path: "/privacidad", priority: 0.2 },
+  { path: "/reembolsos", priority: 0.2 },
+  { path: "/cookies", priority: 0.2 },
+  { path: "/arrepentimiento", priority: 0.2 },
 ];
 
 // Bloque de datos estructurados (schema.org) para que Google entienda la página.

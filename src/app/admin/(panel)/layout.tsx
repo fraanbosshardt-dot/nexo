@@ -13,6 +13,7 @@ const SECTIONS: { href: string; label: string; icon: string; perm: Perm }[] = [
   { href: "/admin/usuarios", label: "Clientes", icon: "user", perm: "view" },
   { href: "/admin/cobros", label: "Cobros y cupones", icon: "card", perm: "view" },
   { href: "/admin/soporte", label: "Soporte", icon: "help", perm: "view" },
+  { href: "/admin/consultas", label: "Consultas del sitio", icon: "info", perm: "view" },
   { href: "/admin/comunicaciones", label: "Comunicaciones", icon: "bell", perm: "view" },
   { href: "/admin/finanzas", label: "Finanzas", icon: "wallet", perm: "owner" },
   { href: "/admin/sistema", label: "Sistema y seguridad", icon: "shield", perm: "view" },
