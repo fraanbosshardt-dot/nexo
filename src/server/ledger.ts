@@ -354,6 +354,7 @@ export type OpenItem = {
   overdue: boolean;
   status: string;
   category: string | null;
+  recurringRuleId?: string | null;
 };
 
 export async function openObligations(db: Db, ws: string, today: Date, opts: { until?: Date; direction?: ObligationDirection } = {}): Promise<OpenItem[]> {
@@ -380,6 +381,7 @@ export async function openObligations(db: Db, ws: string, today: Date, opts: { u
     overdue: o.dueDate < today,
     status: o.status,
     category: o.category?.name ?? null,
+    recurringRuleId: o.recurringRuleId,
   }));
 }
 

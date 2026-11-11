@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import { requireWorkspace } from "@/lib/auth/session";
+import { canUse, requireWorkspace } from "@/lib/auth/session";
+import { isEstimatedGrain, loadSaleHref } from "@/server/grain";
 import { getDb } from "@/lib/db";
 import { dashboard, listMovements, openObligations } from "@/server/ledger";
 import { insights } from "@/server/insights";
@@ -20,7 +21,8 @@ const MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct
 
 export default async function Home({ searchParams }: { searchParams: Promise<{ listo?: string }> }) {
   const { listo } = await searchParams;
-  const { workspace, user, modules } = await requireWorkspace();
+  const { workspace, user, modules, plan } = await requireWorkspace();
+  const grainOn = !!modules.cereal && (await canUse(plan, "cereal"));
   const db = getDb();
   const today = todayIn(workspace.timezone);
   const cur = workspace.baseCurrency;
@@ -114,6 +116,16 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ l
           <div className="list">{toConfirm.map((o) => {
             const rec = o.direction === "RECEIVABLE";
             const isToday = o.dueDate.getTime() === today.getTime();
+            if (grainOn && isEstimatedGrain(o)) return (
+              <div className="li cf-li" key={o.id}>
+                <span className="cf-ic in" aria-hidden="true"><Icon name="grain" /></span>
+                <div className="grow">
+                  <div className="t">{isToday ? "Hoy estimabas cobrar una venta de cereal" : "¿Ya vendiste el cereal de este mes?"}</div>
+                  <div className="s">Estimabas {formatMoney(o.remaining, o.currency)}{isToday ? "" : ` · era el ${fmtDayMonth(o.dueDate)}`}</div>
+                </div>
+                <div className="cf-acts"><Link className="btn pri sm" href={loadSaleHref(o.dueDate)}>Cargar venta</Link></div>
+              </div>
+            );
             return (
               <div className="li cf-li" key={o.id}>
                 <span className={`cf-ic ${rec ? "in" : "out"}`} aria-hidden="true"><Icon name={rec ? "plus" : "minus"} /></span>

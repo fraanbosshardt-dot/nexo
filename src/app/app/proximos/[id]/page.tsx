@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { requireWorkspace } from "@/lib/auth/session";
+import { canUse, requireWorkspace } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
-import { remaining } from "@/server/ledger";
+import { paidSoFar, remaining } from "@/server/ledger";
+import { isEstimatedGrain, loadSaleHref } from "@/server/grain";
 import { formatMoney } from "@/lib/money";
 import { fmtDate, isoDate, todayIn } from "@/lib/dates";
 import { PageHead } from "@/components/page";
@@ -20,10 +21,12 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function PayPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { workspace } = await requireWorkspace();
+  const { workspace, modules, plan } = await requireWorkspace();
   const db = getDb();
-  const ob = await db.obligation.findFirst({ where: { id, workspaceId: workspace.id }, include: { payments: true } });
+  const ob = await db.obligation.findFirst({ where: { id, workspaceId: workspace.id }, include: { payments: true, category: { select: { name: true } } } });
   if (!ob || ob.status === "SETTLED" || ob.status === "CANCELLED") notFound();
+  // Una venta de cereal estimada se completa cargando la venta (quintales y precio), no con un cobro suelto.
+  if (modules.cereal && isEstimatedGrain({ ...ob, category: ob.category?.name, paid: paidSoFar(ob) }) && (await canUse(plan, "cereal"))) redirect(loadSaleHref(ob.dueDate));
   const accounts = await db.account.findMany({ where: { workspaceId: workspace.id, active: true, currency: ob.currency, type: { notIn: ["CREDIT_CARD", "INVESTMENT"] } }, orderBy: { createdAt: "asc" } });
   const left = remaining(ob);
   const inc = ob.direction === "RECEIVABLE";

@@ -10,9 +10,9 @@ export type GrainDefaults = {
   taxPct: string; other: string; fxRate: string; collectDate: string; accountId?: string;
 };
 
-export function GrainForm({ action, d, accounts, cur, mode, settled, showReplace, submit }: {
+export function GrainForm({ action, d, accounts, cur, mode, settled, submit }: {
   action: (s: FormState, fd: FormData) => Promise<FormState>; d: GrainDefaults; accounts: { id: string; name: string; currency: string }[]; cur: string;
-  mode: "new" | "edit"; settled?: boolean; showReplace?: boolean; submit: string;
+  mode: "new" | "edit"; settled?: boolean; submit: string;
 }) {
   const grains = GRAINS.includes(d.grain) ? GRAINS : [d.grain, ...GRAINS];
   return (
@@ -27,7 +27,7 @@ export function GrainForm({ action, d, accounts, cur, mode, settled, showReplace
       {settled
         ? <p className="notice" style={{ margin: 0 }}>Esta venta ya está cobrada. Si cambiás el monto, la fecha o la cuenta, se corrige también ese ingreso y el saldo queda bien.</p>
         : <label className="simtg"><input type="checkbox" name="collected" /><span>Ya la cobré</span></label>}
-      {mode === "new" && (showReplace ? <label className="simtg"><input type="checkbox" name="replacePlanned" defaultChecked /><span>Reemplaza a la venta prevista de ese mes (recomendado, para no contarla dos veces)</span></label> : <input type="hidden" name="replacePlanned" value="on" />)}
+      {mode === "new" && <input type="hidden" name="replacePlanned" value="on" />}
       <p className="sub">1 tonelada = 10 quintales. El impuesto se calcula sobre el total bruto.</p>
       <div><Submit>{submit}</Submit></div>
     </ActionForm>

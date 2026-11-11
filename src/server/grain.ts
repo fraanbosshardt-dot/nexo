@@ -2,9 +2,9 @@
 // Cada venta crea su cobro: si ya se cobró, un ingreso; si no, un pendiente que entra en el flujo de caja.
 import type { Db } from "./ledger";
 import { paidSoFar, payObligation, recordMovement, reverseTransaction, UserError } from "./ledger";
-import { dec, round2, ZERO, type MoneyValue } from "@/lib/money";
+import { dec, round2, ZERO, type Money, type MoneyValue } from "@/lib/money";
 import { period } from "@/lib/dates";
-import { changeRuleFrom, createRule, endRule, materializeOccurrence, occurrences } from "./recurring";
+import { changeRuleFrom, createRule, endRule, materializeOccurrence, occurrences, projectedItems } from "./recurring";
 
 export function grainNet(s: { tonnes: MoneyValue; pricePerTonne: MoneyValue; fxRate?: MoneyValue | null; taxPct: MoneyValue; otherDeductions: MoneyValue }) {
   const gross = round2(dec(s.tonnes).times(dec(s.pricePerTonne)).times(s.fxRate ? dec(s.fxRate) : 1));
@@ -130,13 +130,56 @@ export async function grainSales(db: Db, ws: string) {
   });
 }
 
+// ---------- Una sola lista por mes ----------
+// Para el productor hay "ventas": las cargadas, las estimadas (meses sin venta, de la venta mensual) y los cobros de
+// una estimada que se registraron sin cargar la venta (sin quintales ni precio).
+
+type Sale = Awaited<ReturnType<typeof grainSales>>[number];
+export type GrainRow =
+  | { kind: "sale"; date: Date; s: Sale }
+  | { kind: "estimated"; date: Date; amount: Money; currency: string }
+  | { kind: "noDetail"; date: Date; amount: Money; paid: Money; currency: string; obligationId: string; settled: boolean };
+
+export async function grainTimeline(db: Db, ws: string, today: Date, monthsAhead = 6) {
+  const sales = await grainSales(db, ws);
+  const rows: GrainRow[] = sales.map((s) => ({ kind: "sale", date: s.sale.collectDate, s }));
+  const cat = await db.category.findFirst({ where: { workspaceId: ws, kind: "INCOME", name: GRAIN_CATEGORY, parentId: null } });
+  const ruleIds = cat ? (await db.recurringRule.findMany({ where: { workspaceId: ws, direction: "RECEIVABLE", categoryId: cat.id }, select: { id: true } })).map((r) => r.id) : [];
+  if (ruleIds.length) {
+    const taken = new Set(sales.map((s) => period(s.sale.collectDate)));
+    const obs = await db.obligation.findMany({ where: { workspaceId: ws, recurringRuleId: { in: ruleIds }, status: { not: "CANCELLED" } }, include: { payments: true }, orderBy: { dueDate: "asc" } });
+    for (const o of obs) {
+      const paid = paidSoFar(o);
+      if (paid.gt(0)) rows.push({ kind: "noDetail", date: o.dueDate, amount: dec(o.amount), paid, currency: o.currency, obligationId: o.id, settled: o.status === "SETTLED" });
+      else if (!taken.has(period(o.dueDate))) { rows.push({ kind: "estimated", date: o.dueDate, amount: dec(o.amount), currency: o.currency }); taken.add(period(o.dueDate)); }
+    }
+    const from = monthOf(today).from;
+    const to = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + monthsAhead + 1, 0));
+    for (const p of await projectedItems(db, ws, from, to)) {
+      if (!ruleIds.includes(p.ruleId) || taken.has(period(p.dueDate))) continue;
+      rows.push({ kind: "estimated", date: p.dueDate, amount: p.amount, currency: p.currency });
+      taken.add(period(p.dueDate));
+    }
+  }
+  rows.sort((a, b) => a.date.getTime() - b.date.getTime());
+  return { sales, rows };
+}
+
+// Un cobro pendiente que sale de la venta mensual (todavía sin tocar): se completa cargando la venta, no con un cobro suelto.
+export function isEstimatedGrain(o: { direction: string; status: string; recurringRuleId?: string | null; category?: string | null; paid?: MoneyValue }) {
+  return o.direction === "RECEIVABLE" && o.status === "PENDING" && !!o.recurringRuleId && o.category === GRAIN_CATEGORY && !(o.paid && dec(o.paid).gt(0));
+}
+export const loadSaleHref = (d: Date) => `/app/cereal?cargar=${d.toISOString().slice(0, 10)}#cargar`;
+
 // ---------- Venta mensual prevista ----------
 // Quien vende cereal todos los meses carga una "venta prevista" mensual (monto aproximado). Se proyecta como
 // cobro que se repite; cuando carga la venta real, reemplaza a la prevista de ese mes para no contarla dos veces.
 
+export const GRAIN_CATEGORY = "Venta de cereal";
+
 async function grainCategory(db: Db, ws: string) {
-  return (await db.category.findFirst({ where: { workspaceId: ws, kind: "INCOME", name: "Venta de cereal", parentId: null } }))
-    ?? (await db.category.create({ data: { workspaceId: ws, kind: "INCOME", name: "Venta de cereal" } }));
+  return (await db.category.findFirst({ where: { workspaceId: ws, kind: "INCOME", name: GRAIN_CATEGORY, parentId: null } }))
+    ?? (await db.category.create({ data: { workspaceId: ws, kind: "INCOME", name: GRAIN_CATEGORY } }));
 }
 
 // Ventas mensuales vigentes después de "today". Si se terminó hoy ("Dejar de proyectar"), ya no cuenta.

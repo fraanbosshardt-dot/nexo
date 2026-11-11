@@ -3,8 +3,8 @@ import { startTestDb } from "./helpers/testdb";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { createWorkspaceForUser } from "@/server/workspace";
 import { createAccount, payObligation } from "@/server/ledger";
-import { materialize, projectedItems } from "@/server/recurring";
-import { createGrainSale, setupMonthlyGrain } from "@/server/grain";
+import { materialize, materializeOccurrence, projectedItems } from "@/server/recurring";
+import { createGrainSale, grainTimeline, isEstimatedGrain, monthlyGrainRules, setupMonthlyGrain } from "@/server/grain";
 import { forecast } from "@/server/forecast";
 
 let t: Awaited<ReturnType<typeof startTestDb>>;
@@ -53,5 +53,29 @@ describe("venta mensual de cereal", () => {
     await payObligation(db, ws, { obligationId: nov.id, accountId: acc, amount: "7500000", date: d("2026-11-15"), settle: true });
     await sale("2026-11-25", true);
     expect((await db.obligation.findUniqueOrThrow({ where: { id: nov.id } })).status).toBe("SETTLED");
+  });
+
+  it("una sola lista por mes: ventas, cobros sin detalle y meses estimados sin repetir", async () => {
+    const { rows } = await grainTimeline(db, ws, today);
+    const seen = rows.map((r) => `${r.kind}:${r.date.toISOString().slice(0, 7)}`);
+    expect(seen).toContain("noDetail:2026-11");
+    expect(seen).toContain("sale:2026-11");
+    expect(seen).toContain("sale:2026-12");
+    expect(seen).toContain("sale:2027-02");
+    expect(seen).not.toContain("estimated:2026-11");
+    expect(seen).not.toContain("estimated:2026-12");
+    expect(seen).not.toContain("estimated:2027-02");
+    expect(seen.filter((s) => s.startsWith("estimated:"))).toEqual(["estimated:2027-01", "estimated:2027-03", "estimated:2027-04", "estimated:2027-05"]);
+    expect(rows.map((r) => r.date.getTime())).toEqual([...rows].map((r) => r.date.getTime()).sort((a, b) => a - b));
+  });
+
+  it("un cobro estimado se reconoce para llevarlo a cargar la venta", async () => {
+    const jan = await db.obligation.findUniqueOrThrow({ where: { id: await materializeOccurrence(db, ws, (await monthlyGrainRules(db, ws, today))[0].id, d("2027-01-15")) }, include: { category: true, payments: true } });
+    expect(isEstimatedGrain({ ...jan, category: jan.category?.name })).toBe(true);
+    expect(isEstimatedGrain({ ...jan, category: jan.category?.name, paid: "1" })).toBe(false);
+    expect(isEstimatedGrain({ ...jan, category: "Sueldo" })).toBe(false);
+    await sale("2027-01-20");
+    const after = await db.obligation.findUniqueOrThrow({ where: { id: jan.id } });
+    expect(after.status).toBe("CANCELLED");
   });
 });

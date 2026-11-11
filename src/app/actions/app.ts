@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import QRCode from "qrcode";
 import { getDb } from "@/lib/db";
-import { audit, requireUser, requireWorkspace } from "@/lib/auth/session";
+import { audit, canUse, requireUser, requireWorkspace } from "@/lib/auth/session";
 import { parseAmount } from "@/lib/money";
 import { parseDate, todayIn } from "@/lib/dates";
 import { MODULES, modulesForUses, readModules, FREE_LIMITS } from "@/lib/modules";
@@ -242,10 +242,12 @@ export async function payObligationAction(_: FormState, fd: FormData): Promise<F
 
 // Inicio: "Sí, lo cobré / lo pagué" con el monto esperado, hoy, en la cuenta de siempre.
 export async function quickConfirmAction(fd: FormData) {
-  const { user, workspace } = await requireWorkspace();
+  const { user, workspace, modules, plan } = await requireWorkspace();
   const db = getDb();
-  const ob = await db.obligation.findFirst({ where: { id: String(fd.get("obligationId")), workspaceId: workspace.id, status: { in: ["PENDING", "PARTIAL"] } }, include: { payments: true, recurringRule: { select: { accountId: true } } } });
+  const ob = await db.obligation.findFirst({ where: { id: String(fd.get("obligationId")), workspaceId: workspace.id, status: { in: ["PENDING", "PARTIAL"] } }, include: { payments: true, recurringRule: { select: { accountId: true } }, category: { select: { name: true } } } });
   if (!ob) redirect("/app");
+  const { isEstimatedGrain, loadSaleHref } = await import("@/server/grain");
+  if (modules.cereal && isEstimatedGrain({ ...ob, category: ob.category?.name }) && (await canUse(plan, "cereal"))) redirect(loadSaleHref(ob.dueDate));
   const acc = (ob.recurringRule?.accountId && (await db.account.findFirst({ where: { id: ob.recurringRule.accountId, workspaceId: workspace.id, active: true, currency: ob.currency, type: { notIn: ["CREDIT_CARD", "INVESTMENT"] } } })))
     || (await db.account.findFirst({ where: { workspaceId: workspace.id, active: true, currency: ob.currency, type: { notIn: ["CREDIT_CARD", "INVESTMENT"] } }, orderBy: { createdAt: "asc" } }));
   if (!acc) redirect(`/app/proximos/${ob.id}`);

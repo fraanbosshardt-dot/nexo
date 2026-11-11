@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { requireWorkspace } from "@/lib/auth/session";
+import { canUse, requireWorkspace } from "@/lib/auth/session";
+import { isEstimatedGrain, loadSaleHref } from "@/server/grain";
 import { getDb } from "@/lib/db";
 import { openObligations, type OpenItem } from "@/server/ledger";
 import { formatMoney, ZERO } from "@/lib/money";
@@ -19,7 +20,8 @@ export const metadata: Metadata = { title: "Próximos pagos" };
 const MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 
 export default async function Upcoming({ searchParams }: { searchParams: Promise<{ ver?: string; guardado?: string }> }) {
-  const { workspace, modules } = await requireWorkspace();
+  const { workspace, modules, plan } = await requireWorkspace();
+  const grainOn = !!modules.cereal && (await canUse(plan, "cereal"));
   const { ver, guardado } = await searchParams;
   const cur = workspace.baseCurrency;
   const today = todayIn(workspace.timezone);
@@ -105,7 +107,7 @@ export default async function Upcoming({ searchParams }: { searchParams: Promise
                     </div>
                   </div>
                   <b className={`num ${rec ? "pos" : "neg"}`}>{rec ? "+" : "−"}{formatMoney(o.remaining, o.currency)}</b>
-                  <div className="li-acts"><Link className="btn sm" href={`/app/proximos/${o.id}`}>{rec ? "Cobrar" : "Pagar"}</Link>
+                  <div className="li-acts">{grainOn && isEstimatedGrain(o) ? <Link className="btn sm" href={loadSaleHref(o.dueDate)}>Cargar venta</Link> : <Link className="btn sm" href={`/app/proximos/${o.id}`}>{rec ? "Cobrar" : "Pagar"}</Link>}
                   <form action={cancelObligationAction}><input type="hidden" name="id" value={o.id} /><ConfirmSubmit className="dots" title="Cancelar: ya no se va a pagar ni cobrar" ariaLabel={`Cancelar ${o.description}`} question={`¿Cancelar ${o.description} (${formatMoney(o.remaining, o.currency)})?`} yes="Sí, cancelar">×</ConfirmSubmit></form></div>
                 </div>
               );

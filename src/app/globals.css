@@ -911,26 +911,14 @@ html[data-big] body{zoom:1.15}
 /* Ventas de cereal: botones por venta y tarjetas en el celular */
 .gr-acts{display:flex;gap:6px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
 .gr-acts form{display:contents}
-.gr-cards{display:none}
+.gr-s{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin-top:3px}
+.gr-list .num{white-space:nowrap}
+.gr-year{font-size:12px;font-weight:500;color:var(--muted);letter-spacing:.04em;padding:14px 0 4px;border-bottom:1px solid var(--line)}
+.gr-year:first-child{padding-top:0}
 .gr-month-acts{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:flex-start;margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
 .gr-month-acts details{flex:1 1 320px}
 .gr-month-acts details[open]{flex-basis:100%}
-@media (max-width:640px){
-  .gr-table{display:none}
-  .gr-cards{display:flex;flex-direction:column}
-  .gr-card{display:flex;flex-direction:column;gap:10px;padding:14px 0;border-bottom:1px solid var(--line)}
-  .gr-card:last-child{border-bottom:0}
-  .gr-card-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
-  .gr-card-top small{display:block;color:var(--muted);font-size:13px;margin-top:2px}
-  .gr-card-top .num{white-space:nowrap}
-  .gr-card-bot{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
-  .gr-card-bot .btn{min-height:40px}
-}
-.gr-table .gr-acts{flex-wrap:nowrap}
-.gr-table td:last-child{width:1%;white-space:nowrap}
-.gr-table th,.gr-table td{padding-left:8px;padding-right:8px}
-@media (max-width:1500px){.gr-table .pq{display:none}}
-.gr-table .gr-acts .btn{padding:0 12px}
+@media (max-width:640px){.gr-list .li-acts .btn{min-height:40px}}
 
 /* Buscador de listas (Pagos que se repiten, Categorías) */
 .lsearch{position:relative;display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line-2);border-radius:999px;padding:0 16px;min-height:46px;max-width:560px}
