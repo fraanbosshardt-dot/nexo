@@ -3,7 +3,7 @@ import { requireWorkspace } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
 import { formatMoney } from "@/lib/money";
 import { fmtDate, isoDate, todayIn } from "@/lib/dates";
-import { nextOccurrence } from "@/server/recurring";
+import { applyWeekend, occurrences } from "@/server/recurring";
 import { Empty, PageHead, SettingsTabs } from "@/components/page";
 import { ActionForm, Submit } from "@/components/forms";
 import { CloseDetails } from "@/components/close-details";
@@ -32,9 +32,20 @@ export default async function Rules({ searchParams }: { searchParams: Promise<{ 
   const rules = all.filter((r) => !r.endDate || r.endDate > today);
   const ended = all.filter((r) => r.endDate && r.endDate <= today && !replaced.has(r.id));
   const open = sp.nueva === "1" || rules.length === 0;
+  // "Próxima": la primera fecha desde hoy que todavía no se pagó, cobró ni canceló.
+  const done = await db.obligation.findMany({ where: { workspaceId: workspace.id, recurringRuleId: { in: rules.map((r) => r.id) }, occurrenceDate: { gte: today }, OR: [{ status: { in: ["SETTLED", "CANCELLED"] } }, { payments: { some: {} } }] }, select: { recurringRuleId: true, occurrenceDate: true } });
+  const doneKey = new Set(done.map((o) => `${o.recurringRuleId}|${o.occurrenceDate?.toISOString().slice(0, 10)}`));
+  const nextFor = (r: (typeof all)[number]) => {
+    if (r.pausedAt) return null;
+    const d = occurrences(r, today, new Date(today.getTime() + 800 * 864e5)).find((x) => !doneKey.has(`${r.id}|${x.toISOString().slice(0, 10)}`));
+    return d ? applyWeekend(d, r.weekendRule) : null;
+  };
+  const nextOf = new Map(rules.map((r) => [r.id, nextFor(r)]));
+  // Ordenadas por la próxima fecha: lo que viene primero, arriba.
+  rules.sort((a, b) => (nextOf.get(a.id)?.getTime() ?? Infinity) - (nextOf.get(b.id)?.getTime() ?? Infinity));
 
   const row = (r: (typeof all)[number], active: boolean) => {
-    const next = active ? nextOccurrence(r, today) : null;
+    const next = active ? nextOf.get(r.id) ?? null : null;
     return (
       <div className="li" key={r.id} style={{ flexWrap: "wrap" }} data-q={searchText(r.description, FREQ[r.frequency], r.direction === "RECEIVABLE" ? "cobro ingreso" : "pago gasto", r.amount.toString())}>
         <div className="grow" style={{ minWidth: 200 }}>

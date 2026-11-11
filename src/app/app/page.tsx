@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { canUse, requireWorkspace } from "@/lib/auth/session";
 import { isEstimatedGrain, loadSaleHref } from "@/server/grain";
 import { getDb } from "@/lib/db";
-import { dashboard, listMovements, openObligations } from "@/server/ledger";
+import { dashboard, openObligations } from "@/server/ledger";
 import { insights } from "@/server/insights";
 import { formatMoney, ZERO } from "@/lib/money";
 import { fmtDayMonth, periodEnd, period, todayIn } from "@/lib/dates";
@@ -160,7 +160,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ l
         </div>
       )}
       <InstallApp />
-      {modules.alertas && <Suspense fallback={null}><Tip ws={workspace.id} cur={cur} today={today} open={open} /></Suspense>}
+      {modules.alertas && <Suspense fallback={null}><Tip ws={workspace.id} cur={cur} today={today} open={open} skipLate={dueNow.length > 0} /></Suspense>}
       <div className="grid g2">
         <div className="card">
           <div className="chead"><h3>Esta semana</h3><Link className="lk" href="/app/proximos">Ver todo</Link></div>
@@ -184,8 +184,9 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ l
 }
 
 // Consejo del día: se calcula aparte y aparece apenas está listo.
-async function Tip({ ws, cur, today, open }: { ws: string; cur: string; today: Date; open: Awaited<ReturnType<typeof openObligations>> }) {
-  const tips = await insights(getDb(), ws, cur, today, { open });
+async function Tip({ ws, cur, today, open, skipLate }: { ws: string; cur: string; today: Date; open: Awaited<ReturnType<typeof openObligations>>; skipLate: boolean }) {
+  // Si "Para confirmar" ya muestra lo atrasado, el consejo no lo repite.
+  const tips = (await insights(getDb(), ws, cur, today, { open })).filter((t) => !(skipLate && t.kind === "late"));
   const tip = tips.find((t) => t.level === "urgent" || t.level === "warn") ?? tips[0];
   if (!tip) return null;
   return (
@@ -196,14 +197,28 @@ async function Tip({ ws, cur, today, open }: { ws: string; cur: string; today: D
 }
 
 async function Recent({ ws }: { ws: string }) {
-  const recent = await listMovements(getDb(), ws, { take: 4 });
+  // Una transferencia tiene dos patas: se muestra solo la que sale, con las dos cuentas.
+  const recent = await getDb().transaction.findMany({
+    where: { workspaceId: ws, NOT: { type: "TRANSFER", direction: "IN" } },
+    include: { account: { select: { name: true } }, category: { select: { name: true } } },
+    orderBy: [{ effectiveDate: "desc" }, { createdAt: "desc" }],
+    take: 4,
+  });
   if (!recent.length) return <div className="empty">Todavía no cargaste nada. <Link className="lk" href="/app/movimientos/nuevo">+ Cargar un gasto</Link></div>;
+  const groups = recent.filter((t) => t.transferGroupId).map((t) => t.transferGroupId!);
+  const legs = groups.length ? await getDb().transaction.findMany({ where: { workspaceId: ws, transferGroupId: { in: groups }, direction: "IN" }, select: { transferGroupId: true, account: { select: { name: true } } } }) : [];
+  const to = new Map(legs.map((l) => [l.transferGroupId, l.account.name]));
   return (
-    <div className="list">{recent.map((t) => (
-      <div className="li" key={t.id}>
-        <div className="grow"><div className="t">{t.description}</div><div className="s">{fmtDayMonth(t.effectiveDate)} · {t.category?.name ?? t.account.name}</div></div>
-        <b className={`num ${t.type === "TRANSFER" ? "" : t.direction === "IN" ? "pos" : "neg"}`}>{t.direction === "IN" ? "+" : "−"}{formatMoney(t.amount, t.currency)}</b>
-      </div>))}</div>
+    <div className="list">{recent.map((t) => {
+      const transfer = t.type === "TRANSFER";
+      const detail = transfer ? `${t.account.name} → ${to.get(t.transferGroupId) ?? "otra cuenta"}` : t.category?.name ?? t.account.name;
+      return (
+        <Link className="li" key={t.id} href={`/app/movimientos/${t.id}`} style={{ color: "inherit" }}>
+          <div className="grow"><div className="t">{t.description}</div><div className="s">{fmtDayMonth(t.effectiveDate)} · {detail}</div></div>
+          <b className={`num ${transfer ? "" : t.direction === "IN" ? "pos" : "neg"}`}>{transfer ? "" : t.direction === "IN" ? "+" : "−"}{formatMoney(t.amount, t.currency)}</b>
+        </Link>
+      );
+    })}</div>
   );
 }
 

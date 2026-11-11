@@ -10,7 +10,7 @@ import { projectedAction } from "@/app/actions/modules";
 
 export const metadata: Metadata = { title: "Calendario" };
 
-export default async function Calendar({ searchParams }: { searchParams: Promise<{ mes?: string }> }) {
+export default async function Calendar({ searchParams }: { searchParams: Promise<{ mes?: string; dia?: string }> }) {
   const { workspace } = await requireWorkspace();
   const today = todayIn(workspace.timezone);
   const sp = await searchParams;
@@ -27,12 +27,18 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
   const byDay = new Map<string, typeof obs>();
   for (const o of obs) { const k = o.dueDate.toISOString().slice(0, 10); byDay.set(k, [...(byDay.get(k) ?? []), o]); }
   const weeks = Math.ceil((lead + to.getUTCDate()) / 7);
+  // Día elegido (al tocar un número): su lista va debajo. Por defecto, hoy si está en este mes.
+  const todayKey = today.toISOString().slice(0, 10);
+  const sel = /^\d{4}-\d{2}-\d{2}$/.test(sp.dia ?? "") && sp.dia!.startsWith(p) ? sp.dia! : todayKey.startsWith(p) ? todayKey : null;
+  const selItems = sel ? byDay.get(sel) ?? [] : [];
+  const selProj = sel ? projByDay.get(sel) ?? [] : [];
+  const selDate = sel ? new Date(`${sel}T00:00:00Z`) : null;
   return (
     <>
-      <PageHead crumb="Pagos y deudas" title="Calendario" desc="Tocá un pendiente para registrar el pago o el cobro."
+      <PageHead crumb="Pagos y deudas" title="Calendario" desc="Tocá un día para ver qué vence y registrar el pago o el cobro."
         actions={<><Link className="btn" href={`/app/calendario?mes=${addMonths(p, -1)}`} aria-label="Mes anterior">‹</Link><span className="btn" style={{ minWidth: 150, justifyContent: "center" }}>{fmtPeriod(p)}</span><Link className="btn" href={`/app/calendario?mes=${addMonths(p, 1)}`} aria-label="Mes siguiente">›</Link></>} />
       <Tabs current="cal" items={[{ key: "lista", label: "Lista", href: "/app/proximos" }, { key: "cal", label: "Calendario", href: "/app/calendario" }]} />
-      <div className="legend"><span><i style={{ background: "var(--green-soft)", border: "1px solid var(--green)" }} />Cobros</span><span><i style={{ background: "var(--slate-soft)" }} />Pagos</span><span><i style={{ background: "var(--red-soft)" }} />Atrasados</span><span><i style={{ background: "var(--surface-2)", opacity: 0.6 }} />Ya pagados</span><span><i style={{ background: "transparent", border: "1px dashed var(--line-2)" }} />Proyectados (se repiten)</span></div>
+      <div className="legend"><span><i style={{ background: "var(--green)" }} />Cobros</span><span><i style={{ background: "var(--ink)" }} />Pagos</span><span><i style={{ background: "var(--red)" }} />Atrasados</span><span><i style={{ background: "var(--line-2)" }} />Ya pagados</span><span><i style={{ background: "transparent", border: "1px dashed var(--line-2)" }} />Proyectados (se repiten)</span></div>
       <div className="tw" style={{ margin: 0, padding: 0 }}>
         <div className="cal cal-real">
           {["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"].map((d) => <div className="hd" key={d}>{d}</div>)}
@@ -40,8 +46,8 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
             const k = d.toISOString().slice(0, 10), items = byDay.get(k) ?? [], pitems = projByDay.get(k) ?? [];
             const out = d.getUTCMonth() !== from.getUTCMonth();
             return (
-              <div key={k} className={`d ${out ? "out" : ""} ${k === today.toISOString().slice(0, 10) ? "today" : ""}`}>
-                <span className="dn">{d.getUTCDate()}</span>
+              <div key={k} className={`d ${out ? "out" : ""} ${k === todayKey ? "today" : ""} ${k === sel ? "sel" : ""}`}>
+                {out ? <span className="dn">{d.getUTCDate()}</span> : <Link className="dn" href={`/app/calendario?mes=${p}&dia=${k}`} scroll={false} aria-label={`Ver el ${d.getUTCDate()}`} aria-current={k === sel ? "date" : undefined}>{d.getUTCDate()}</Link>}
                 {items.slice(0, 3).map((o) => {
                   const settled = o.status === "SETTLED", late = !settled && o.dueDate < today;
                   const cls = settled ? "ev done" : late ? "ev late" : o.direction === "RECEIVABLE" ? "ev in" : "ev out";
@@ -61,6 +67,30 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
         </div>
       </div>
       {!obs.length && !proj.length && <div className="empty">No hay pagos ni cobros este mes.</div>}
+      {selDate && (obs.length > 0 || proj.length > 0) && (
+        <div className="card cal-day">
+          <div className="chead"><h3>{selDate.getUTCDate()} de {fmtPeriod(p).split(" ")[0].toLowerCase()}</h3><span className="sub">{selItems.length + selProj.length ? `${selItems.length + selProj.length} ${selItems.length + selProj.length === 1 ? "pago o cobro" : "pagos y cobros"}` : "Nada para este día"}</span></div>
+          {selItems.length + selProj.length > 0 && <div className="list">
+            {selItems.map((o) => {
+              const settled = o.status === "SETTLED", rec = o.direction === "RECEIVABLE";
+              return (
+                <div className="li" key={o.id}>
+                  <div className="grow"><div className="t">{o.description}</div><div className="s">{settled ? (rec ? "Cobrado" : "Pagado") : o.dueDate < today ? <span className="neg">Atrasado</span> : rec ? "A cobrar" : "A pagar"}</div></div>
+                  <b className={`num ${rec ? "pos" : "neg"}`}>{rec ? "+" : "−"}{formatMoney(o.amount, o.currency)}</b>
+                  {!settled && <Link className="btn sm" href={`/app/proximos/${o.id}`}>{rec ? "Cobrar" : "Pagar"}</Link>}
+                </div>
+              );
+            })}
+            {selProj.map((x) => (
+              <div className="li proj" key={x.ruleId}>
+                <div className="grow"><div className="t">{x.description}</div><div className="s">Proyectado · se repite</div></div>
+                <b className={`num ${x.direction === "RECEIVABLE" ? "pos" : "neg"}`}>{x.direction === "RECEIVABLE" ? "+" : "−"}{formatMoney(x.amount, x.currency)}</b>
+                <form action={projectedAction}><input type="hidden" name="ruleId" value={x.ruleId} /><input type="hidden" name="occurrence" value={x.occurrence.toISOString().slice(0, 10)} /><input type="hidden" name="do" value="pagar" /><button className="btn sm" type="submit">{x.direction === "RECEIVABLE" ? "Cobrar" : "Pagar"}</button></form>
+              </div>
+            ))}
+          </div>}
+        </div>
+      )}
     </>
   );
 }

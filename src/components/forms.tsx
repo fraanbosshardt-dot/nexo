@@ -11,8 +11,11 @@ const Pending = createContext(false);
 // Se envía con onSubmit (y no con action=) para que, si hay un error, no se borre lo escrito.
 export function ActionForm({ action, children, className, style, id }: { action: Action; children: ReactNode; className?: string; style?: React.CSSProperties; id?: string }) {
   const [state, run, pending] = useActionState(action, null);
+  // El error se oculta apenas la persona empieza a corregir; vuelve a aparecer si el próximo envío falla.
+  const [edited, setEdited] = useState(false);
   return (
     <form
+      onInput={() => { if (state?.error && !edited) setEdited(true); }}
       id={id}
       className={className}
       style={style}
@@ -21,12 +24,13 @@ export function ActionForm({ action, children, className, style, id }: { action:
       noValidate
       onSubmit={(e) => {
         e.preventDefault();
+        setEdited(false);
         const fd = new FormData(e.currentTarget);
         startTransition(() => run(fd));
       }}
     >
       <Pending.Provider value={pending}>{children}</Pending.Provider>
-      {state?.error && <p className="auth-err" role="alert">{state.error}</p>}
+      {state?.error && !edited && <p className="auth-err" role="alert">{state.error}</p>}
       {state?.ok && <p className="notice g" role="status">{state.ok}</p>}
     </form>
   );

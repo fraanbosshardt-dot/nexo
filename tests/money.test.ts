@@ -5,7 +5,7 @@ import { addMonths, parseDate, period, todayIn } from "@/lib/dates";
 describe("dinero exacto", () => {
   it("lee importes en formato argentino y en formato con punto decimal", () => {
     expect(parseAmount("1.234.567,89")?.toFixed(2)).toBe("1234567.89");
-    expect(parseAmount("$ 1.000")?.toFixed(2)).toBe("1000.00");
+    expect(parseAmount("$ 1.000")?.toFixed(2)).toBe("1000.00");
     expect(parseAmount("1234,5")?.toFixed(2)).toBe("1234.50");
     expect(parseAmount("1234.56")?.toFixed(2)).toBe("1234.56");
     expect(parseAmount("-50")?.toFixed(2)).toBe("-50.00");
@@ -33,11 +33,11 @@ describe("dinero exacto", () => {
   });
 
   it("formatea en pesos argentinos", () => {
-    expect(formatMoney("1234567.5")).toBe("$ 1.234.567,50");
-    expect(formatMoney("1000")).toBe("$ 1.000");
-    expect(formatMoney("-27800")).toBe("−$ 27.800");
-    expect(formatMoney("205.5", "USD")).toBe("US$ 205,50");
-    expect(formatMoney("650000", "ARS", { sign: true })).toBe("+$ 650.000");
+    expect(formatMoney("1234567.5")).toBe("$ 1.234.567,50");
+    expect(formatMoney("1000")).toBe("$ 1.000");
+    expect(formatMoney("-27800")).toBe("−$ 27.800");
+    expect(formatMoney("205.5", "USD")).toBe("US$ 205,50");
+    expect(formatMoney("650000", "ARS", { sign: true })).toBe("+$ 650.000");
   });
 
   it("convierte entre monedas sin tocar el importe original", () => {

@@ -25,7 +25,7 @@ export default async function Debts() {
   return (
     <>
       <PageHead crumb="Pagos y deudas" title="Deudas y préstamos" desc="Tocá una deuda para ver cuotas, tasas y cuánto ahorrás si la cancelás." />
-      {active.length > 0 && <div className="card" style={{ display: "flex", gap: 28, flexWrap: "wrap" }}><Stat label="Total que debés" value={formatMoney(total, cur)} /><Stat label="Cuotas de este mes" value={formatMoney(thisMonth, cur)} /><Stat label="Terminás de pagar" value={lastDue ? fmtPeriod(period(lastDue)) : "—"} /></div>}
+      {active.length > 0 && <div className="card" style={{ display: "flex", gap: 28, flexWrap: "wrap" }}><Stat label="Capital que debés" value={formatMoney(total, cur)} /><Stat label="Falta pagar este mes" value={thisMonth.isZero() ? "Al día" : formatMoney(thisMonth, cur)} tone={thisMonth.isZero() ? "pos" : undefined} /><Stat label="Terminás de pagar" value={lastDue ? fmtPeriod(period(lastDue)) : "—"} /></div>}
       {active.length > 0 && (
         <div className="grid g3">{active.map((d) => (
           <Link key={d.debt.id} href={`/app/deudas/${d.debt.id}`} className="card dcard" style={{ textDecoration: "none", color: "inherit" }}>

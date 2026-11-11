@@ -62,7 +62,7 @@ export default async function MovementDetail({ params }: { params: Promise<{ id:
       {!locked && (
         <form action={reverseAction} className="card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <input type="hidden" name="id" value={t.id} />
-          <p className="sub" style={{ margin: 0, maxWidth: "52ch" }}>Anular crea un movimiento al revés con fecha de hoy. No borra nada: el historial queda completo.</p>
+          <p className="sub" style={{ margin: 0, maxWidth: "52ch" }}>Anular crea un movimiento al revés, con la misma fecha, y el saldo vuelve a como estaba. No borra nada: el historial queda completo.</p>
           <ConfirmSubmit className="btn" question="¿Anular este movimiento?" yes="Sí, anular">Anular movimiento</ConfirmSubmit>
         </form>
       )}

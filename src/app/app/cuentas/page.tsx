@@ -22,13 +22,18 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
   const act = accounts.filter((a) => a.active), ina = accounts.filter((a) => !a.active);
   const cur = workspace.baseCurrency;
   const total = (f: (a: (typeof accounts)[number]) => boolean, c = cur) => act.filter((a) => a.currency === c && f(a)).reduce((s, a) => s.plus(balances.get(a.id) ?? ZERO), ZERO);
-  const card = (a: (typeof accounts)[number]) => (
-    <Link key={a.id} className="card dcard" href={`/app/cuentas/${a.id}`} style={{ textDecoration: "none", color: "inherit" }}>
-      <div className="chead" style={{ marginBottom: 8 }}><div><div className="sub" style={{ margin: 0 }}>{a.institution || "—"}</div><h3>{a.name}</h3></div><span className="pill">{a.type === "INVESTMENT" ? "Inversión" : a.currency}</span></div>
-      <div className="num" style={{ fontFamily: "var(--f-display)", fontSize: 22, fontWeight: 600 }}>{formatMoney(balances.get(a.id) ?? ZERO, a.currency)}</div>
-      <p className="sub">{ACCOUNT_TYPE_LABEL[a.type]}</p>
-    </Link>
-  );
+  const card = (a: (typeof accounts)[number]) => {
+    const bal = balances.get(a.id) ?? ZERO;
+    // Una cuenta de dinero no puede quedar en negativo: casi siempre falta cargar un ingreso o corregir el saldo.
+    const odd = bal.isNegative() && a.type !== "INVESTMENT";
+    return (
+      <Link key={a.id} className="card dcard" href={`/app/cuentas/${a.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+        <div className="chead" style={{ marginBottom: 8 }}><div>{a.institution && <div className="sub" style={{ margin: 0 }}>{a.institution}</div>}<h3>{a.name}</h3></div><span className="pill">{a.type === "INVESTMENT" ? "Inversión" : a.currency}</span></div>
+        <div className={`num ${odd ? "neg" : ""}`} style={{ fontFamily: "var(--f-display)", fontSize: 22, fontWeight: 600 }}>{formatMoney(bal, a.currency)}</div>
+        <p className="sub">{odd ? "Saldo negativo: ¿falta cargar un ingreso? Entrá para corregir el saldo." : ACCOUNT_TYPE_LABEL[a.type]}</p>
+      </Link>
+    );
+  };
   const atLimit = plan === "FREE" && act.length >= FREE_LIMITS.accounts;
   return (
     <>

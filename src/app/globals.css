@@ -954,3 +954,10 @@ html[data-big] body{zoom:1.15}
 .spaces form{display:contents}.space-btn{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-height:44px;padding:0 12px;border:1px solid var(--line-2);border-radius:10px;background:var(--surface);color:var(--fg);font:inherit;text-align:left;cursor:pointer}
 .space-btn.on{border-color:var(--ink);cursor:default}
 .welcome-back{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px 12px;padding:10px 16px;background:var(--surface-2);font-size:14px}
+/* El "?" de ayuda queda redondo también en pantallas táctiles (no se estira a 44 px de alto) */
+@media (pointer:coarse){.help>summary{min-height:28px;width:28px;height:28px}}
+/* Calendario: el número del día se toca para ver su lista; lo pagado se ve como barra suave en el celular */
+.cal .d a.dn{text-decoration:none}.cal .d a.dn:hover{background:var(--surface-2)}
+.cal .d.sel{box-shadow:inset 0 0 0 2px var(--ink)}
+@media (max-width:900px){.cal .d .ev.done{background:var(--line-2);text-decoration:none}.cal .d a.dn{width:32px;height:32px}}
+.cal-day{margin-top:12px}

@@ -20,10 +20,10 @@ type Row = OpenItem & { proj?: { ruleId: string; occ: string; variable: boolean 
 export const metadata: Metadata = { title: "Próximos pagos" };
 const MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 
-export default async function Upcoming({ searchParams }: { searchParams: Promise<{ ver?: string; guardado?: string }> }) {
+export default async function Upcoming({ searchParams }: { searchParams: Promise<{ ver?: string; guardado?: string; listo?: string }> }) {
   const { workspace, modules, plan } = await requireWorkspace();
   const grainOn = !!modules.cereal && (await canUse(plan, "cereal"));
-  const { ver, guardado } = await searchParams;
+  const { ver, guardado, listo } = await searchParams;
   const cur = workspace.baseCurrency;
   const today = todayIn(workspace.timezone);
   const in7 = new Date(today.getTime() + 7 * 864e5);
@@ -57,6 +57,7 @@ export default async function Upcoming({ searchParams }: { searchParams: Promise
   return (
     <>
       <PageHead crumb="Pagos y deudas" title="Próximos pagos" desc="Lo que falta pagar y cobrar en los próximos 12 meses. Lo marcado como Proyectado sale de tus pagos que se repiten." actions={<Link className="btn pri" href="/app/movimientos/nuevo?estado=pendiente">+ Agregar un pago o cobro</Link>} />
+      {listo && <p className="notice g" role="status">{listo === "cobro" ? "Listo, registramos el cobro." : "Listo, registramos el pago."}</p>}
       {guardado && <div className="notice g" role="status"><span>Listo, quedó guardado.</span><Link className="btn sm" href="/app/movimientos/nuevo?estado=pendiente" style={{ marginLeft: "auto" }}>+ Cargar otro</Link></div>}
       {proj.length > 0 && <div className="sub help-line"><span className="pill">Proyectado</span> = lo que esperás de tus pagos que se repiten <Help term="proyectado" /></div>}
       {modules.calendario && <Tabs current="lista" items={[{ key: "lista", label: "Lista", href: "/app/proximos" }, { key: "cal", label: "Calendario", href: "/app/calendario" }]} />}

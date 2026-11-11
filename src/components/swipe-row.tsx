@@ -20,7 +20,7 @@ export function SwipeRow({ children, actions, className = "li" }: { children: Re
 
   return (
     <div className="swipe" ref={ref}>
-      <div className="swipe-acts" aria-hidden={!open}>{actions}</div>
+      <div className="swipe-acts" aria-hidden={!open} inert={!open}>{actions}</div>
       <div
         className={`${className} swipe-front`}
         style={{ transform: dx ? `translateX(${dx}px)` : undefined, transition: start.current ? "none" : undefined }}

@@ -7,19 +7,19 @@ import { budgetFor, goalsOverview } from "./planning";
 import { formatMoney, ZERO } from "@/lib/money";
 import { fmtPeriod, period } from "@/lib/dates";
 
-export type Insight = { level: "urgent" | "warn" | "info" | "good"; title: string; detail: string; href: string };
+export type Insight = { level: "urgent" | "warn" | "info" | "good"; title: string; detail: string; href: string; kind?: "late" };
 
 export async function insights(db: Db, ws: string, currency: string, today: Date, pre?: { open?: Awaited<ReturnType<typeof openObligations>> }): Promise<Insight[]> {
   const out: Insight[] = [];
   const f = (v: Parameters<typeof formatMoney>[0]) => formatMoney(v, currency);
   const open = pre?.open ?? (await openObligations(db, ws, today));
   const late = open.filter((o) => o.overdue && o.direction === "PAYABLE");
-  if (late.length) out.push({ level: "urgent", title: `${late.length} ${late.length === 1 ? "pago atrasado" : "pagos atrasados"} por ${f(late.reduce((s, o) => s.plus(o.remaining), ZERO))}`, detail: late.slice(0, 3).map((o) => o.description).join(" · "), href: "/app/proximos" });
+  if (late.length) out.push({ level: "urgent", title: `${late.length} ${late.length === 1 ? "pago atrasado" : "pagos atrasados"} por ${f(late.reduce((s, o) => s.plus(o.remaining), ZERO))}`, detail: late.slice(0, 3).map((o) => o.description).join(" · "), href: "/app/proximos", kind: "late" });
   // Una venta de cereal estimada que pasó no es un cobro atrasado: falta cargar la venta.
   const lateGrain = open.filter((o) => o.overdue && isEstimatedGrain(o));
   if (lateGrain.length) out.push({ level: "info", title: lateGrain.length === 1 ? "Falta cargar la venta de cereal estimada" : `Faltan cargar ${lateGrain.length} ventas de cereal estimadas`, detail: "Cargala con quintales y precio para que quede el cobro real.", href: loadSaleHref(lateGrain[0].dueDate) });
   const lateIn = open.filter((o) => o.overdue && o.direction === "RECEIVABLE" && !isEstimatedGrain(o));
-  if (lateIn.length) out.push({ level: "warn", title: `${lateIn.length} ${lateIn.length === 1 ? "cobro atrasado" : "cobros atrasados"}`, detail: lateIn.slice(0, 3).map((o) => o.description).join(" · "), href: "/app/proximos" });
+  if (lateIn.length) out.push({ level: "warn", title: `${lateIn.length} ${lateIn.length === 1 ? "cobro atrasado" : "cobros atrasados"}`, detail: lateIn.slice(0, 3).map((o) => o.description).join(" · "), href: "/app/proximos", kind: "late" });
 
   const { rows } = await forecast(db, ws, { currency, today, months: 6 });
   const red = rows.filter((r) => r.min.lt(0));

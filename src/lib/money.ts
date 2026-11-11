@@ -38,7 +38,8 @@ export function formatMoney(v: MoneyValue, currency = "ARS", opts: { cents?: "au
   // Intl acepta el número como texto: formatea sin pasar por float.
   const body = nf.format(abs.toFixed(showCents ? 2 : 0) as unknown as number);
   const sign = d.isNegative() && !d.isZero() ? "−" : opts.sign && d.gt(0) ? "+" : "";
-  return `${sign}${symbolOf(currency)} ${body}`;
+  // Espacio que no se corta: el símbolo y el número nunca quedan en renglones distintos.
+  return `${sign}${symbolOf(currency)} ${body}`;
 }
 
 // Reparte un total en n partes que suman exacto: los centavos sobrantes van a las primeras cuotas.

@@ -26,12 +26,14 @@ const fail = (e: unknown): FormState => {
 };
 const str = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
 const money = (fd: FormData, k: string, label: string) => {
+  if (!str(fd, k)) throw new UserError(`Escribí ${label}.`);
   const d = parseAmount(str(fd, k));
   if (!d) throw new UserError(`Revisá ${label}: tiene que ser un número.`);
   return d;
 };
 const optMoney = (fd: FormData, k: string, label: string) => (str(fd, k) ? money(fd, k, label) : null);
 const date = (fd: FormData, k: string, label: string) => {
+  if (!str(fd, k)) throw new UserError(`Elegí ${label}.`);
   const d = parseDate(str(fd, k));
   if (!d) throw new UserError(`Revisá ${label} (dd/mm/aaaa).`);
   return d;

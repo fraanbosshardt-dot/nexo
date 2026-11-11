@@ -30,6 +30,11 @@ export default async function PayPage({ params }: { params: Promise<{ id: string
   const accounts = await db.account.findMany({ where: { workspaceId: workspace.id, active: true, currency: ob.currency, type: { notIn: ["CREDIT_CARD", "INVESTMENT"] } }, orderBy: { createdAt: "asc" } });
   const left = remaining(ob);
   const inc = ob.direction === "RECEIVABLE";
+  // Cuenta propuesta: la del pago que se repite o la de pago de la tarjeta; si no, la primera.
+  const rule = ob.recurringRuleId ? await db.recurringRule.findFirst({ where: { id: ob.recurringRuleId, workspaceId: workspace.id }, select: { accountId: true } }) : null;
+  const card = ob.sourceType === "card" && ob.sourceId ? await db.creditCard.findFirst({ where: { id: ob.sourceId, workspaceId: workspace.id }, select: { payAccountId: true } }) : null;
+  const preferred = [rule?.accountId, card?.payAccountId].find((id) => id && accounts.some((a) => a.id === id)) ?? undefined;
+  const amountText = new Intl.NumberFormat("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(left.toNumber());
   const today = todayIn(workspace.timezone);
   // Ingresos y gastos que se repiten cambian de monto: por defecto, lo que se carga es el total de esta vez.
   const recurring = !!ob.recurringRuleId;
@@ -45,12 +50,12 @@ export default async function PayPage({ params }: { params: Promise<{ id: string
         </dl>
         {accounts.length ? (
           <ActionForm action={payObligationAction} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <input type="hidden" name="obligationId" value={ob.id} />
+            <input type="hidden" name="obligationId" value={ob.id} /><input type="hidden" name="kind" value={inc ? "cobro" : "pago"} />
             <div className="frow">
-              <label className="field">{inc ? "¿Cuánto cobraste?" : "¿Cuánto pagaste?"}<input name="amount" inputMode="decimal" defaultValue={left.toFixed(2).replace(".", ",")} /></label>
+              <label className="field">{inc ? "¿Cuánto cobraste?" : "¿Cuánto pagaste?"}<input name="amount" inputMode="decimal" defaultValue={amountText} /></label>
               <label className="field">Fecha<input name="date" type="date" defaultValue={isoDate(today)} /></label>
             </div>
-            <label className="field">{inc ? "Entra en" : "Sale de"}<select name="accountId">{accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>
+            <label className="field">{inc ? "Entra en" : "Sale de"}<select name="accountId" defaultValue={preferred}>{accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>
             <label className="simtg"><input type="checkbox" name="settle" defaultChecked={settleDefault} /><span><b style={{ fontWeight: 500 }}>Fue el total</b><br /><span className="sub">{inc ? "Si cobraste otro monto (más o menos), queda registrado así y no queda nada pendiente." : "Si la factura vino por otro monto, queda así y no queda nada pendiente."} Destildalo si fue una parte y falta el resto.</span></span></label>
             <div className="sub help-line">¿Qué es “Fue el total”? <Help term="total" /></div>
             {recurring && <label className="simtg"><input type="checkbox" name="updateFuture" /><span>Usar este monto para los próximos meses</span></label>}

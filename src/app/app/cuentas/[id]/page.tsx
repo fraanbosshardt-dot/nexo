@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ConfirmSubmit } from "@/components/confirm-submit";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { requireWorkspace } from "@/lib/auth/session";
@@ -42,14 +43,14 @@ export default async function AccountDetail({ params }: { params: Promise<{ id: 
       <div className="card">
         <div className="chead"><h3>Movimientos</h3><span className="sub">{mv.length} {mv.length === 1 ? "movimiento" : "movimientos"}</span></div>
         {mv.length ? <div className="list">{mv.map((t) => (
-          <div className="li" key={t.id} style={t.reversedBy || t.reversalOfId ? { opacity: 0.6 } : undefined}>
+          <Link className="li" key={t.id} href={`/app/movimientos/${t.id}`} style={{ color: "inherit", ...(t.reversedBy || t.reversalOfId ? { opacity: 0.6 } : {}) }}>
             <div className="dchip"><b>{t.effectiveDate.getUTCDate()}</b><span>{fmtDayMonth(t.effectiveDate).split(" ")[1]}</span></div>
             <div className="grow"><div className="t">{t.description}</div><div className="s">{t.category?.name ?? (t.type === "TRANSFER" ? "Entre tus cuentas" : t.type === "ADJUSTMENT" ? "Corrección de saldo" : "Sin categoría")}</div></div>
             <b className={`num ${t.direction === "IN" ? "pos" : ""}`}>{formatMoney(t.direction === "IN" ? t.amount : t.amount.neg(), a.currency, { sign: true })}</b>
-          </div>))}</div> : <Empty>Todavía no hay movimientos en esta cuenta.</Empty>}
+          </Link>))}</div> : <Empty>Todavía no hay movimientos en esta cuenta.</Empty>}
       </div>
       <div className="card">
-        <details className="more"><summary>¿No coincide con tu banco? Corregir el saldo</summary>
+        <details className="more" open={bal.isNegative() && a.type !== "INVESTMENT"}><summary>¿No coincide con tu banco? Corregir el saldo</summary>
           <ActionForm action={reconcileAction} style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 10, maxWidth: 520 }}>
             <p className="sub">Escribí el saldo que ves en tu banco. Si es distinto, agregamos una "corrección de saldo" por la diferencia. Tus movimientos anteriores no cambian.</p>
             <input type="hidden" name="accountId" value={a.id} />
@@ -65,7 +66,7 @@ export default async function AccountDetail({ params }: { params: Promise<{ id: 
             <label className="field">Notas<input name="notes" defaultValue={a.notes ?? ""} /></label>
             <div><Submit className="btn">Guardar cambios</Submit></div>
           </ActionForm>
-          <form action={toggleAccountAction} style={{ marginTop: 10 }}><input type="hidden" name="id" value={a.id} /><button className="btn ghost" style={{ color: "var(--red)" }} type="submit">{a.active ? "Desactivar cuenta" : "Reactivar cuenta"}</button></form>
+          <form action={toggleAccountAction} style={{ marginTop: 10 }}><input type="hidden" name="id" value={a.id} />{a.active ? <ConfirmSubmit className="btn ghost" question={`¿Desactivar ${a.name}? Deja de aparecer para cargar movimientos y no suma en tus saldos. Sus movimientos quedan y la podés reactivar cuando quieras.`} yes="Sí, desactivar">Desactivar cuenta</ConfirmSubmit> : <button className="btn" type="submit">Reactivar cuenta</button>}</form>
         </details>
       </div>
     </>

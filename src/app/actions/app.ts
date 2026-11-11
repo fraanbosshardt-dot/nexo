@@ -27,11 +27,13 @@ function fail(e: unknown): FormState {
   return { error: "No pudimos guardar. Probá de nuevo en un momento." };
 }
 const money = (v: FormDataEntryValue | null, label: string) => {
+  if (!String(v ?? "").trim()) throw new UserError(`Escribí ${label}.`);
   const d = parseAmount(String(v ?? ""));
   if (!d) throw new UserError(`Revisá ${label}: tiene que ser un número.`);
   return d;
 };
 const date = (v: FormDataEntryValue | null, label: string) => {
+  if (!String(v ?? "").trim()) throw new UserError(`Elegí ${label}.`);
   const d = parseDate(String(v ?? ""));
   if (!d) throw new UserError(`Revisá ${label} (dd/mm/aaaa).`);
   return d;
@@ -237,7 +239,8 @@ export async function payObligationAction(_: FormState, fd: FormData): Promise<F
     return fail(e);
   }
   revalidatePath("/app", "layout");
-  redirect(String(fd.get("back") || "/app/proximos").startsWith("/app") ? String(fd.get("back") || "/app/proximos") : "/app/proximos");
+  const back = String(fd.get("back") || "");
+  redirect(back.startsWith("/app") ? back : `/app/proximos?listo=${fd.get("kind") === "cobro" ? "cobro" : "pago"}`);
 }
 
 // Inicio: "Sí, lo cobré / lo pagué" con el monto esperado, hoy, en la cuenta de siempre.
