@@ -3,7 +3,7 @@ import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { NextRequest } from "next/server";
 import { checkIdToken, exchangeCode, GOOGLE_COOKIE, googleEnabled, readStart } from "@/lib/auth/google";
-import { audit, createSession } from "@/lib/auth/session";
+import { audit, createSession, landingPath } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
 import { appUrl } from "@/lib/email";
 import { findOrCreateGoogleUser } from "@/server/google-auth";
@@ -79,5 +79,5 @@ export async function GET(req: NextRequest) {
   }
   await createSession(user.id, { twoFactorVerified: !user.totpEnabledAt, remember: true });
   await audit("auth.login", { userId: user.id, meta: { via: "google" } });
-  redirect(r.created ? "/bienvenida" : user.totpEnabledAt ? "/verificar" : "/app");
+  redirect(user.totpEnabledAt ? "/verificar" : await landingPath(r.created ? "/bienvenida" : "/app"));
 }

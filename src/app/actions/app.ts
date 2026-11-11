@@ -293,12 +293,17 @@ export async function createCategoryAction(_: FormState, fd: FormData): Promise<
 
 // ---------- Configuración ----------
 
+// El nombre es de la persona; país y monedas son del espacio y los cambia solo su dueño.
 export async function updateProfileAction(_: FormState, fd: FormData): Promise<FormState> {
-  const { user, workspace } = await requireWorkspace();
+  const { user } = await requireUser();
   const name = String(fd.get("name") ?? "").trim();
   if (!name) return { error: "Decinos cómo te llamamos." };
   const db = getDb();
   await db.user.update({ where: { id: user.id }, data: { name } });
+  const { pickMembership } = await import("@/server/sharing");
+  const m = pickMembership(user.memberships, user.activeWorkspaceId);
+  if (!m || m.role !== "OWNER") { revalidatePath("/app", "layout"); return { ok: "Guardado. País y monedas los cambia el dueño del espacio." }; }
+  const workspace = m.workspace;
   await db.workspace.update({
     where: { id: workspace.id },
     data: (() => {
@@ -312,7 +317,8 @@ export async function updateProfileAction(_: FormState, fd: FormData): Promise<F
 }
 
 export async function saveModulesAction(_: FormState, fd: FormData): Promise<FormState> {
-  const { workspace } = await requireWorkspace();
+  const { workspace, membership } = await requireWorkspace();
+  if (membership.role !== "OWNER") return { error: "Las funciones del espacio las cambia su dueño." };
   const on = fd.getAll("modules").map(String);
   const current = readModules(workspace.modules);
   for (const m of MODULES) current[m.key] = on.includes(m.key);
@@ -432,7 +438,9 @@ export async function deleteCategoryAction(_: FormState, fd: FormData): Promise<
 
 // Borrar la propia cuenta: pide la contraseña (si tiene) y el correo escrito. No deja borrar con Pro pago activo.
 export async function deleteMyAccountAction(_: FormState, fd: FormData): Promise<FormState> {
-  const { user, workspace } = await requireWorkspace();
+  const { user } = await requireUser();
+  // El plan que importa es el del espacio propio (el que se borra), no el que esté mirando.
+  const workspace = user.memberships.find((m) => m.role === "OWNER")?.workspace ?? user.memberships[0].workspace;
   const db = getDb();
   if (String(fd.get("confirm") ?? "").trim().toLowerCase() !== user.email) return { error: `Escribí tu correo exacto: ${user.email}` };
   if (user.passwordHash) {

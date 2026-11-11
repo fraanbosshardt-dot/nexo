@@ -20,8 +20,8 @@ import { Icon, type IconName } from "@/components/icons";
 export const metadata: Metadata = { title: "Inicio" };
 const MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 
-export default async function Home({ searchParams }: { searchParams: Promise<{ listo?: string }> }) {
-  const { listo } = await searchParams;
+export default async function Home({ searchParams }: { searchParams: Promise<{ listo?: string; solomirar?: string; compartido?: string }> }) {
+  const { listo, solomirar, compartido } = await searchParams;
   const { workspace, user, modules, plan } = await requireWorkspace();
   const grainOn = !!modules.cereal && (await canUse(plan, "cereal"));
   const db = getDb();
@@ -117,6 +117,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ l
         </div>
       </div>
       <QuickButtons cereal={!!modules.cereal} />
+      {solomirar && <p className="notice a" role="status">En este espacio solo podés mirar: no se guardó ningún cambio. Si necesitás cargar, pedile a quien te invitó que te dé permiso.</p>}
+      {compartido && <p className="notice g" role="status">Listo, ya estás en el espacio compartido. Para volver al tuyo, abrí el menú de tu cuenta.</p>}
       {listo && <p className="notice g" role="status">{listo === "cobro" ? "Listo, registramos el cobro." : "Listo, registramos el pago."}</p>}
       {toConfirm.length > 0 && (
         <div className="card cf-card">

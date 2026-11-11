@@ -6,6 +6,7 @@ import { getDb } from "@/lib/db";
 import { randomToken, sha256 } from "@/lib/crypto";
 import { readModules } from "@/lib/modules";
 import { effectivePlan, hasFeature, type FeatureKey } from "@/server/plans";
+import { pickMembership } from "@/server/sharing";
 
 const COOKIE = "nexo_session";
 export const HINT_COOKIE = "nexo_in"; // solo dice "hay sesión" (sin datos), para que la web pública muestre "Ir a la app"
@@ -40,7 +41,7 @@ export async function createSession(userId: string, opts: { twoFactorVerified: b
 export const getSession = cache(async function getSession() {
   const token = (await cookies()).get(COOKIE)?.value;
   if (!token) return null;
-  const s = await getDb().session.findUnique({ where: { tokenHash: sha256(token) }, include: { user: { include: { memberships: { take: 1, orderBy: { createdAt: "asc" }, include: { workspace: { include: { subscription: true } } } } } } } });
+  const s = await getDb().session.findUnique({ where: { tokenHash: sha256(token) }, include: { user: { include: { memberships: { orderBy: { createdAt: "asc" }, include: { workspace: { include: { subscription: true } } } } } } } });
   if (!s || s.revokedAt || s.expiresAt < new Date() || s.user.deletedAt || s.user.suspendedAt) return null;
   return s;
 });
@@ -69,14 +70,30 @@ export async function requireUser() {
   return { session: s, user: s.user };
 }
 
-// Exige usuario y devuelve su espacio. Si no terminó la introducción, lo manda ahí.
+// Exige usuario y devuelve el espacio que está viendo (el propio o uno compartido). Si no terminó la introducción, lo manda ahí.
+// Quien "solo mira" un espacio compartido no puede cambiar nada: toda acción del servidor (pedido con
+// el encabezado next-action) que pase por acá se corta.
 export async function requireWorkspace(opts: { allowNotOnboarded?: boolean } = {}) {
   const { session, user } = await requireUser();
-  const membership = user.memberships[0];
+  const membership = pickMembership(user.memberships, user.activeWorkspaceId);
   if (!membership) redirect("/ingresar");
   const workspace = membership.workspace;
   if (!workspace.onboardedAt && !opts.allowNotOnboarded) redirect("/bienvenida");
+  if (membership.role === "VIEWER" && (await headers()).get("next-action")) redirect("/app?solomirar=1");
   return { session, user, membership, workspace, modules: readModules(workspace.modules), plan: effectivePlan(workspace.subscription) };
+}
+
+// Después de ingresar: si estaba aceptando una invitación, vuelve a ella; si no, al destino de siempre.
+export async function landingPath(fallback: string) {
+  const t = (await cookies()).get("nexo_invite")?.value;
+  return t && /^[\w-]{20,64}$/.test(t) ? `/invitacion/${t}` : fallback;
+}
+
+// Lo que solo puede hacer el dueño del espacio (compartirlo, el plan).
+export async function requireOwner() {
+  const ctx = await requireWorkspace();
+  if (ctx.membership.role !== "OWNER") redirect("/app/configuracion?soloduenio=1");
+  return ctx;
 }
 
 export async function audit(action: string, data: { userId?: string | null; workspaceId?: string | null; entity?: string; entityId?: string; meta?: object } = {}) {

@@ -46,7 +46,9 @@ const SETTINGS: Item[] = [
 
 const Mark = () => <span className="brand-mark">F</span>;
 
-export function Shell({ children, modules, overdue, userName, plan, isAdmin, logout }: { children: React.ReactNode; modules: ModuleState; overdue: number; userName: string; plan: string; isAdmin: boolean; logout: () => Promise<void> }) {
+export type Space = { id: string; label: string; active: boolean };
+
+export function Shell({ children, modules, overdue, userName, plan, isAdmin, logout, spaces = [], switchSpace }: { children: React.ReactNode; modules: ModuleState; overdue: number; userName: string; plan: string; isAdmin: boolean; logout: () => Promise<void>; spaces?: Space[]; switchSpace?: (fd: FormData) => Promise<void> }) {
   const path = usePathname();
   const [open, setOpen] = useState(false);
   const [menu, setMenu] = useState(false);
@@ -128,6 +130,16 @@ export function Shell({ children, modules, overdue, userName, plan, isAdmin, log
               <div className="avatar" style={{ width: 44, height: 44, fontSize: 16, margin: 0 }}>{initials}</div>
               <div><h2>{userName}</h2><p className="sub" style={{ margin: 0, color: "var(--muted)" }}>Plan {plan === "PRO" ? "Pro" : "Gratis"}</p></div>
             </div>
+            {spaces.length > 1 && switchSpace && (
+              <div className="spaces" role="group" aria-label="Espacio que ves">
+                <h6>Estás viendo</h6>
+                {spaces.map((sp) => (
+                  <form key={sp.id} action={switchSpace}><input type="hidden" name="workspaceId" value={sp.id} />
+                    <button type="submit" className={`space-btn ${sp.active ? "on" : ""}`} aria-pressed={sp.active} disabled={sp.active}>{sp.label}{sp.active && <span className="pill b">Ahora</span>}</button>
+                  </form>
+                ))}
+              </div>
+            )}
             <div className="list">
               {[...(isAdmin ? [["Panel interno", "/admin"]] : []), ["Tu plan", "/app/configuracion?tab=plan"], ["Configuración", "/app/configuracion"]].map(([l, h]) => (
                 <Link key={h} className="li" href={h} onClick={() => setMenu(false)} style={{ textDecoration: "none", color: "inherit" }}><div className="grow">{l}</div><span className="mut">›</span></Link>

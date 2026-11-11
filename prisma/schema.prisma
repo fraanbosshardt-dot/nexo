@@ -31,6 +31,7 @@ model User {
   suspendedAt    DateTime?
   emailReminders Boolean   @default(true)
   bigText        Boolean? // "Letra más grande" guardada en la cuenta (null: nunca la tocó)
+  activeWorkspaceId String? // espacio que está mirando (el propio o uno compartido); vacío = el propio
   // Referidos: código propio para invitar, quién te invitó y cuándo se entregó el premio (1 mes de Pro a cada uno).
   referralCode       String?   @unique
   referredById       String?
@@ -43,6 +44,7 @@ model User {
   sessions       Session[]
   passwordResets PasswordReset[]
   memberships    Membership[]
+  pushSubs       PushSubscription[]
   auditLogs      AuditLog[]
   tickets        SupportTicket[]
 }
@@ -92,6 +94,7 @@ model Workspace {
   debts          Debt[]
   creditCards    CreditCard[]
   grainStocks    GrainStock[]
+  invites        WorkspaceInvite[]
   budgets        Budget[]
   goals          Goal[]
   investments    Investment[]
@@ -587,6 +590,36 @@ model GrainSale {
   collectDate     DateTime  @db.Date
   obligationId    String?   @unique
   createdAt       DateTime  @default(now())
+
+  @@index([workspaceId])
+}
+
+// Avisos en el celular (Web Push): cada navegador o celular donde la persona los activó.
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// Invitación a un espacio compartido: se acepta con el enlace del correo, entrando con ese mismo correo.
+model WorkspaceInvite {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  email       String
+  role        Role      @default(EDITOR)
+  tokenHash   String    @unique
+  invitedById String
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime  @default(now())
 
   @@index([workspaceId])
 }

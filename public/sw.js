@@ -43,3 +43,25 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(fetch(req).catch(() => caches.match(OFFLINE)));
   }
 });
+
+// Avisos en el celular: llegan vacíos y se pide a la app qué mostrar (con tu sesión), así ningún dato viaja en el aviso.
+self.addEventListener("push", (event) => {
+  event.waitUntil((async () => {
+    let m = { title: "Finan", body: "Tenés pagos o cobros para revisar.", url: "/app/proximos" };
+    try {
+      const r = await fetch("/api/push/aviso", { credentials: "same-origin", cache: "no-store" });
+      if (r.ok) m = await r.json();
+    } catch (e) { /* sin conexión: se muestra el aviso genérico */ }
+    await self.registration.showNotification(m.title, { body: m.body, icon: "/icons/192", badge: "/icons/192", data: { url: m.url }, tag: "finan-vencimientos" });
+  })());
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = (event.notification.data && event.notification.data.url) || "/app";
+  event.waitUntil((async () => {
+    const wins = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    for (const w of wins) if (new URL(w.url).origin === self.location.origin) { await w.focus(); return w.navigate(url); }
+    return self.clients.openWindow(url);
+  })());
+});

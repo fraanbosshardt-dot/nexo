@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getDb } from "@/lib/db";
 import { hashPassword, passwordProblem, verifyPassword } from "@/lib/auth/password";
-import { audit, createSession, destroySession, getSession, markTwoFactorVerified } from "@/lib/auth/session";
+import { audit, createSession, destroySession, getSession, landingPath, markTwoFactorVerified } from "@/lib/auth/session";
 import { verifyTotp } from "@/lib/auth/totp";
 import { decryptSecret } from "@/lib/crypto";
 import { createWorkspaceForUser } from "@/server/workspace";
@@ -43,7 +43,7 @@ export async function signupAction(_: FormState, fd: FormData): Promise<FormStat
   await applyProGrant(db, user.email, ws.id);
   await createSession(user.id, { twoFactorVerified: true, remember: true });
   try { const { sendVerifyEmail } = await import("@/server/account-mail"); await sendVerifyEmail(user); } catch (e) { console.error("confirmar correo", e); }
-  redirect("/bienvenida");
+  redirect(await landingPath("/bienvenida"));
 }
 
 export async function loginAction(_: FormState, fd: FormData): Promise<FormState> {
@@ -69,7 +69,7 @@ export async function loginAction(_: FormState, fd: FormData): Promise<FormState
   try { const { notifyNewDevice } = await import("@/server/account-mail"); await notifyNewDevice(db, user, h.get("user-agent"), ip); } catch (e) { console.error("aviso de ingreso", e); }
   await createSession(user.id, { twoFactorVerified: !user.totpEnabledAt, remember: fd.get("remember") === "on" });
   await audit("auth.login", { userId: user.id });
-  redirect(user.totpEnabledAt ? "/verificar" : "/app");
+  redirect(user.totpEnabledAt ? "/verificar" : await landingPath("/app"));
 }
 
 export async function verifyLoginCodeAction(_: FormState, fd: FormData): Promise<FormState> {
@@ -89,7 +89,7 @@ export async function verifyLoginCodeAction(_: FormState, fd: FormData): Promise
   }
   await markTwoFactorVerified(s.id);
   await audit("auth.2fa_ok", { userId: s.userId });
-  redirect("/app");
+  redirect(await landingPath("/app"));
 }
 
 export async function logoutAction() {

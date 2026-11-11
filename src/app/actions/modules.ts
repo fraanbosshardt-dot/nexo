@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getDb } from "@/lib/db";
-import { audit, canUse, requireWorkspace } from "@/lib/auth/session";
+import { audit, canUse, requireOwner, requireWorkspace } from "@/lib/auth/session";
 import { parseAmount } from "@/lib/money";
 import { parseDate, todayIn } from "@/lib/dates";
 import { isCurrency } from "@/lib/countries";
@@ -470,7 +470,7 @@ export async function revertImportAction(fd: FormData) {
 // ---------- Plan y soporte ----------
 
 export async function startTrialAction() {
-  const { user, workspace } = await requireWorkspace();
+  const { user, workspace } = await requireOwner();
   const sub = workspace.subscription;
   if (sub?.trialEndsAt) redirect("/app/configuracion?tab=plan&prueba=usada");
   await getDb().subscription.upsert({
@@ -496,7 +496,7 @@ export async function supportTicketAction(_: FormState, fd: FormData): Promise<F
 // ---------- Cobro de Pro ----------
 
 export async function checkoutAction(fd: FormData) {
-  const { user, workspace } = await requireWorkspace();
+  const { user, workspace } = await requireOwner();
   const { startCheckout } = await import("@/server/billing");
   const { appUrl } = await import("@/lib/email");
   const cycle = fd.get("cycle") === "yearly" ? "yearly" : "monthly";
@@ -514,7 +514,7 @@ export async function checkoutAction(fd: FormData) {
 }
 
 export async function cancelPlanAction() {
-  const { user, workspace } = await requireWorkspace();
+  const { user, workspace } = await requireOwner();
   const { cancelSubscription } = await import("@/server/billing");
   await cancelSubscription(getDb(), workspace.id);
   await audit("billing.canceled", { userId: user.id, workspaceId: workspace.id });

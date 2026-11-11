@@ -50,11 +50,12 @@ export async function exportAccountData(db: PrismaClient, userId: string) {
 }
 
 // ---------- Borrar una cuenta ----------
-// Borra los espacios donde la persona es la única integrante (con todo su contenido) y después la cuenta.
+// Borra los espacios de la persona (los que es dueña, aunque los haya compartido, y donde es la única integrante),
+// con todo su contenido, y después la cuenta. De los espacios de otros solo se va (se borra su membresía).
 // La auditoría queda sin el vínculo a la persona (la relación es SetNull).
 export async function deleteAccount(db: PrismaClient, userId: string) {
   const ms = await db.membership.findMany({ where: { userId }, include: { workspace: { include: { _count: { select: { members: true } } } } } });
-  const solo = ms.filter((m) => m.workspace._count.members <= 1).map((m) => m.workspaceId);
+  const solo = ms.filter((m) => m.role === "OWNER" || m.workspace._count.members <= 1).map((m) => m.workspaceId);
   await db.$transaction(async (tx) => {
     for (const ws of solo) {
       const where = { workspaceId: ws };

@@ -13,6 +13,7 @@ import { announcement, announcementFor, systemSettings } from "@/server/settings
 import { Icon } from "@/components/icons";
 import { ActionForm, Submit } from "@/components/forms";
 import { BigTextSync } from "@/components/big-text";
+import { switchWorkspaceAction } from "@/app/actions/sharing";
 import { resendVerifyAction } from "@/app/actions/app";
 
 // La app es privada: nunca se indexa.
@@ -21,7 +22,7 @@ export const metadata: Metadata = { robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const { user, workspace, modules, plan } = await requireWorkspace();
+  const { user, workspace, modules, plan, membership } = await requireWorkspace();
   const db = getDb();
   const today = todayIn(workspace.timezone);
   // Pendientes de reglas recurrentes y resúmenes de tarjeta ya cerrados: se generan solos y sin duplicar.
@@ -42,13 +43,25 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     announcement(db),
   ]);
   const notice = announcementFor(ann, plan);
+  // Espacios para elegir (el propio y los compartidos), con el nombre de quien los comparte.
+  const others = user.memberships.filter((m) => m.role !== "OWNER");
+  const owners = others.length ? await db.membership.findMany({ where: { workspaceId: { in: others.map((m) => m.workspaceId) }, role: "OWNER" }, select: { workspaceId: true, user: { select: { name: true } } } }) : [];
+  const ownerOf = (wsId: string) => owners.find((o) => o.workspaceId === wsId)?.user.name.split(" ")[0] ?? "otra persona";
+  const spaces = user.memberships.map((m) => ({ id: m.workspaceId, label: m.role === "OWNER" ? "Tu espacio" : `Espacio de ${ownerOf(m.workspaceId)}`, active: m.workspaceId === workspace.id }));
+  const sharedView = membership.role !== "OWNER";
   return (
     <><BigTextSync saved={user.bigText ?? null} />
-    <Shell modules={modules} overdue={overdue} userName={user.name} plan={plan} isAdmin={!!role} logout={logoutAction}>
+    <Shell spaces={spaces} switchSpace={switchWorkspaceAction} modules={modules} overdue={overdue} userName={user.name} plan={plan} isAdmin={!!role} logout={logoutAction}>
       {notice && (
         <div className={`notice ${notice.tone === "warn" ? "a" : "b"} app-ann`} role="status">
           <Icon name={notice.tone === "warn" ? "info" : "spark"} />
           <span>{notice.text}{notice.link && <> <a className="lnk" href={notice.link}>Ver más</a></>}</span>
+        </div>
+      )}
+      {sharedView && (
+        <div className="notice b app-ann" role="status">
+          <Icon name="user" />
+          <span>Estás viendo el espacio de {ownerOf(workspace.id)}{membership.role === "VIEWER" ? " (solo mirar)" : ""}. Cambiás al tuyo desde el menú de tu cuenta.</span>
         </div>
       )}
       {!user.emailVerified && (

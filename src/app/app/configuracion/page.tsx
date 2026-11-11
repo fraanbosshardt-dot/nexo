@@ -16,20 +16,25 @@ import { ActionForm, OtpInput, Submit } from "@/components/forms";
 import { deleteMyAccountAction, emailRemindersAction, confirm2faAction, disable2faAction, revokeOtherSessionsAction, saveModulesAction, start2faAction, twoFactorQr, updateProfileAction } from "@/app/actions/app";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { ShareLink } from "@/components/referral";
+import { SharingTab } from "./sharing-tab";
+import { PushToggle } from "@/components/push-toggle";
+import { pushConfig } from "@/server/push";
 
 export const metadata: Metadata = { title: "Configuración" };
 
-const TABS = [["general", "General"], ["funciones", "Funciones"], ["seguridad", "Seguridad"], ["plan", "Plan"], ["datos", "Tus datos"]] as const;
+const TABS = [["general", "General"], ["funciones", "Funciones"], ["compartir", "Compartir"], ["seguridad", "Seguridad"], ["plan", "Plan"], ["datos", "Tus datos"]] as const;
 
-export default async function Settings({ searchParams }: { searchParams: Promise<{ tab?: string; pago?: string; cancelado?: string; cupon?: string }> }) {
-  const { user, workspace, modules, plan, session } = await requireWorkspace();
+export default async function Settings({ searchParams }: { searchParams: Promise<{ tab?: string; pago?: string; cancelado?: string; cupon?: string; soloduenio?: string }> }) {
+  const { user, workspace, modules, plan, session, membership } = await requireWorkspace();
   const sp = await searchParams;
   const asked = sp.tab;
   const t = TABS.some(([k]) => k === asked) ? asked! : "general";
   const tabs = <SettingsTabs current={t} rules={modules.reglas} />;
   const now = new Intl.DateTimeFormat("es-AR", { timeZone: workspace.timezone, dateStyle: "full", timeStyle: "short" }).format(new Date());
 
+  const push = pushConfig();
   let body: React.ReactNode = null;
+  if (t === "compartir") body = <SharingTab workspaceId={workspace.id} role={membership.role} plan={plan} userId={user.id} />;
   if (t === "general") {
     body = (
       <div className="card">
@@ -182,5 +187,5 @@ export default async function Settings({ searchParams }: { searchParams: Promise
       </div></div>
     );
   }
-  return (<div className="narrow wide"><PageHead crumb="Ajustes" title="Configuración" />{tabs}{t === "general" && <><ThemeChoice /><BigTextToggle /><InstallApp /></>}{body}</div>);
+  return (<div className="narrow wide"><PageHead crumb="Ajustes" title="Configuración" />{tabs}{sp.soloduenio && <p className="notice a">Eso lo puede hacer solo el dueño del espacio.</p>}{t === "general" && <><ThemeChoice /><BigTextToggle />{push.enabled && <PushToggle publicKey={push.publicKey} />}<InstallApp /></>}{body}</div>);
 }

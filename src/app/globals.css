@@ -949,3 +949,8 @@ html[data-big] body{zoom:1.15}
 .swipe-acts .sw-pay{background:var(--ink)}
 @media (max-width:640px){.swipe-acts{display:flex}}
 @media (prefers-reduced-motion:reduce){.swipe>.swipe-front{transition:none}}
+/* Menú de la cuenta: elegir espacio (propio o compartido) */
+.spaces{display:flex;flex-direction:column;gap:6px;margin:14px 0 4px}.spaces h6{margin:0 0 2px;font-size:12px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.spaces form{display:contents}.space-btn{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-height:44px;padding:0 12px;border:1px solid var(--line-2);border-radius:10px;background:var(--surface);color:var(--fg);font:inherit;text-align:left;cursor:pointer}
+.space-btn.on{border-color:var(--ink);cursor:default}
+.welcome-back{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px 12px;padding:10px 16px;background:var(--surface-2);font-size:14px}

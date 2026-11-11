@@ -5,6 +5,7 @@ import { requireWorkspace } from "@/lib/auth/session";
 import { MODULES, USES } from "@/lib/modules";
 import { COUNTRIES } from "@/lib/countries";
 import { Onboarding } from "./onboarding";
+import { switchWorkspaceAction } from "@/app/actions/sharing";
 
 export const metadata: Metadata = { title: "Bienvenida" };
 
@@ -16,5 +17,18 @@ export default async function WelcomePage() {
   const geo = h.get("x-vercel-ip-country") ?? h.get("accept-language")?.match(/-([A-Z]{2})/)?.[1] ?? "AR";
   const detected = COUNTRIES.some((c) => c.code === geo);
   const guess = detected ? geo : "AR";
-  return <Onboarding firstName={user.name.split(" ")[0]} uses={USES} modules={MODULES} guessCountry={guess} detected={detected} />;
+  // Si está en un espacio compartido, puede volver a ese sin armar el propio.
+  const shared = user.memberships.find((m) => m.role !== "OWNER" && m.workspace.onboardedAt);
+  return (
+    <>
+      {shared && (
+        <form action={switchWorkspaceAction} className="welcome-back">
+          <input type="hidden" name="workspaceId" value={shared.workspaceId} />
+          <span>¿Querías volver al espacio compartido?</span>
+          <button className="btn sm" type="submit">Volver al espacio compartido</button>
+        </form>
+      )}
+      <Onboarding firstName={user.name.split(" ")[0]} uses={USES} modules={MODULES} guessCountry={guess} detected={detected} />
+    </>
+  );
 }

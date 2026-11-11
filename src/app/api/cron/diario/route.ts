@@ -3,6 +3,7 @@ import { appUrl, sendEmail } from "@/lib/email";
 import { formatMoney } from "@/lib/money";
 import { todayIn } from "@/lib/dates";
 import { refreshRates } from "@/server/fx";
+import { pushConfig, pushToUser } from "@/server/push";
 import { remaining } from "@/server/ledger";
 
 // Tarea diaria (Vercel Cron la llama una vez por día con CRON_SECRET):
@@ -43,6 +44,23 @@ async function run(db: ReturnType<typeof getDb>) {
   for (let i = 0; i < workspaces.length; i += 20) {
     await Promise.all(workspaces.slice(i, i + 20).map((ws) => one(ws).catch((e) => { skipped++; console.error("[cron] aviso", ws.id, e); })));
   }
-  await db.auditLog.create({ data: { action: "cron.diario", meta: { rates: fx, emails: sent, notSent: skipped } } });
-  return Response.json({ ok: true, rates: fx, emails: sent, notSent: skipped });
+  const pushes = await pushDueTomorrow(db);
+  await db.auditLog.create({ data: { action: "cron.diario", meta: { rates: fx, emails: sent, notSent: skipped, pushes } } });
+  return Response.json({ ok: true, rates: fx, emails: sent, notSent: skipped, pushes });
+}
+
+// Personas con avisos en el celular y algo que vence mañana en alguno de sus espacios.
+async function pushDueTomorrow(db: ReturnType<typeof getDb>) {
+  if (!pushConfig().enabled) return 0;
+  const users = await db.user.findMany({ where: { pushSubs: { some: {} }, suspendedAt: null, deletedAt: null }, select: { id: true, memberships: { select: { workspace: { select: { id: true, timezone: true } } } } } });
+  let n = 0;
+  for (const u of users) {
+    let due = 0;
+    for (const m of u.memberships) {
+      const tomorrow = new Date(todayIn(m.workspace.timezone).getTime() + 864e5);
+      due += await db.obligation.count({ where: { workspaceId: m.workspace.id, status: { in: ["PENDING", "PARTIAL"] }, dueDate: tomorrow } });
+    }
+    if (due) n += await pushToUser(db, u.id);
+  }
+  return n;
 }

@@ -18,9 +18,11 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 - [ ] Z8. Decidir cómo mostrar el flujo de caja cuando los ingresos no se repiten: "Estimar con mi promedio", "Simular un ingreso" o las dos.
 - [ ] Z13. Mover la app y la base a la costa este de EE.UU. (Vercel `iad1` y Railway us-east), más cerca de Latinoamérica: ~50-70 ms menos por pedido. Se hace desde Vercel y Railway; avisame y cambio `vercel.json`.
 - [ ] Z15. Dominio para Finan: finan.com, finan.app y finanapp.com están ocupados; getfinan.com, usefinan.com y finanhq.com estaban libres el 11/11/2026. Antes de lanzar, buscar "Finan" en el registro de marcas (INPI y los países donde se venda). Cuando haya dominio: cambiar APP_URL en Vercel y la URL del webhook en Mercado Pago (hoy apunta a nexo-eight-sage.vercel.app).
+- [ ] Z16. Activar los avisos en el celular: correr npm run vapid y cargar VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY y VAPID_SUBJECT (mailto:tu correo) en Vercel. Sin las claves, la opción no aparece.
 - [ ] Z14. Mercado Pago ahora cobra el precio en pesos de Panel → Ajustes → Precio de Pro (el mismo que se muestra). Cargalo ahí; `MP_PRICE_MONTHLY`, `MP_PRICE_YEARLY` y `MP_CURRENCY` ya no se usan y se pueden borrar de Vercel.
 
 ### Probar con una persona real
+- [ ] T8. Compartir el espacio con alguien real (invitación por correo, aceptar, solo mirar) y recibir un aviso en el celular (Android e iPhone con la app instalada).
 - [ ] T6. Deslizar un pago en Próximos pagos desde el celular (no se pudo probar con el dedo en la compu).
 - [ ] T7. Abrir en Excel el archivo de Exportar → Movimientos (Excel) y guardar un reporte en PDF desde el celular y la compu.
 - [ ] T4. Importar un extracto real de Mercado Pago (CSV desde la app o la web de MP) y revisar que entren bien los movimientos.
@@ -31,11 +33,9 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 
 ### Para la próxima vuelta
 - [ ] P7. Publicar en Play Store y App Store (con Capacitor, la misma app empaquetada). Necesita tus cuentas de desarrollador: Google US$25 una vez, Apple US$99 por año.
-- [ ] P8. Notificaciones en el celular (además del email) para los vencimientos.
 - [ ] P6. Probar la lectura de PDF con resúmenes reales de varios bancos (Galicia, Santander, BBVA, Nación, Macro, Mercado Pago) y ajustar los formatos que no reconozca.
 - [ ] P4. Cuando esté publicado: dar de alta el sitio en Google Search Console y enviar el sitemap (/sitemap.xml).
 - [ ] P1. Asistente con IA (Pro): hoy figura como "próximamente".
-- [ ] P2. Espacio compartido (Pro): invitar hasta 3 personas.
 - [ ] P11. Modo sin conexión para ver los datos sin internet.
 - [ ] P14. Facturas de AFIP para los cobros de Pro.
 
@@ -44,6 +44,8 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 - [ ] M4. Testimonios de usuarios reales, cuando los haya (nunca inventados).
 
 ## Completado
+- [x] 11/11/2026 — P2. Espacio compartido (Pro): el dueño invita por correo hasta 3 personas con permiso de "carga y edita" o "solo mira" (Configuración → Compartir). Se acepta con la cuenta de ese mismo correo; cada uno elige qué espacio ve desde el menú de su cuenta. Quien solo mira no puede guardar nada. Si el dueño borra su cuenta, su espacio se borra entero.
+- [x] 11/11/2026 — P8. Avisos en el celular (Web Push, sin librerías): se activan en Configuración, llegan el día antes de cada vencimiento y viajan sin datos (el celular pide el detalle a la app). En iPhone hace falta instalar la app primero.
 - [x] 11/11/2026 — P10. Gestos en el celular: en Próximos pagos, deslizar un pago o cobro hacia la izquierda muestra Pagar/Cobrar y Cancelar (con confirmación). En la compu no cambia nada.
 - [x] 11/11/2026 — P9. Funciones Pro en Beta terminadas: saldo día a día en el flujo de caja (próximos 60 días, con el día más bajo), exportar movimientos a Excel (.xlsx real), reporte del mes para imprimir o guardar como PDF, e importar Excel (.xlsx) y OFX/QFX del banco.
 - [x] 11/11/2026 — Sin "Hecho en Argentina" en el pie de página ni "Hecho para la Argentina" en Quiénes somos: la plataforma es para cualquier país.

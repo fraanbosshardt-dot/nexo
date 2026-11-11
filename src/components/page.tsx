@@ -41,6 +41,7 @@ export function SettingsTabs({ current, rules = true }: { current: string; rules
   const items = [
     { key: "general", label: "General", href: "/app/configuracion" },
     { key: "funciones", label: "Funciones", href: "/app/configuracion?tab=funciones" },
+    { key: "compartir", label: "Compartir", href: "/app/configuracion?tab=compartir" },
     { key: "categorias", label: "Categorías", href: "/app/categorias" },
     ...(rules ? [{ key: "recurrentes", label: "Pagos que se repiten", href: "/app/recurrentes" }] : []),
     { key: "importar", label: "Importar y exportar", href: "/app/importar" },
