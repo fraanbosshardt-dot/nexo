@@ -55,8 +55,8 @@ export default async function Investments() {
           <summary>+ Nueva inversión</summary>
           <ActionForm action={createInvestmentAction} style={{ display: "flex", flexDirection: "column", gap: 12, paddingTop: 10, maxWidth: 640 }}>
             <div className="frow"><label className="field">Nombre<input name="name" placeholder="Ej.: Plazo fijo 30 días" /></label><label className="field">Tipo<select name="kind">{KINDS.map((k) => <option key={k}>{k}</option>)}</select></label></div>
-            <div className="frow"><label className="field">Moneda<select name="currency" defaultValue={cur}>{CURRENCIES.map((c) => <option key={c.code} value={c.code}>{c.code}</option>)}</select></label><label className="field">Primer aporte (opcional)<input name="amount" inputMode="decimal" placeholder="0,00" /></label></div>
-            <label className="field">Sale de<select name="accountId"><option value="">No registrar ahora</option>{accounts.map((a) => <option key={a.id} value={a.id}>{a.name} ({a.currency})</option>)}</select></label>
+            <div className="frow"><label className="field">Moneda<select name="currency" defaultValue={cur}>{CURRENCIES.map((c) => <option key={c.code} value={c.code}>{c.code}</option>)}</select></label><label className="field">Cuánto pusiste (opcional)<input name="amount" inputMode="decimal" placeholder="0,00" /></label></div>
+            <label className="field">¿De dónde sale?<select name="accountId"><option value="">Ya lo tenía invertido (no sale de ninguna cuenta)</option>{accounts.map((a) => <option key={a.id} value={a.id}>{a.name} ({a.currency})</option>)}</select></label>
             <div><Submit>Crear inversión</Submit></div>
           </ActionForm>
         </details>

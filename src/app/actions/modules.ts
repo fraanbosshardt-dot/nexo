@@ -293,6 +293,8 @@ export async function createInvestmentAction(_: FormState, fd: FormData): Promis
     const inv = await createInvestment(getDb(), workspace.id, { name: str(fd, "name"), kind: str(fd, "kind") || "Otra", currency: isCurrency(str(fd, "currency")) ? str(fd, "currency") : workspace.baseCurrency });
     const first = optMoney(fd, "amount", "el aporte");
     if (first && str(fd, "accountId")) await investmentMove(getDb(), workspace.id, { investmentId: inv.id, kind: "CONTRIBUTION", accountId: str(fd, "accountId"), amount: first, date: todayIn(workspace.timezone), userId: user.id });
+    // Ya lo tenía invertido: se registra lo puesto sin mover ninguna cuenta.
+    else if (first && first.gt(0)) await getDb().investmentMovement.create({ data: { investmentId: inv.id, kind: "CONTRIBUTION", amount: first.toFixed(2), date: todayIn(workspace.timezone) } });
   } catch (e) { return fail(e); }
   redirect(done("/app/inversiones"));
 }

@@ -156,9 +156,9 @@ export default async function Settings({ searchParams }: { searchParams: Promise
                 <button className="btn" type="submit" name="cycle" value="yearly">Pagar por año · {formatMoney(String(bill.yearly), bill.currency)}</button>
               </div>
             </form>
-          ) : (
+          ) : plan !== "PRO" ? (
             <p className="sub">Pro cuesta {priceLabel(ps, "monthly").text} por mes o {priceLabel(ps, "yearly").text} por año. El cobro con Mercado Pago se activa pronto; mientras tanto podés usar la prueba gratis.</p>
-          )}
+          ) : null}
           {!paidPro && !sub?.trialEndsAt && plan !== "PRO" && <form action={startTrialAction} style={{ marginTop: 12 }}><button className="btn ghost" type="submit">Probar Pro gratis 14 días</button></form>}
         </div>
         <div className="card">

@@ -31,7 +31,8 @@ export default async function Simulator({ searchParams }: { searchParams: Promis
         <PageHead crumb="Planificar" title="Simulador" desc="Probá una decisión antes de tomarla. Nada de esto cambia tus datos." />
         {tabs}
         <div className="split sim">
-          <form className="card" method="get" style={{ display: "flex", flexDirection: "column", gap: 12, alignSelf: "start" }}>
+          {/* Al calcular, la pantalla baja sola hasta el resultado (en el celular queda debajo del formulario). */}
+          <form className="card" method="get" action="/app/simulador#resultado" style={{ display: "flex", flexDirection: "column", gap: 12, alignSelf: "start" }}>
             <h3>¿Qué querés comprar?</h3>
             <label className="field">Precio de contado<input name="precio" inputMode="decimal" placeholder="0,00" defaultValue={sp.precio ?? ""} /></label>
             <div className="frow"><label className="field">Cuotas<select name="cuotas" defaultValue={String(n)}>{[1, 2, 3, 6, 9, 12, 18, 24, 36].map((x) => <option key={x} value={x}>{x === 1 ? "En un pago" : `${x} cuotas`}</option>)}</select></label>
@@ -42,7 +43,7 @@ export default async function Simulator({ searchParams }: { searchParams: Promis
             <div><button className="btn pri" type="submit">Calcular</button></div>
             <p className="sub">Mira tu dinero de hoy y todo lo que ya sabés que entra y sale, mes a mes, y le suma las cuotas.</p>
           </form>
-          <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0 }}>
+          <div id="resultado" style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0, scrollMarginTop: 72 }}>
             {!r ? <div className="empty">Cargá el precio y las cuotas para ver si te alcanza.</div> : (
               <>
                 <div className={`card verdict ${r.ok ? "yes" : "no"}`}>
@@ -54,8 +55,8 @@ export default async function Simulator({ searchParams }: { searchParams: Promis
                 <div className="card"><div className="chead"><h3>Otras opciones</h3><span className="sub">mismo total, distinta cantidad de cuotas</span></div>
                   <div className="chips">{r.options.map((o) => <span key={o.installments} className={`opt ${o.ok ? "ok" : "ko"}`}>{o.installments === 1 ? "Contado" : `${o.installments} cuotas`} · {fm(o.cuota)} {o.ok ? "✓" : "✕"}</span>)}</div></div>
                 <div className="card"><div className="chead"><h3>Cómo quedaría tu dinero</h3></div>
-                  <div className="tw"><table><thead><tr><th>Mes</th><th className="n">Sin la compra</th><th className="n">Cuota</th><th className="n">Con la compra</th><th className="n">Punto más bajo</th></tr></thead>
-                    <tbody>{r.rows.map((x, i) => <tr key={x.period}><td style={{ whiteSpace: "nowrap" }}>{fmtPeriod(x.period)}</td><td className="n">{fm(r.baseRows[i].end)}</td><td className="n">{x.cuota.gt(0) ? fm(x.cuota.neg()) : "—"}</td><td className="n"><b className={x.end.isNegative() ? "neg" : ""}>{fm(x.end)}</b></td><td className={`n ${x.min.lt(r.cushion) ? "neg" : ""}`}>{fm(x.min)}</td></tr>)}</tbody></table></div></div>
+                  <div className="tw"><table><thead><tr><th>Mes</th><th className="n mh">Sin la compra</th><th className="n">Cuota</th><th className="n">Con la compra</th><th className="n mh">Punto más bajo</th></tr></thead>
+                    <tbody>{r.rows.map((x, i) => <tr key={x.period}><td style={{ whiteSpace: "nowrap" }}>{fmtPeriod(x.period)}</td><td className="n mh">{fm(r.baseRows[i].end)}</td><td className="n">{x.cuota.gt(0) ? fm(x.cuota.neg()) : "—"}</td><td className="n"><b className={x.end.isNegative() ? "neg" : ""}>{fm(x.end)}</b></td><td className={`n mh ${x.min.lt(r.cushion) ? "neg" : ""}`}>{fm(x.min)}</td></tr>)}</tbody></table></div></div>
               </>
             )}
           </div>
@@ -91,7 +92,7 @@ export default async function Simulator({ searchParams }: { searchParams: Promis
       {tabs}
       <div className="presets">{["base", "optimista", "pesimista", "custom"].map((k) => <a key={k} className={`preset ${preset === k ? "on" : ""}`} href={k === "custom" ? "/app/simulador?tab=escenarios&gastos=0" : `/app/simulador?tab=escenarios&preset=${k}`}><b>{k === "base" ? "Base" : k === "optimista" ? "Optimista" : k === "pesimista" ? "Pesimista" : "Personalizado"}</b><span>{desc[k]}</span></a>)}</div>
       <div className="split sim">
-        <form className="card" method="get" style={{ display: "flex", flexDirection: "column", gap: 12, alignSelf: "start" }}>
+        <form className="card" method="get" action="/app/simulador#resultado" style={{ display: "flex", flexDirection: "column", gap: 12, alignSelf: "start" }}>
           <input type="hidden" name="tab" value="escenarios" />
           <h3>Ajustes</h3>
           <label className="field">Cambio en tus gastos (%)<input name="gastos" inputMode="numeric" defaultValue={String(expensePct)} /></label>
@@ -100,7 +101,7 @@ export default async function Simulator({ searchParams }: { searchParams: Promis
           <label className="field">Perder un ingreso<select name="sin" defaultValue={v.sin ?? ""}><option value="">Ninguno</option>{incomeRules.map((r) => <option key={r.id} value={r.id}>{r.description}</option>)}</select></label>
           <div><button className="btn pri" type="submit">Simular</button></div>
         </form>
-        <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0 }}>
+        <div id="resultado" style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0, scrollMarginTop: 72 }}>
           <div className="card" style={{ display: "flex", gap: 28, flexWrap: "wrap" }}>
             <div className="fstep"><span>En 12 meses (base)</span><b className="num">{fm(base.rows.at(-1)!.end)}</b></div>
             <div className="fstep"><span>En 12 meses (escenario)</span><b className={`num ${scen.rows.at(-1)!.end.isNegative() ? "neg" : ""}`}>{fm(scen.rows.at(-1)!.end)}</b></div>

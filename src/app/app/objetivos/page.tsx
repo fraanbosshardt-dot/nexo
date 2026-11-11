@@ -27,7 +27,7 @@ export default async function Goals() {
           const fm = (v: Parameters<typeof formatMoney>[0]) => formatMoney(v, g.goal.currency);
           return (
             <div className="card" key={g.goal.id}>
-              <div className="chead"><div><h3>{g.goal.name}</h3><p className="sub">Meta {fm(g.goal.targetAmount)}{g.goal.targetDate ? ` · para ${fmtDate(g.goal.targetDate)}` : ""}</p></div>{g.done ? <span className="pill g">Cumplido</span> : g.onTrack === false ? <span className="pill">Atrasado</span> : g.onTrack ? <span className="pill g">En camino</span> : null}</div>
+              <div className="chead"><div><h3>{g.goal.name}</h3><p className="sub">Meta {fm(g.goal.targetAmount)}{g.goal.targetDate ? ` · para ${fmtDate(g.goal.targetDate)}` : ""}</p></div>{g.done ? <span className="pill g">Cumplido</span> : g.onTrack === false ? <span className="pill a">No llegás a la fecha</span> : g.onTrack ? <span className="pill g">En camino</span> : null}</div>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}><b className="num">{fm(g.saved)}</b><span className="mut num">{Math.round(g.pct)}%</span></div>
               <div className="bar" style={{ margin: "6px 0 12px", height: 10 }}><i style={{ width: `${g.pct}%`, background: "var(--ink)" }} /></div>
               {!g.done && <dl className="kv"><dt>Te falta</dt><dd>{fm(g.left)}</dd>{g.monthsLeft && <><dt>Necesitás por mes</dt><dd><b>{fm(g.needed)}</b> durante {g.monthsLeft} meses</dd></>}{g.eta && <><dt>Con tu aporte llegás en</dt><dd>{fmtPeriod(g.eta)}</dd></>}</dl>}

@@ -77,7 +77,9 @@ export async function addValuation(db: Db, ws: string, input: { investmentId?: s
 export async function investmentsOverview(db: Db, ws: string) {
   const invs = await db.investment.findMany({ where: { workspaceId: ws }, include: { movements: { orderBy: { date: "desc" } }, valuations: { orderBy: { date: "desc" } } }, orderBy: { createdAt: "asc" } });
   return invs.map((i) => {
-    const invested = i.movements.reduce((s, m) => (m.kind === "CONTRIBUTION" ? s.plus(dec(m.amount)) : m.kind === "WITHDRAWAL" ? s.minus(dec(m.amount)) : s), ZERO);
+    const moved = i.movements.reduce((s, m) => (m.kind === "CONTRIBUTION" ? s.plus(dec(m.amount)) : m.kind === "WITHDRAWAL" ? s.minus(dec(m.amount)) : s), ZERO);
+    // Sin aportes registrados (se cargó lo que ya tenía con una valuación): lo invertido es la primera valuación, no cero.
+    const invested = moved.isZero() && i.valuations.length ? dec(i.valuations[i.valuations.length - 1].value) : moved;
     const last = i.valuations[0];
     const value = last ? dec(last.value) : invested;
     const gain = value.minus(invested);

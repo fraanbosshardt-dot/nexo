@@ -61,12 +61,12 @@ export default async function Flow({ searchParams }: { searchParams: Promise<{ h
           </div>
         </div>
         <div className="tw"><table>
-          <thead><tr>{sp.detalle ? <><th>Mes</th><th className="n">Saldo inicial</th><th className="n">Ya entró</th><th className="n">Ya salió</th><th className="n">Falta entrar</th><th className="n">Falta salir</th><th className="n">Saldo final</th><th className="n">Punto más bajo</th></> : <><th>Mes</th><th className="n">Entra</th><th className="n">Sale</th><th className="n">Resultado</th><th className="n">Saldo final</th><th style={{ width: "26%" }} /></>}</tr></thead>
+          <thead><tr>{sp.detalle ? <><th>Mes</th><th className="n">Saldo inicial</th><th className="n">Ya entró</th><th className="n">Ya salió</th><th className="n">Falta entrar</th><th className="n">Falta salir</th><th className="n">Saldo final</th><th className="n">Punto más bajo</th></> : <><th>Mes</th><th className="n mh">Entra</th><th className="n mh">Sale</th><th className="n">Resultado</th><th className="n">Saldo final</th><th className="mh" style={{ width: "26%" }} /></>}</tr></thead>
           <tbody>{rows.map((r) => sp.detalle ? (
             <tr key={r.period}><td style={{ whiteSpace: "nowrap" }}>{fmtPeriod(r.period)}</td><td className="n">{f(r.start)}</td><td className="n">{f(r.realizedIn)}</td><td className="n">{f(r.realizedOut.neg())}</td><td className="n">{f(r.pendingIn)}</td><td className="n">{f(r.pendingOut.neg())}</td><td className="n"><b className={r.end.isNegative() ? "neg" : ""}>{f(r.end)}</b></td><td className={`n ${r.min.isNegative() ? "neg" : ""}`}>{f(r.min)}</td></tr>
           ) : (
-            <tr key={r.period}><td style={{ whiteSpace: "nowrap" }}>{fmtPeriod(r.period)}</td><td className="n pos">{f(r.realizedIn.plus(r.pendingIn))}</td><td className="n">{f(r.realizedOut.plus(r.pendingOut).neg())}</td><td className="n"><span className={`pill ${r.result.isNegative() ? "r" : "g"}`}>{f(r.result, { sign: true })}</span></td><td className="n"><b className={r.end.isNegative() ? "neg" : ""}>{f(r.end)}</b></td>
-              <td><div className="bar" style={{ height: 6 }}><i style={{ width: `${max.isZero() ? 0 : r.end.abs().dividedBy(max).times(100).toNumber()}%`, background: r.end.isNegative() ? "var(--red)" : "var(--ink)" }} /></div></td></tr>
+            <tr key={r.period}><td style={{ whiteSpace: "nowrap" }}>{fmtPeriod(r.period)}</td><td className="n pos mh">{f(r.realizedIn.plus(r.pendingIn))}</td><td className="n mh">{f(r.realizedOut.plus(r.pendingOut).neg())}</td><td className="n"><span className={`pill ${r.result.isNegative() ? "r" : "g"}`}>{f(r.result, { sign: true })}</span></td><td className="n"><b className={r.end.isNegative() ? "neg" : ""}>{f(r.end)}</b></td>
+              <td className="mh"><div className="bar" style={{ height: 6 }}><i style={{ width: `${max.isZero() ? 0 : r.end.abs().dividedBy(max).times(100).toNumber()}%`, background: r.end.isNegative() ? "var(--red)" : "var(--ink)" }} /></div></td></tr>
           ))}</tbody>
         </table></div>
       </div>
