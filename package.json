@@ -2,7 +2,7 @@
   "name": "nexo",
   "version": "0.1.0",
   "private": true,
-  "description": "NEXO: finanzas personales y planificación patrimonial",
+  "description": "Finan: finanzas personales y planificación patrimonial",
   "engines": {
     "node": ">=20.19"
   },

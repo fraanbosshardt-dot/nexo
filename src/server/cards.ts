@@ -222,7 +222,7 @@ export type CarryInstallment = { description: string; amount: MoneyValue; remain
 
 // Carga a mano (o desde el PDF, siempre confirmado por la persona) un resumen de la tarjeta.
 // La deuda que trae se registra como AJUSTE en la cuenta de la tarjeta: no es un gasto nuevo
-// (las compras fueron antes de usar NEXO), así no se cuenta dos veces.
+// (las compras fueron antes de usar Finan), así no se cuenta dos veces.
 export async function loadStatement(db: Db, ws: string, input: { cardId: string; closingDate: Date; dueDate: Date; total: MoneyValue; minimum?: MoneyValue | null; carry?: CarryInstallment[]; userId?: string | null }) {
   const card = await loadCard(db, ws, input.cardId);
   const total = round2(input.total);
@@ -237,7 +237,7 @@ export async function loadStatement(db: Db, ws: string, input: { cardId: string;
     if (!Number.isInteger(c.remaining) || c.remaining < 1 || c.remaining > 60) throw new UserError(`Las cuotas que faltan de "${c.description}" van de 1 a 60.`);
   }
   const existing = card.statements.find((s) => s.closingDate.getTime() === input.closingDate.getTime()) ?? null;
-  // Lo que NEXO ya tenía para ese resumen (compras cargadas acá), para ajustar solo la diferencia.
+  // Lo que Finan ya tenía para ese resumen (compras cargadas acá), para ajustar solo la diferencia.
   const base = existing ? dec(existing.totalAmount) : (await statementAmount(db, card, input.closingDate)).total;
   const delta = total.minus(base);
   const p = period(input.closingDate);
@@ -254,7 +254,7 @@ export async function loadStatement(db: Db, ws: string, input: { cardId: string;
       await tx.cardStatement.create({ data: { cardId: card.id, closingDate: input.closingDate, dueDate: input.dueDate, totalAmount: total.toFixed(2), minimumAmount: minimum.toFixed(2), obligationId } });
     }
     if (!delta.isZero()) {
-      await tx.transaction.create({ data: { workspaceId: ws, accountId: card.accountId!, type: "ADJUSTMENT", direction: delta.gt(0) ? "OUT" : "IN", amount: delta.abs().toFixed(2), currency: card.currency, description: `Resumen ${p} cargado (deuda anterior a NEXO)`, effectiveDate: input.closingDate, economicPeriod: p, createdById: input.userId ?? null } });
+      await tx.transaction.create({ data: { workspaceId: ws, accountId: card.accountId!, type: "ADJUSTMENT", direction: delta.gt(0) ? "OUT" : "IN", amount: delta.abs().toFixed(2), currency: card.currency, description: `Resumen ${p} cargado (deuda anterior a Finan)`, effectiveDate: input.closingDate, economicPeriod: p, createdById: input.userId ?? null } });
     }
     const next = nextClosing(input.closingDate, card.closingDay);
     for (const c of carry) {

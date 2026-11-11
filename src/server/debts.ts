@@ -65,7 +65,7 @@ export type DebtInput = {
   startDate: Date;
   firstDue?: Date | null;
   accountId?: string | null; // si el dinero entró en una cuenta
-  paidInstallments?: number; // cuotas ya pagadas antes de cargarla en NEXO
+  paidInstallments?: number; // cuotas ya pagadas antes de cargarla en Finan
   notes?: string | null;
   userId?: string | null;
 };

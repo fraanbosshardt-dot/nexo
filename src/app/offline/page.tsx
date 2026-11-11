@@ -9,10 +9,10 @@ export default function Offline() {
     <div className="nx auth">
       <div className="auth-card" style={{ maxWidth: 480, gridTemplateColumns: "1fr" }}>
         <main className="auth-main" style={{ gap: 16 }}>
-          <span className="lp-brand"><span className="brand-mark">N</span><b>NEXO</b></span>
+          <span className="lp-brand"><span className="brand-mark">F</span><b>Finan</b></span>
           <div className="auth-box">
             <h1>Sin conexión</h1>
-            <p className="sub">No hay internet en este momento. Por seguridad, tus datos no se guardan en el teléfono: cuando vuelva la conexión, NEXO se abre con todo al día.</p>
+            <p className="sub">No hay internet en este momento. Por seguridad, tus datos no se guardan en el teléfono: cuando vuelva la conexión, Finan se abre con todo al día.</p>
             <a className="btn pri auth-btn" href="/app">Probar de nuevo</a>
           </div>
         </main>

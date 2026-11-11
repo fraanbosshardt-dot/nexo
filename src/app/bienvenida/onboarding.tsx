@@ -106,7 +106,7 @@ export function Onboarding({ firstName, uses, modules, guessCountry, detected }:
   return (
     <div className="nx obx">
       <header className="obx-top">
-        <span className="lp-brand"><span className="brand-mark">N</span><b>NEXO</b></span>
+        <span className="lp-brand"><span className="brand-mark">F</span><b>Finan</b></span>
       </header>
       <ActionForm action={finishOnboardingAction}>
         <div className="obx-wrap">
@@ -133,7 +133,7 @@ export function Onboarding({ firstName, uses, modules, guessCountry, detected }:
               <>
                 <div>
                   <h1>Hola{firstName ? `, ${firstName}` : ""}</h1>
-                  <p className="lead">En dos minutos dejamos NEXO listo para que sepas cuánto podés gastar hasta tu próximo cobro.</p>
+                  <p className="lead">En dos minutos dejamos Finan listo para que sepas cuánto podés gastar hasta tu próximo cobro.</p>
                 </div>
                 <div className="obx-card obx-card-b">
                   <span className="obx-ico"><Icon name="wallet" /></span>
@@ -287,7 +287,7 @@ export function Onboarding({ firstName, uses, modules, guessCountry, detected }:
           <div className="in">
             {step > 0 ? <button type="button" className="btn" onClick={back}>Atrás</button> : <span />}
             <span className="obx-mini" aria-live="polite">{step > 0 ? <>Hoy <b>{formatMoney(balance, sumCur)}</b></> : null}</span>
-            {step < 3 ? <button type="button" className="btn pri obx-next" onClick={next}>{nextLabel}</button> : <Submit className="btn pri obx-next" pending="Armando tu NEXO…">Entrar a NEXO</Submit>}
+            {step < 3 ? <button type="button" className="btn pri obx-next" onClick={next}>{nextLabel}</button> : <Submit className="btn pri obx-next" pending="Armando tu Finan…">Entrar a Finan</Submit>}
           </div>
         </footer>
       </ActionForm>

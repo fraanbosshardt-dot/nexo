@@ -1,4 +1,4 @@
-# NEXO — Pendientes y completados
+# Finan — Pendientes y completados
 
 Regla general: la primera vista de cada pantalla muestra solo lo indispensable. El detalle va detrás de "⋯", "Ver más" o una pantalla propia.
 Cuando algo se termina, pasa a "Completado" con la fecha.
@@ -6,11 +6,10 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 ## Pendientes
 
 ### Necesitan algo tuyo
-- [ ] Z2. Cargar las claves reales para activar lo que ya está programado: RESEND_API_KEY y EMAIL_FROM (emails), CRON_SECRET (tarea diaria), MP_ACCESS_TOKEN, MP_WEBHOOK_SECRET y precios (Mercado Pago). Están explicadas en .env.example.
+- [ ] Z2. Cargar las claves reales en Vercel para activar lo que ya está programado: RESEND_API_KEY y EMAIL_FROM (emails), CRON_SECRET (tarea diaria), MP_ACCESS_TOKEN y MP_WEBHOOK_SECRET (Mercado Pago: el Access Token de producción y la clave secreta de Webhooks de la aplicación Finan). Están explicadas en .env.example.
 - [ ] Z3. Decidir el precio de Pro en pesos (u otra moneda) para Mercado Pago.
 - [ ] Z4. Pasar la base de Railway al plan Hobby.
 - [ ] Z5. Cargar los correos de contacto por área y los links de redes en Panel → Ajustes → Contacto y redes.
-- [ ] Z6. Nombre y dominio nuevos: avisar y se cambian (el nombre y los datos del titular están en src/lib/brand.ts).
 - [ ] Z7. Que un abogado revise los legales (términos, privacidad, reembolsos, cookies, arrepentimiento) antes de hacer publicidad, incluido si alcanza con no tener domicilio físico.
 - [ ] Z9. Activar la medición de visitas en Vercel (proyecto → Analytics → Enable). El código ya está puesto; sin activarlo no mide nada.
 - [ ] Z10. Cargar el precio de Pro en pesos en Panel → Ajustes → Precio de Pro (por mes y por año). Mientras esté vacío, la web muestra el de dólares.
@@ -18,6 +17,7 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 - [ ] Z12. Con el dominio nuevo: dar de alta Search Console y enviar /sitemap.xml.
 - [ ] Z8. Decidir cómo mostrar el flujo de caja cuando los ingresos no se repiten: "Estimar con mi promedio", "Simular un ingreso" o las dos.
 - [ ] Z13. Mover la app y la base a la costa este de EE.UU. (Vercel `iad1` y Railway us-east), más cerca de Latinoamérica: ~50-70 ms menos por pedido. Se hace desde Vercel y Railway; avisame y cambio `vercel.json`.
+- [ ] Z15. Dominio para Finan: finan.com, finan.app y finanapp.com están ocupados; getfinan.com, usefinan.com y finanhq.com estaban libres el 11/11/2026. Antes de lanzar, buscar "Finan" en el registro de marcas (INPI y los países donde se venda). Cuando haya dominio: cambiar APP_URL en Vercel y la URL del webhook en Mercado Pago (hoy apunta a nexo-eight-sage.vercel.app).
 - [ ] Z14. Mercado Pago ahora cobra el precio en pesos de Panel → Ajustes → Precio de Pro (el mismo que se muestra). Cargalo ahí; `MP_PRICE_MONTHLY`, `MP_PRICE_YEARLY` y `MP_CURRENCY` ya no se usan y se pueden borrar de Vercel.
 
 ### Probar con una persona real
@@ -48,6 +48,8 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 - [ ] M4. Testimonios de usuarios reales, cuando los haya (nunca inventados).
 
 ## Completado
+- [x] 11/11/2026 — Nombre nuevo de la app: Finan (en toda la app, correos, ícono con la F y el panel interno).
+- [x] 11/11/2026 — Mercado Pago: aplicación Finan creada (Suscripciones) y notificaciones (webhook) configuradas en modo prueba y productivo, con el evento Planes y suscripciones.
 - [x] 11/11/2026 — A20. Agro: stock de cereal sin vender con precio de referencia; suma al patrimonio y baja solo al cargar una venta (vuelve si se borra).
 - [x] 11/11/2026 — A21. Importar el extracto de Mercado Pago: el importador reconoce sus columnas (entradas y salidas separadas, fecha con hora) y saltea saldos y filas en cero.
 - [x] 11/11/2026 — A15. Ventas de cereal: el arreglo de ventas viejas pasa al mantenimiento de cada 15 minutos, ya no corre en cada visita.

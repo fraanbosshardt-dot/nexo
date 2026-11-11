@@ -21,7 +21,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
   const thisMonth = rev[rev.length - 1]?.n ?? 0;
   return (
     <>
-      <PageHead title="Resumen" desc="Cómo viene NEXO: clientes, uso, plata y lo que espera respuesta." />
+      <PageHead title="Resumen" desc="Cómo viene Finan: clientes, uso, plata y lo que espera respuesta." />
       {sinpermiso && <p className="notice a">Tu rol no tiene acceso a esa sección.</p>}
       <Stats items={[
         ["Clientes", int(o.users), `+${int(o.newWeek)} en 7 días`],

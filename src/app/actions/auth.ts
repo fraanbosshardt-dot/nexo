@@ -116,8 +116,8 @@ export async function requestResetAction(_: FormState, fd: FormData): Promise<Fo
   const { sendEmail, appUrl } = await import("@/lib/email");
   await sendEmail({
     to: user.email,
-    subject: "Elegí una contraseña nueva para NEXO",
-    text: `Hola ${user.name.split(" ")[0]}:\n\nPara elegir una contraseña nueva, entrá a este enlace (vence en 1 hora):\n${appUrl()}/recuperar/${token}\n\nSi no lo pediste vos, ignorá este correo: tu contraseña no cambia.\n\nNEXO`,
+    subject: "Elegí una contraseña nueva para Finan",
+    text: `Hola ${user.name.split(" ")[0]}:\n\nPara elegir una contraseña nueva, entrá a este enlace (vence en 1 hora):\n${appUrl()}/recuperar/${token}\n\nSi no lo pediste vos, ignorá este correo: tu contraseña no cambia.\n\nFinan`,
   });
   return ok;
 }

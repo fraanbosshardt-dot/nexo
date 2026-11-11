@@ -11,7 +11,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ size: stri
   return new ImageResponse(
     (
       <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "#1A5FD0", borderRadius: maskable ? 0 : px * 0.22 }}>
-        <div style={{ color: "#FFFFFF", fontSize: px * (maskable ? 0.46 : 0.58), fontWeight: 500, fontFamily: "sans-serif", lineHeight: 1 }}>N</div>
+        <div style={{ color: "#FFFFFF", fontSize: px * (maskable ? 0.46 : 0.58), fontWeight: 500, fontFamily: "sans-serif", lineHeight: 1 }}>F</div>
       </div>
     ),
     { width: px, height: px, headers: { "cache-control": "public, max-age=31536000, immutable" } },

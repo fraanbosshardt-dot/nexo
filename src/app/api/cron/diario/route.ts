@@ -37,7 +37,7 @@ async function run(db: ReturnType<typeof getDb>) {
     const due = await db.obligation.findMany({ where: { workspaceId: ws.id, status: { in: ["PENDING", "PARTIAL"] }, dueDate: tomorrow, remindedAt: null }, include: { payments: true } });
     if (!due.length) return;
     const lines = due.map((o) => `• ${o.description}: ${formatMoney(remaining(o), o.currency)} (${o.direction === "RECEIVABLE" ? "a cobrar" : "a pagar"})`);
-    const r = await sendEmail({ to: owner.email, subject: due.length === 1 ? `Mañana vence ${due[0].description}` : `Mañana vencen ${due.length} pagos y cobros`, text: `Hola ${owner.name.split(" ")[0]}:\n\nMañana vence:\n${lines.join("\n")}\n\nRegistralo en ${appUrl()}/app/proximos\n\nSi no querés recibir estos avisos, apagalos en Configuración.\n\nNEXO` });
+    const r = await sendEmail({ to: owner.email, subject: due.length === 1 ? `Mañana vence ${due[0].description}` : `Mañana vencen ${due.length} pagos y cobros`, text: `Hola ${owner.name.split(" ")[0]}:\n\nMañana vence:\n${lines.join("\n")}\n\nRegistralo en ${appUrl()}/app/proximos\n\nSi no querés recibir estos avisos, apagalos en Configuración.\n\nFinan` });
     if (r.sent) { sent++; await db.obligation.updateMany({ where: { id: { in: due.map((o) => o.id) } }, data: { remindedAt: new Date() } }); } else skipped++;
   };
   for (let i = 0; i < workspaces.length; i += 20) {

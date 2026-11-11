@@ -41,7 +41,7 @@ describe("Resumen cargado a mano", () => {
     expect(after.open.length).toBe(0);
   });
 
-  it("si el resumen ya tenía compras cargadas en NEXO, solo ajusta la diferencia", async () => {
+  it("si el resumen ya tenía compras cargadas en Finan, solo ajusta la diferencia", async () => {
     const { ws, card } = await setup("res2@test.com");
     await cardPurchase(db, ws.id, { cardId: card.id, description: "Super", amount: "100000", date: d("2026-11-10") });
     await loadStatement(db, ws.id, { cardId: card.id, closingDate: d("2026-11-25"), dueDate: d("2026-12-05"), total: "130000" });

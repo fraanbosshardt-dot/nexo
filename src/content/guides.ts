@@ -18,7 +18,7 @@ export const GUIDES: Guide[] = [
       { h: "4. Armá un fondo para imprevistos", p: ["La recomendación más común es juntar de a poco entre 3 y 6 meses de tus gastos fijos. Empezá con una meta chica, por ejemplo un mes, y no lo uses para el día a día."] },
       { h: "5. Revisalo una vez por semana", p: ["Cinco minutos alcanzan: qué vence esta semana, si algún pago cambió y cómo viene el mes. Lo importante es enterarte antes, no después."] },
     ],
-    cta: { href: "/registro", label: "Hacerlo con NEXO, gratis" },
+    cta: { href: "/registro", label: "Hacerlo con Finan, gratis" },
   },
   {
     slug: "conviene-pagar-en-cuotas",
@@ -59,7 +59,7 @@ export const GUIDES: Guide[] = [
       { h: "Otros descuentos", p: ["Comisión del acopio o corredor, flete, secada, paritarias y otros gastos se restan del bruto. Sumalos todos para no sobreestimar lo que vas a cobrar."] },
       { h: "Planificar con ventas mes a mes", p: ["Si vendés todos los meses, cargá un monto aproximado por mes y reemplazalo por la venta real cuando la hagas. Así ves la plata que viene sin contarla dos veces."] },
     ],
-    cta: { href: "/productores", label: "Ver NEXO para productores" },
+    cta: { href: "/productores", label: "Ver Finan para productores" },
   },
 ];
 

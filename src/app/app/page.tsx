@@ -153,7 +153,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ l
       )}
       {stepsLeft > 0 && (
         <div className="card">
-          <div className="chead"><div><h3>Primeros pasos</h3><p className="sub">Te faltan {stepsLeft}. Con esto NEXO te muestra cuánto vas a tener cada mes.</p></div></div>
+          <div className="chead"><div><h3>Primeros pasos</h3><p className="sub">Te faltan {stepsLeft}. Con esto Finan te muestra cuánto vas a tener cada mes.</p></div></div>
           <ol className="steps">{steps.map(([ok, label, href]) => <li key={label} className={ok ? "ok" : ""}>{ok ? <span>{label}</span> : <Link className="lnk" href={href}>{label}</Link>}</li>)}</ol>
         </div>
       )}

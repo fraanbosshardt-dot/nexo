@@ -5,7 +5,7 @@ import { PublicShell } from "@/components/public-shell";
 
 export const metadata: Metadata = {
   title: "Novedades",
-  description: "Todo lo nuevo de NEXO, mes a mes: funciones que se suman, mejoras en el celular y cambios que nos pidieron quienes la usan todos los días.",
+  description: "Todo lo nuevo de Finan, mes a mes: funciones que se suman, mejoras en el celular y cambios que nos pidieron quienes la usan todos los días.",
   alternates: { canonical: "/novedades" },
 };
 export const revalidate = 300;

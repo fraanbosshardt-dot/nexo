@@ -46,7 +46,7 @@ export default async function CardDetail({ params }: { params: Promise<{ id: str
           <div className="hrow"><span>Próximo resumen (estimado)</span><b>{fm(c.nextAmount)} <span className="mut" style={{ fontWeight: 400 }}>· vence {fmtDate(c.nextDue)}</span></b></div>
           <div className="hrow"><span>Cuotas que faltan</span><b>{fm(c.futureInstallments)}</b></div>
           <div className="acts" style={{ marginTop: 12 }}>{toPay && <Link className="btn pri" href={`/app/proximos/${toPay.id}`}>Pagar resumen</Link>}<a className="btn" href="#cargar-resumen">Cargar un resumen</a></div>
-          {!c.card.statements.length && !toPay && <p className="sub" style={{ marginTop: 10 }}>¿Ya debías algo cuando creaste la tarjeta? Cargá tu último resumen y NEXO queda al día con lo que debés y las cuotas que siguen.</p>}
+          {!c.card.statements.length && !toPay && <p className="sub" style={{ marginTop: 10 }}>¿Ya debías algo cuando creaste la tarjeta? Cargá tu último resumen y Finan queda al día con lo que debés y las cuotas que siguen.</p>}
         </div>
       </div>
       <div className="card" id="cargar-resumen">

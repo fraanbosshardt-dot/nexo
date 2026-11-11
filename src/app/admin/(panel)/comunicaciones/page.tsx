@@ -54,7 +54,7 @@ export default async function Comms() {
       </div>
 
       <div className="card">
-        <div className="chead"><h3>Correo a tus clientes</h3><span className="sub">Solo a quienes aceptan correos de NEXO</span></div>
+        <div className="chead"><h3>Correo a tus clientes</h3><span className="sub">Solo a quienes aceptan correos de Finan</span></div>
         {!emailEnabled() && <p className="notice a" style={{ marginBottom: 12 }}>Para que salgan los correos falta cargar RESEND_API_KEY y EMAIL_FROM en Vercel.</p>}
         {owner && (
           <ActionForm action={adminSendCampaignAction} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -62,7 +62,7 @@ export default async function Comms() {
               {AUDIENCES.map(([k, l]) => <option key={k} value={k}>{l} ({int(size[k] ?? 0)})</option>)}
               {countries.map((c) => <option key={c.country} value={`country:${c.country}`}>Solo {COUNTRIES.find((x) => x.code === c.country)?.name ?? c.country}</option>)}
             </select></label>
-            <label className="field">Asunto<input name="subject" maxLength={120} placeholder="Novedades de noviembre en NEXO" /></label>
+            <label className="field">Asunto<input name="subject" maxLength={120} placeholder="Novedades de noviembre en Finan" /></label>
             <label className="field">Texto<textarea name="body" rows={6} placeholder={"Te contamos lo nuevo de este mes:\n\n• …"} /></label>
             <p className="adm-hint">Cada correo empieza con "Hola" y el nombre, y termina con cómo dejar de recibirlos.</p>
             <div className="acts">

@@ -1,4 +1,4 @@
-# NEXO
+# Finan
 
 Plataforma de finanzas personales y planificación patrimonial, pensada para Argentina: pesos y dólares, cuotas, tarjetas, deudas, flujo de caja, presupuestos, objetivos, inversiones y ventas de granos.
 

@@ -1,6 +1,6 @@
 import "server-only";
 // Acceso al panel interno: sesión propia (cookie nexo_admin), solo con Google y lista blanca.
-// No depende de la cuenta de la app: alguien del equipo puede administrar sin tener cuenta en NEXO.
+// No depende de la cuenta de la app: alguien del equipo puede administrar sin tener cuenta en Finan.
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getDb } from "@/lib/db";

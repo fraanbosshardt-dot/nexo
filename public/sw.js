@@ -1,4 +1,4 @@
-// Service worker de NEXO.
+// Service worker de Finan.
 // Guarda solo lo que no cambia (estilos, código, íconos) y una página "Sin conexión".
 // Nunca guarda páginas de la app ni respuestas con datos: tu información financiera no queda en el teléfono.
 const VERSION = "nexo-v1";

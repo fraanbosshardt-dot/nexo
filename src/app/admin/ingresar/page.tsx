@@ -23,7 +23,7 @@ export default async function AdminLogin({ searchParams }: { searchParams: Promi
     <div className="adm-login">
       <div className="adm-login-card">
         <span className="adm-login-ico"><Icon name="shield" /></span>
-        <h1>Panel interno de NEXO</h1>
+        <h1>Panel interno de Finan</h1>
         <p className="sub">Solo para el equipo. Se entra con una cuenta de Google que esté en la lista.</p>
         {google && MSG[google] && <p className="auth-err" role="alert">{MSG[google]}</p>}
         {googleEnabled() ? (

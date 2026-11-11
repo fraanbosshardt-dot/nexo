@@ -64,7 +64,7 @@ export async function exportBackup(db: Db, ws: string) {
     db.asset.findMany({ where: { workspaceId: ws }, include: { valuations: true } }),
     db.grainSale.findMany({ where: { workspaceId: ws } }),
   ]);
-  return JSON.stringify({ app: "NEXO", version: 1, exportedAt: new Date().toISOString(), workspace, accounts, categories, transactions, obligations, rules, debts, cards, budgets, goals, investments, assets, grain }, null, 2);
+  return JSON.stringify({ app: "Finan", version: 1, exportedAt: new Date().toISOString(), workspace, accounts, categories, transactions, obligations, rules, debts, cards, budgets, goals, investments, assets, grain }, null, 2);
 }
 
 // ---------- Importar CSV ----------

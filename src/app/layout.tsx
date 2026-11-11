@@ -10,14 +10,14 @@ const roboto = Roboto({ subsets: ["latin"], weight: ["400", "500"], variable: "-
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE.url),
-  title: { default: SITE.title, template: "%s · NEXO" },
+  title: { default: SITE.title, template: "%s · Finan" },
   description: SITE.description,
   applicationName: SITE.name,
   alternates: { canonical: "/" },
   openGraph: { type: "website", siteName: SITE.name, title: SITE.title, description: SITE.description, url: "/", locale: "es_419" },
   twitter: { card: "summary_large_image", title: SITE.title, description: SITE.description },
   robots: { index: true, follow: true },
-  appleWebApp: { capable: true, title: "NEXO", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: "Finan", statusBarStyle: "default" },
   formatDetection: { telephone: false },
 };
 

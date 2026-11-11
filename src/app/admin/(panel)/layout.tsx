@@ -5,7 +5,7 @@ import { can, ROLE_NAMES, type Perm } from "@/server/admin-team";
 import { adminLogoutAction } from "@/app/actions/admin";
 import { AdminNav } from "./nav";
 
-export const metadata: Metadata = { title: { default: "Panel interno", template: "%s · Panel NEXO" }, robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: { default: "Panel interno", template: "%s · Panel Finan" }, robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
 
 const SECTIONS: { href: string; label: string; icon: string; perm: Perm }[] = [
@@ -29,7 +29,7 @@ export default async function PanelLayout({ children }: { children: React.ReactN
     <div className="adm">
       <header className="adm-top">
         <div className="adm-bar">
-          <Link href="/admin" className="brand" style={{ textDecoration: "none" }}><span className="brand-mark">N</span><b>NEXO</b></Link>
+          <Link href="/admin" className="brand" style={{ textDecoration: "none" }}><span className="brand-mark">F</span><b>Finan</b></Link>
           <span className="pill b">Panel interno</span>
           <span style={{ flex: 1 }} />
           <span className="adm-who"><b>{admin.name ?? admin.email}</b><small>{admin.email} · {ROLE_NAMES[admin.role]}</small></span>

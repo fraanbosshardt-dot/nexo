@@ -68,7 +68,7 @@ export function StatementForm({ cardId, closing, due, pdf, pdfLeft }: { cardId: 
         <div><button type="button" className="btn sm" onClick={() => setRows((x) => [...x, { description: "", amount: "", remaining: "" }])}>+ Agregar una compra en cuotas</button></div>
         <span className="sub" style={{ fontWeight: 400 }}>Por ejemplo, si este resumen trae la cuota 3 de 6 de una heladera, ponés la cuota y “3” en Faltan. Así aparecen solas en los próximos resúmenes.</span>
       </div>
-      <p className="sub" style={{ margin: 0 }}>La deuda que traés se carga como saldo de la tarjeta, no como un gasto nuevo: esas compras ya las hiciste antes de usar NEXO.</p>
+      <p className="sub" style={{ margin: 0 }}>La deuda que traés se carga como saldo de la tarjeta, no como un gasto nuevo: esas compras ya las hiciste antes de usar Finan.</p>
       <div className="acts" style={{ justifyContent: "flex-end" }}><Submit>Guardar resumen</Submit></div>
     </ActionForm>
   );
