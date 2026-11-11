@@ -10,7 +10,7 @@ import { parseDate, todayIn } from "@/lib/dates";
 import { MODULES, modulesForUses, readModules, FREE_LIMITS } from "@/lib/modules";
 import { generateTotpSecret, otpauthUrl, verifyTotp } from "@/lib/auth/totp";
 import { decryptSecret, encryptSecret } from "@/lib/crypto";
-import { adjustBalance, cancelObligation, createAccount, payObligation, recordMovement, recordTransfer, reverseTransaction, UserError } from "@/server/ledger";
+import { adjustBalance, cancelObligation, createAccount, deleteMovement, payObligation, recordMovement, recordTransfer, updateMovement, UserError } from "@/server/ledger";
 import type { FormState } from "./auth";
 import { createRule, materialize } from "@/server/recurring";
 import { MATERIALIZE_DAYS } from "@/server/forecast";
@@ -271,13 +271,6 @@ export async function cancelObligationAction(fd: FormData) {
   revalidatePath("/app", "layout");
 }
 
-export async function reverseAction(fd: FormData) {
-  const { user, workspace } = await requireWorkspace();
-  await reverseTransaction(getDb(), workspace.id, String(fd.get("id")), user.id);
-  await audit("tx.reversed", { userId: user.id, workspaceId: workspace.id, entity: "transaction", entityId: String(fd.get("id")) });
-  revalidatePath("/app", "layout");
-}
-
 // ---------- Categorías ----------
 
 export async function createCategoryAction(_: FormState, fd: FormData): Promise<FormState> {
@@ -379,27 +372,36 @@ export async function updateMovementAction(_: FormState, fd: FormData): Promise<
   const { user, workspace } = await requireWorkspace();
   const id = String(fd.get("id") ?? "");
   try {
-    const db = getDb();
-    const t = await db.transaction.findFirst({ where: { id, workspaceId: workspace.id }, include: { reversedBy: true } });
-    if (!t) throw new UserError("No encontramos ese movimiento.");
-    if (t.reversalOfId || t.reversedBy) throw new UserError("Un movimiento anulado no se puede editar.");
-    const description = String(fd.get("description") ?? "").trim();
-    if (!description) throw new UserError("Escribí el concepto.");
-    const categoryId = String(fd.get("categoryId") ?? "") || null;
-    if (categoryId && !(await db.category.findFirst({ where: { id: categoryId, workspaceId: workspace.id } }))) throw new UserError("No encontramos esa categoría.");
-    const effectiveDate = date(fd.get("effectiveDate"), "la fecha");
-    const economicPeriod = /^\d{4}-\d{2}$/.test(String(fd.get("economicPeriod"))) ? String(fd.get("economicPeriod")) : t.economicPeriod;
-    const simple = (t.type === "INCOME" || t.type === "EXPENSE") && !t.obligationId && !t.transferGroupId;
-    const amount = simple && String(fd.get("amount") ?? "").trim() ? money(fd.get("amount"), "el importe") : null;
-    if (amount && !amount.gt(0)) throw new UserError("El importe tiene que ser mayor a cero.");
-    await db.transaction.update({
-      where: { id: t.id },
-      data: { description: description.slice(0, 140), categoryId, effectiveDate, economicPeriod, notes: String(fd.get("notes") ?? "").trim() || null, ...(amount ? { amount: amount.toFixed(2) } : {}) },
+    const amountRaw = String(fd.get("amount") ?? "").trim();
+    await updateMovement(getDb(), workspace.id, id, {
+      description: String(fd.get("description") ?? ""),
+      categoryId: String(fd.get("categoryId") ?? "") || null,
+      effectiveDate: date(fd.get("effectiveDate"), "la fecha"),
+      economicPeriod: /^\d{4}-\d{2}$/.test(String(fd.get("economicPeriod"))) ? String(fd.get("economicPeriod")) : String(fd.get("effectiveDate") ?? "").slice(0, 7),
+      notes: String(fd.get("notes") ?? "").trim() || null,
+      amount: amountRaw ? money(amountRaw, "el importe") : null,
+      accountId: String(fd.get("accountId") ?? "") || null,
     });
-    await audit("tx.updated", { userId: user.id, workspaceId: workspace.id, entity: "transaction", entityId: t.id });
+    await audit("tx.updated", { userId: user.id, workspaceId: workspace.id, entity: "transaction", entityId: id });
   } catch (e) { return fail(e); }
   revalidatePath("/app", "layout");
   redirect("/app/movimientos?guardado=1");
+}
+
+// Borrar un movimiento cargado por error (se va del todo, con lo que dependía de él).
+export async function deleteMovementAction(fd: FormData) {
+  const { user, workspace } = await requireWorkspace();
+  const id = String(fd.get("id") ?? "");
+  try {
+    await deleteMovement(getDb(), workspace.id, id);
+  } catch (e) {
+    if (e instanceof UserError) redirect(`/app/movimientos/${id}?error=${encodeURIComponent(e.message)}`);
+    throw e;
+  }
+  await audit("tx.deleted", { userId: user.id, workspaceId: workspace.id, entity: "transaction", entityId: id });
+  revalidatePath("/app", "layout");
+  const back = String(fd.get("back") ?? "");
+  redirect(/^\/app(\/|\?|$)/.test(back) ? back : "/app/movimientos?borrado=1");
 }
 
 export async function setBigTextAction(on: boolean) {

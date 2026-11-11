@@ -310,6 +310,84 @@ export async function adjustBalance(db: Db, ws: string, input: { accountId: stri
   return { diff, transactionId: t.id };
 }
 
+// ---------- Borrar y corregir un movimiento ----------
+// Si te equivocaste, el movimiento se borra del todo (no queda "anulado") y se deshace lo que dependía de él.
+
+const SAME_LOAD_MS = 10_000; // un pendiente creado junto con el movimiento (pagado en parte, por ejemplo) se borra con él
+
+export async function deleteMovement(db: Db, ws: string, id: string) {
+  const t = await db.transaction.findFirst({ where: { id, workspaceId: ws }, include: { obligation: true, reversedBy: true } });
+  if (!t) throw new UserError("No encontramos ese movimiento.");
+  if (t.obligation?.sourceType === "grain") throw new UserError("Este cobro es de una venta de cereal: borrala o corregila desde Ventas de cereal.");
+  if (t.type === "DEBT_DISBURSEMENT") throw new UserError("Es la plata de un préstamo: borrá o cancelá el préstamo desde Deudas y préstamos.");
+  // Todo lo que se va junto: las dos patas de una transferencia y, si estaba anulado, su anulación.
+  const ids = new Set<string>([t.id]);
+  if (t.transferGroupId) for (const l of await db.transaction.findMany({ where: { workspaceId: ws, transferGroupId: t.transferGroupId }, select: { id: true } })) ids.add(l.id);
+  for (const x of await db.transaction.findMany({ where: { workspaceId: ws, OR: [{ reversalOfId: { in: [...ids] } }, { id: t.reversalOfId ?? "" }] }, select: { id: true, transferGroupId: true } })) {
+    ids.add(x.id);
+    if (x.transferGroupId) for (const l of await db.transaction.findMany({ where: { workspaceId: ws, transferGroupId: x.transferGroupId }, select: { id: true } })) ids.add(l.id);
+  }
+  const all = await db.transaction.findMany({ where: { id: { in: [...ids] } }, select: { id: true, obligationId: true, createdAt: true } });
+  const obIds = [...new Set(all.map((x) => x.obligationId).filter(Boolean) as string[])];
+  return db.$transaction(async (tx) => {
+    const list = [...ids];
+    await tx.installmentPlan.deleteMany({ where: { transactionId: { in: list }, card: { workspaceId: ws } } });
+    await tx.investmentMovement.deleteMany({ where: { transactionId: { in: list }, investment: { workspaceId: ws } } });
+    await tx.goalContribution.deleteMany({ where: { transactionId: { in: list }, goal: { workspaceId: ws } } });
+    // Primero las anulaciones (apuntan al original), después el resto.
+    await tx.transaction.deleteMany({ where: { id: { in: list }, reversalOfId: { not: null } } });
+    await tx.transaction.deleteMany({ where: { id: { in: list } } });
+    for (const obId of obIds) {
+      const ob = await tx.obligation.findUnique({ where: { id: obId }, include: { payments: true } });
+      if (!ob) continue;
+      const bornTogether = !ob.recurringRuleId && !ob.sourceType && all.some((x) => x.obligationId === ob.id && Math.abs(x.createdAt.getTime() - ob.createdAt.getTime()) < SAME_LOAD_MS);
+      if (bornTogether && ob.payments.length === 0) { await tx.obligation.delete({ where: { id: ob.id } }); continue; }
+      const updated = await refreshStatus(tx, ob.id);
+      // Una deuda que había quedado pagada vuelve a estar activa si se borra un pago.
+      if (ob.sourceType === "debt" && ob.sourceId && updated.status !== "SETTLED") await tx.debt.updateMany({ where: { id: ob.sourceId, workspaceId: ws, status: "PAID" }, data: { status: "ACTIVE" } });
+    }
+    return { deleted: list.length };
+  });
+}
+
+// Corregir un movimiento: concepto, categoría, fecha, mes, notas y, cuando se puede, importe y cuenta.
+export async function updateMovement(
+  db: Db,
+  ws: string,
+  id: string,
+  input: { description: string; categoryId: string | null; effectiveDate: Date; economicPeriod: string; notes: string | null; amount?: MoneyValue | null; accountId?: string | null },
+) {
+  const t = await db.transaction.findFirst({ where: { id, workspaceId: ws }, include: { reversedBy: true, obligation: true } });
+  if (!t) throw new UserError("No encontramos ese movimiento.");
+  if (t.reversalOfId || t.reversedBy) throw new UserError("Este movimiento estaba anulado: borralo y cargalo de nuevo.");
+  const description = input.description.trim();
+  if (!description) throw new UserError("Escribí el concepto.");
+  if (input.categoryId && !(await db.category.findFirst({ where: { id: input.categoryId, workspaceId: ws } }))) throw new UserError("No encontramos esa categoría.");
+  const plan = await db.installmentPlan.findFirst({ where: { transactionId: t.id } });
+  const fixedAmount = !!plan || t.obligation?.sourceType === "grain" || t.type === "DEBT_DISBURSEMENT" || t.type === "INVESTMENT";
+  const amount = input.amount != null && !fixedAmount ? round2(input.amount) : null;
+  if (amount && !amount.gt(0)) throw new UserError("El importe tiene que ser mayor a cero.");
+  // Cuenta: solo en gastos e ingresos comunes, y a otra de la misma moneda.
+  let accountId: string | null = null;
+  if (input.accountId && input.accountId !== t.accountId) {
+    if (t.transferGroupId || t.obligationId || plan || (t.type !== "INCOME" && t.type !== "EXPENSE")) throw new UserError("La cuenta de este movimiento no se cambia: borralo y cargalo de nuevo.");
+    const acc = await ownAccount(db, ws, input.accountId);
+    if (acc.currency !== t.currency) throw new UserError(`Elegí una cuenta en ${t.currency}.`);
+    accountId = acc.id;
+  }
+  return db.$transaction(async (tx) => {
+    const common = { effectiveDate: input.effectiveDate, ...(amount ? { amount: money(amount) } : {}) };
+    await tx.transaction.update({ where: { id: t.id }, data: { ...common, description: description.slice(0, 140), categoryId: t.type === "TRANSFER" ? null : input.categoryId, economicPeriod: input.economicPeriod, notes: input.notes, ...(accountId ? { accountId } : {}) } });
+    // Transferencia en la misma moneda: la otra pata cambia igual (importe y fecha).
+    if (t.transferGroupId) {
+      const legs = await tx.transaction.findMany({ where: { workspaceId: ws, transferGroupId: t.transferGroupId, id: { not: t.id } } });
+      const sameCurrency = legs.every((l) => l.currency === t.currency);
+      for (const l of legs) await tx.transaction.update({ where: { id: l.id }, data: { effectiveDate: input.effectiveDate, ...(amount && sameCurrency ? { amount: money(amount) } : {}) } });
+    }
+    if (t.obligationId && amount) await refreshStatus(tx, t.obligationId);
+  });
+}
+
 export async function reverseTransaction(db: Db, ws: string, transactionId: string, userId?: string | null) {
   return db.$transaction(async (tx) => {
     const t = await tx.transaction.findFirst({ where: { id: transactionId, workspaceId: ws }, include: { reversedBy: true } });

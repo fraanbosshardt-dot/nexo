@@ -1,9 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { reverseAction } from "@/app/actions/app";
+import { deleteMovementAction } from "@/app/actions/app";
 
-// Aviso "Guardado · Deshacer" después de cargar un movimiento. Deshacer lo anula (no borra el historial).
+// Aviso "Guardado · Deshacer" después de cargar un movimiento. Deshacer lo borra (como si no se hubiera cargado).
 export function SavedToast() {
   const sp = useSearchParams();
   const router = useRouter();
@@ -16,14 +16,14 @@ export function SavedToast() {
     const t = setTimeout(() => { setShow(false); const n = new URLSearchParams(sp); n.delete("guardado"); router.replace(n.size ? `${path}?${n}` : path, { scroll: false }); }, 9000);
     return () => clearTimeout(t);
   }, [id, sp, path, router]);
-  // En Movimientos ya está el cartel con "Cargar otro" y "Ver o anular": no se repite.
+  // En Movimientos ya está el cartel con "Cargar otro" y "Ver o corregir": no se repite.
   if (!show || !id || path === "/app/movimientos") return null;
   return (
     <div className="toast" role="status" style={{ display: "flex", gap: 16, alignItems: "center" }}>
       <span>{id === "1" ? "Cambios guardados" : "Guardado"}</span>
       {id !== "1" && (
-        <form action={async (fd) => { await reverseAction(fd); setShow(false); router.replace(path); }}>
-          <input type="hidden" name="id" value={id} />
+        <form action={deleteMovementAction} onSubmit={() => setShow(false)}>
+          <input type="hidden" name="id" value={id} /><input type="hidden" name="back" value={path} />
           <button type="submit" style={{ border: 0, background: "none", color: "#A8C7FA", fontWeight: 500, cursor: "pointer", padding: 0 }}>Deshacer</button>
         </form>
       )}
