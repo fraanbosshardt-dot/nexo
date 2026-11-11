@@ -73,6 +73,12 @@ export function Onboarding({ firstName, uses, modules, guessCountry, detected }:
   const chooseIncMode = (m: "fijo" | "varia" | "no") => {
     setIncMode(m);
     setIncomes((p) => p.map((x) => ({ ...x, variable: m === "varia", name: x.name === "Sueldo" && m === "varia" ? "Mis ingresos" : x.name === "Mis ingresos" && m === "fijo" ? "Sueldo" : x.name })));
+    // Los campos del ingreso aparecen debajo: se muestran y el foco va al monto, para que no queden fuera de la pantalla.
+    if (m !== "no") setTimeout(() => {
+      const box = document.querySelector(".obx-incs");
+      box?.scrollIntoView({ behavior: "smooth", block: "center" });
+      (box?.querySelector('input[inputmode="decimal"]') as HTMLInputElement | null)?.focus({ preventScroll: true });
+    }, 60);
   };
 
   const incOn = hasAcc && (incMode === "fijo" || incMode === "varia");

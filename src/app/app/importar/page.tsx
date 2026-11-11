@@ -31,8 +31,8 @@ export default async function ImportExport({ searchParams }: { searchParams: Pro
             <label className="field">Archivo<input type="file" name="file" accept=".csv,.xlsx,.ofx,.qfx,text/csv,text/plain" required /></label>
             <label className="field">Cuenta de los movimientos<select name="accountId">{accounts.map((a) => <option key={a.id} value={a.id}>{a.name} ({a.currency})</option>)}</select></label>
             <p className="sub" style={{ margin: 0 }}>CSV, Excel (.xlsx) u OFX del banco. Tiene que tener fecha, concepto e importe (o entradas y salidas en columnas separadas, como el extracto de Mercado Pago). Los importes negativos son gastos y los positivos, ingresos. Las filas que ya estaban cargadas se saltean.{pro ? "" : " Excel y OFX son parte de Pro."}</p>
-            <label className="simtg"><input type="checkbox" name="confirm" value="1" /><span>Ya revisé el resumen: importar</span></label>
-            <div><Submit pending="Leyendo el archivo…">Revisar o importar</Submit></div>
+            <p className="sub" style={{ margin: 0 }}>Primero tocá <b>Revisar</b>: te decimos cuántos movimientos vamos a cargar, sin guardar nada. Si está bien, tocá <b>Importar</b>.</p>
+            <div className="acts"><button className="btn" type="submit" name="confirm" value="0">Revisar</button><Submit pending="Importando…" name="confirm" value="1">Importar</Submit></div>
           </ActionForm>
         ) : <div className="empty">Primero creá una cuenta para los movimientos.</div>}
       </div>

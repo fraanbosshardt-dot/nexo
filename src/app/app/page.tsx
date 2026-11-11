@@ -40,7 +40,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ l
     [true, "Cargá tu primera cuenta", "/app/cuentas"],
     // Para un productor, lo que cobra seguido es la venta de cereal.
     grainOn ? [incomeRules > 0 || grainSales > 0, "Cargá tu venta de cereal o estimá los meses", "/app/cereal"] : [incomeRules > 0, "Cargá tu sueldo o lo que cobrás seguido", "/app/recurrentes?nueva=1"],
-    [expenseRules > 0, "Cargá tus gastos fijos (luz, expensas, alquiler)", "/app/recurrentes?nueva=1"],
+    [expenseRules > 0, "Cargá tus gastos fijos (alquiler, luz, internet)", "/app/recurrentes?nueva=1"],
     [expenses > 0, "Anotá un gasto del día", "/app/movimientos/nuevo"],
   ];
   const stepsLeft = steps.filter(([ok]) => !ok).length;

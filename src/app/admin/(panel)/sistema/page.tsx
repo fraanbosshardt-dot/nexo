@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { systemSettings } from "@/server/settings";
 import { billingConfig } from "@/server/billing";
+import { pushConfig } from "@/server/push";
 import { emailEnabled } from "@/lib/email";
 import { googleEnabled } from "@/lib/auth/google";
 import { PageHead } from "@/components/page";
@@ -48,6 +49,7 @@ export default async function SystemPage() {
             <dt>Lecturas de PDF este mes</dt><dd>{int(pdf)} (límite {sys.pdfLimit} por cliente)</dd>
             <dt>Correos (Resend)</dt><dd>{ok(emailEnabled(), emailEnabled() ? "Activado" : "Falta la clave")}</dd>
             <dt>Cobros (Mercado Pago)</dt><dd>{ok(bill.enabled, bill.enabled ? "Activado" : "Falta configurar")}</dd>
+            <dt>Avisos en el celular</dt><dd>{ok(pushConfig().enabled, pushConfig().enabled ? "Activado" : "Faltan las claves")}</dd>
             <dt>Ingreso con Google</dt><dd>{ok(googleEnabled(), googleEnabled() ? "Activado" : "Falta configurar")}</dd>
           </dl>
         </div>

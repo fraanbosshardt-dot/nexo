@@ -458,7 +458,7 @@ export async function importAction(_: FormState, fd: FormData): Promise<FormStat
     const acc = await getDb().account.findFirst({ where: { id: accountId, workspaceId: workspace.id } });
     if (!acc) throw new UserError("Elegí la cuenta de los movimientos.");
     const preview = await previewImport(getDb(), workspace.id, acc.id, text, Object.keys(map).length ? map : autoMap(text));
-    if (fd.get("confirm") !== "1") return { ok: `Listo para importar ${preview.ok.length} movimientos. ${preview.duplicates} ya estaban cargados y ${preview.errors.length} tienen errores${preview.errors.length ? ` (líneas ${preview.errors.slice(0, 5).map((e) => e.line).join(", ")})` : ""}. Tocá "Importar" para confirmar.` };
+    if (fd.get("confirm") !== "1") return { ok: `Listo para importar ${preview.ok.length} movimientos. ${preview.duplicates} ya estaban cargados y ${preview.errors.length} tienen errores${preview.errors.length ? ` (líneas ${preview.errors.slice(0, 5).map((e) => e.line).join(", ")})` : ""}. Si está bien, tocá "Importar".` };
     const b = await applyImport(getDb(), workspace.id, acc.id, file.name, preview, user.id);
     await audit("import.applied", { userId: user.id, workspaceId: workspace.id, entity: "importBatch", entityId: b.id, meta: { rows: b.rows } });
   } catch (e) { return fail(e); }

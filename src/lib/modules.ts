@@ -17,7 +17,7 @@ export const MODULES: { key: ModuleKey; name: string; description: string; defau
   { key: "informes", name: "Informes y estadísticas", description: "Reportes y comparativos.", default: false, pro: true },
   { key: "alertas", name: "Alertas y consejos", description: "Avisos de vencimientos, meses en rojo y deudas caras.", default: true },
   { key: "reglas", name: "Reglas recurrentes", description: "Sueldos, servicios y cuotas que se repiten solos.", default: true },
-  { key: "cereal", name: "Agro: ventas de granos", description: "Quintales, precio por tonelada e impuesto al cheque.", default: false, pro: true },
+  { key: "cereal", name: "Agro: ventas de granos", description: "Quintales o toneladas, precio por tonelada, impuestos y descuentos.", default: false, pro: true },
 ];
 
 export type ModuleState = Record<ModuleKey, boolean>;
@@ -44,7 +44,7 @@ export const USES: { key: string; title: string; description: string; modules: M
   { key: "ahorro", title: "Ahorrar para algo", description: "Metas con el aporte mensual que necesitás.", modules: ["objetivos"] },
   { key: "futuro", title: "Saber cuánto voy a tener", description: "Flujo de caja y simulador.", modules: ["flujo", "simulador"] },
   { key: "invertir", title: "Seguir mis inversiones", description: "Cartera, rendimientos y patrimonio.", modules: ["inversiones", "activos"] },
-  { key: "agro", title: "Soy productor agropecuario", description: "Ventas de granos con impuesto al cheque.", modules: ["cereal", "flujo"] },
+  { key: "agro", title: "Soy productor agropecuario", description: "Ventas de granos con su neto, mes a mes.", modules: ["cereal", "flujo"] },
   { key: "indep", title: "Trabajo por mi cuenta", description: "Cobros que varían mes a mes.", modules: ["flujo", "informes"] },
 ];
 

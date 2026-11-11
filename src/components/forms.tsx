@@ -25,7 +25,8 @@ export function ActionForm({ action, children, className, style, id }: { action:
       onSubmit={(e) => {
         e.preventDefault();
         setEdited(false);
-        const fd = new FormData(e.currentTarget);
+        // Incluye el botón que se tocó (name/value), así un formulario puede tener dos acciones.
+        const fd = new FormData(e.currentTarget, (e.nativeEvent as SubmitEvent).submitter);
         startTransition(() => run(fd));
       }}
     >
@@ -36,10 +37,10 @@ export function ActionForm({ action, children, className, style, id }: { action:
   );
 }
 
-export function Submit({ children, className = "btn pri", pending = "Guardando…" }: { children: ReactNode; className?: string; pending?: string }) {
+export function Submit({ children, className = "btn pri", pending = "Guardando…", name, value }: { children: ReactNode; className?: string; pending?: string; name?: string; value?: string }) {
   const busy = useContext(Pending);
   return (
-    <button className={className} type="submit" disabled={busy} aria-busy={busy}>
+    <button className={className} type="submit" disabled={busy} aria-busy={busy} name={name} value={value}>
       {busy ? pending : children}
     </button>
   );

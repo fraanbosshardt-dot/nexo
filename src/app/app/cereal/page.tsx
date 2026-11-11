@@ -25,7 +25,7 @@ const LISTO: Record<string, string> = {
 
 export default async function Grain({ searchParams }: { searchParams: Promise<{ u?: string; mensual?: string; listo?: string; cargar?: string }> }) {
   const { workspace, plan } = await requireWorkspace();
-  if (!(await canUse(plan, "cereal"))) return <ProGate crumb="Mi dinero" title="Ventas de cereal" text="Para productores: cargá cada venta en quintales o toneladas, con precio por tonelada e impuesto al cheque. El neto se suma solo a tus ingresos." trialUsed={!!workspace.subscription?.trialEndsAt} />;
+  if (!(await canUse(plan, "cereal"))) return <ProGate crumb="Mi dinero" title="Ventas de cereal" text="Para productores: cargá cada venta en quintales o toneladas, con precio por tonelada, impuestos y descuentos. El neto se suma solo a tus ingresos." trialUsed={!!workspace.subscription?.trialEndsAt} />;
   const sp = await searchParams;
   const unit = sp.u === "t" ? "t" : "qq";
   const db = getDb();
@@ -134,7 +134,7 @@ export default async function Grain({ searchParams }: { searchParams: Promise<{ 
             {rows.length > 0 && <Link className="lk" href={`/app/cereal${unit === "t" ? "?u=t" : ""}`}>Cancelar</Link>}
           </div>
           <GrainForm action={grainSaleAction} mode="new" accounts={accOpts} cur={cur} submit="Guardar venta"
-            d={{ saleDate: isoDate(collectDate > today ? today : collectDate), grain: "Soja", quantity: "", unit, price: "", priceCurrency: cur, taxPct: "1,2", other: "", fxRate: "", collectDate: isoDate(collectDate), accountId: formAccount }} />
+            d={{ saleDate: isoDate(collectDate > today ? today : collectDate), grain: "Soja", quantity: "", unit, price: "", priceCurrency: cur, taxPct: workspace.country === "AR" ? "1,2" : "0", other: "", fxRate: "", collectDate: isoDate(collectDate), accountId: formAccount }} />
         </div>
       )}
 

@@ -13,9 +13,14 @@ const FAQ: [string, string][] = [
   ["¿Cómo cargo una compra en cuotas?", "Agregá tu tarjeta en Tarjetas con el día de cierre y de vencimiento. Después cargá la compra desde la tarjeta y elegí la cantidad de cuotas. Cada cuota aparece en el mes que vence."],
   ["¿Las compras con tarjeta se cuentan dos veces?", "No. La compra es el gasto. Pagar el resumen es pasar plata de tu cuenta a la tarjeta, así que no suma como gasto otra vez."],
   ["¿Por qué lo invertido no aparece en Disponible?", "Porque no lo podés gastar hoy. Lo ves en Inversiones y en Patrimonio neto."],
-  ["Me equivoqué en un movimiento", "Abrilo desde Movimientos y anulalo. Se crea un movimiento al revés, así tu historial queda completo y el saldo vuelve a estar bien."],
+  ["Me equivoqué en un movimiento", "Abrilo desde Movimientos: podés corregir el concepto, la categoría, la fecha o el importe, o anularlo. Anular crea un movimiento al revés, así tu historial queda completo y el saldo vuelve a estar bien."],
+  ["El saldo de una cuenta no coincide con el del banco", "Entrá a la cuenta y tocá «Corregir el saldo». Escribís lo que ves en el banco y se agrega una corrección por la diferencia, sin tocar tus movimientos."],
+  ["¿Cómo cargo el sueldo, el alquiler o los servicios una sola vez?", "Cargalos como pago o cobro que se repite (desde Nuevo movimiento → Más opciones, o en Configuración → Pagos que se repiten). Aparecen solos en Próximos pagos todos los meses. Si el monto cambia, marcalos como variables y al pagar ponés el real."],
+  ["¿Cómo armo un presupuesto?", "En Presupuestos, tocá «Armar el presupuesto» y poné un límite solo a las categorías que quieras controlar. Lo que gastes y lo que tengas pendiente se descuenta solo, y el mes siguiente lo podés copiar."],
+  ["¿Puedo compartir mis cuentas con mi pareja o mi familia?", "Sí, con Pro. En Configuración → Compartir invitás por correo hasta 3 personas, que pueden cargar y editar o solo mirar. Cada una entra con su propia cuenta."],
+  ["¿Cómo recibo avisos de vencimientos?", "Por email, el día antes de cada vencimiento (se apagan en Configuración → Seguridad). También podés activar los avisos en el celular desde Configuración → General; en iPhone, primero instalá la app en la pantalla de inicio."],
   ["¿Cómo apago una función que no uso?", "En Configuración, pestaña Funciones. Lo que apagás desaparece del menú y tus datos quedan guardados."],
-  ["¿Se conecta con mi banco?", "No. Cargás tus movimientos o importás el extracto en CSV. Nunca te pedimos la clave del banco."],
+  ["¿Se conecta con mi banco?", "No. Cargás tus movimientos o importás el extracto del banco o de Mercado Pago (CSV; con Pro también Excel y OFX), desde Configuración → Importar y exportar. Nunca te pedimos la clave del banco."],
 ];
 
 export default async function Help() {

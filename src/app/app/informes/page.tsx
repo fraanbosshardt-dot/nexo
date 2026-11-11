@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import Decimal from "decimal.js";
 import { canUse, requireWorkspace } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
 import { categoryReport } from "@/server/io";
@@ -16,14 +17,17 @@ export default async function Reports() {
   const { workspace, plan } = await requireWorkspace();
   if (!(await canUse(plan, "informes"))) return <ProGate crumb="Análisis" title="Informes" text="Tus gastos por categoría mes a mes y la evolución de lo que entra y sale." trialUsed={!!workspace.subscription?.trialEndsAt} />;
   const cur = workspace.baseCurrency;
-  const r = await categoryReport(getDb(), workspace.id, cur, period(todayIn(workspace.timezone)), 6);
-  const max = r.totals.reduce((m, t) => (t.income.gt(m) ? t.income : t.expense.gt(m) ? t.expense : m), ZERO);
+  const full = await categoryReport(getDb(), workspace.id, cur, period(todayIn(workspace.timezone)), 6);
+  // Arranca en el primer mes con movimientos (sin columnas vacías al principio para quien recién empieza).
+  const first = Math.max(0, full.totals.findIndex((t) => !t.income.isZero() || !t.expense.isZero()));
+  const r = { ...full, periods: full.periods.slice(first), totals: full.totals.slice(first), rows: full.rows.map((row) => ({ ...row, values: row.values.slice(first) })) };
+  const max = r.totals.reduce((m, t) => Decimal.max(m, t.income, t.expense), ZERO);
   const has = r.totals.some((t) => !t.income.isZero() || !t.expense.isZero());
   const W = 640, H = 200, L = 70, B = 26, T = 10, bw = (W - L - 8) / r.periods.length;
   const y = (v: number) => T + (1 - v / (max.toNumber() || 1)) * (H - T - B);
   return (
     <>
-      <PageHead crumb="Análisis" title="Informes" desc={`Los últimos 6 meses, en ${cur}.`} actions={<><a className="btn" href="/app/exportar/excel" download>Excel</a><Link className="btn" href="/reporte">Reporte en PDF</Link></>} />
+      <PageHead crumb="Análisis" title="Informes" desc={r.periods.length < 6 ? `Desde ${fmtPeriod(r.periods[0]).toLowerCase()}, en ${cur}.` : `Los últimos 6 meses, en ${cur}.`} actions={<><a className="btn" href="/app/exportar/excel" download>Excel</a><Link className="btn" href="/reporte">Reporte en PDF</Link></>} />
       {!has ? (
         <div className="empty">Todavía no hay movimientos para mostrar. Cuando cargues ingresos y gastos, ves acá cómo cambian mes a mes.</div>
       ) : (

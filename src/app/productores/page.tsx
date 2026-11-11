@@ -9,12 +9,12 @@ import { jsonLd } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Para productores agropecuarios: ventas de granos y flujo de caja",
-  description: `Cargá tus ventas de soja, maíz, trigo o girasol en quintales o toneladas, con impuesto al cheque, y mirá tu flujo de caja mes a mes con lo que vas a cobrar. ${BRAND.name} para el campo.`,
+  description: `Cargá tus ventas de soja, maíz, trigo o girasol en quintales o toneladas, con impuestos y descuentos, y mirá tu flujo de caja mes a mes con lo que vas a cobrar. ${BRAND.name} para el campo.`,
   alternates: { canonical: "/productores" },
 };
 
 const POINTS: [IconName, string, string][] = [
-  ["grain", "Cada venta con su neto", "Quintales o toneladas, precio por tonelada, impuesto al cheque y otros descuentos. El neto se calcula solo."],
+  ["grain", "Cada venta con su neto", "Quintales o toneladas, precio por tonelada, impuestos y otros descuentos. El neto se calcula solo."],
   ["repeat", "Ventas mes a mes", "Si vendés todos los meses, cargás un monto aproximado y se proyecta. Cuando vendés de verdad, la venta real ocupa ese mes."],
   ["flow", "Flujo de caja con lo que viene", "Lo que está por cobrar suma en lo proyectado: ves con cuánto terminás cada mes, aunque todavía no hayas cobrado."],
   ["fuel", "El campo y la casa juntos", "Gasoil, insumos y arrendamientos en el mismo lugar que el alquiler, los servicios y las tarjetas."],
