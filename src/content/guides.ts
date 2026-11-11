@@ -61,6 +61,60 @@ export const GUIDES: Guide[] = [
     ],
     cta: { href: "/productores", label: "Ver Finan para productores" },
   },
+  {
+    slug: "fondo-de-emergencia",
+    title: "Fondo de emergencia: cuánto necesitás y cómo armarlo",
+    description: "Qué es un fondo de emergencia, cuántos meses de gastos tiene que cubrir, dónde guardarlo y cómo juntarlo de a poco aunque ganes poco.",
+    date: "2026-11-11", minutes: 5, tag: "Ahorro",
+    intro: "Es la plata que te salva cuando algo sale mal: te quedás sin un ingreso, se rompe el auto o aparece un gasto de salud. Tenerlo cambia cómo vivís el resto del mes.",
+    sections: [
+      { h: "Cuánto tiene que cubrir", p: ["Lo más recomendado es entre 3 y 6 meses de tus gastos fijos: vivienda, servicios, comida, transporte, salud y cuotas. No de todo lo que gastás, solo de lo que pagás sí o sí.", "Si trabajás por tu cuenta, tus ingresos cambian mucho o mantenés a otras personas, apuntá a 6 meses o más."] },
+      { h: "Empezá con una meta chica", p: ["Juntar 6 meses de golpe es imposible para casi todos. Empezá por un mes: es una meta alcanzable y ya te cubre la mayoría de los imprevistos.", "Apartá un monto fijo el mismo día que cobrás, antes de gastar. Aunque sea poco, lo que importa es que sea todos los meses."] },
+      { h: "Dónde guardarlo", p: ["Tiene que estar disponible enseguida y no perder valor: una cuenta que pague intereses o un plazo fijo corto que se renueva solo.", "Evitá inversiones que pueden bajar justo cuando las necesitás, y no lo mezcles con la cuenta del día a día: si lo ves, lo gastás."] },
+      { h: "Cuándo usarlo (y cuándo no)", p: ["Es para urgencias de verdad: algo que no podías prever y que no puede esperar. Unas vacaciones o un celular nuevo no son emergencias: para eso armá un objetivo aparte.", "Si lo usás, la prioridad del mes siguiente es volver a llenarlo."] },
+    ],
+    cta: { href: "/herramientas/fondo-de-emergencia", label: "Calcular mi fondo de emergencia" },
+  },
+  {
+    slug: "como-funciona-el-plazo-fijo",
+    title: "Cómo funciona un plazo fijo y cuánto ganás",
+    description: "Qué es un plazo fijo, cómo se calcula el interés con la TNA, qué es la TEA y cuándo conviene renovar capital más intereses.",
+    date: "2026-11-11", minutes: 4, tag: "Inversiones",
+    intro: "Le prestás plata al banco por un tiempo fijo y te la devuelve con intereses. Es de las inversiones más simples, y entender la tasa te ayuda a comparar.",
+    sections: [
+      { h: "Cómo se calcula", p: ["El interés es: monto × TNA × días / 365. Con 100.000 al 36% anual durante 30 días ganás unos 2.959.", "La TNA es la tasa que informa el banco. No es lo que ganás en un año, salvo que dejes la plata 365 días seguidos."] },
+      { h: "TEA: lo que ganás si renovás", p: ["Si al vencer volvés a invertir capital más intereses, el siguiente plazo gana sobre un monto más grande. Eso es interés compuesto, y la TEA lo refleja: siempre es un poco mayor que la TNA."] },
+      { h: "Qué mirar antes de hacerlo", p: ["Comparalo con la inflación esperada: si los precios suben más que la tasa, tu plata compra menos al final aunque el número sea más grande.", "Fijate el plazo mínimo y si podés cancelarlo antes. La plata del fondo de emergencia conviene en plazos cortos."] },
+    ],
+    cta: { href: "/herramientas/plazo-fijo", label: "Calcular cuánto gano" },
+  },
+  {
+    slug: "regla-50-30-20",
+    title: "La regla 50/30/20 para armar tu presupuesto",
+    description: "Cómo repartir lo que cobrás entre necesidades, gustos y ahorro con la regla 50/30/20, y cómo adaptarla si tus gastos fijos son más altos.",
+    date: "2026-11-11", minutes: 4, tag: "Día a día",
+    intro: "Es la forma más simple de empezar un presupuesto: tres partes y una sola cuenta. No tiene que ser exacta, sirve como punto de partida.",
+    sections: [
+      { h: "Las tres partes", p: ["50% para necesidades: vivienda, servicios, comida, transporte, salud y el mínimo de tus deudas.", "30% para gustos: salidas, ropa, viajes, suscripciones y todo lo que podrías dejar si hiciera falta.", "20% para ahorro: fondo de emergencia, objetivos y pagar deudas antes de tiempo."] },
+      { h: "Si las necesidades pasan del 50%", p: ["Es muy común, sobre todo con alquiler. No te frustres: empezá ahorrando lo que puedas, aunque sea un 5%, y revisá si algún gasto fijo se puede bajar (planes, servicios, seguros)."] },
+      { h: "Cómo sostenerlo", p: ["Apartá el ahorro apenas cobrás, no lo que sobra a fin de mes: casi nunca sobra.", "Revisalo una vez al mes con lo que gastaste de verdad. Ver los números reales ayuda más que cualquier regla."] },
+    ],
+    cta: { href: "/herramientas/presupuesto-50-30-20", label: "Calcular mi 50/30/20" },
+  },
+  {
+    slug: "como-salir-de-deudas",
+    title: "Cómo salir de las deudas paso a paso",
+    description: "Un plan simple para salir de deudas: listarlas, frenar las nuevas, elegir cuál pagar primero (método avalancha o bola de nieve) y evitar el pago mínimo.",
+    date: "2026-11-11", minutes: 5, tag: "Deudas",
+    intro: "Salir de deudas no depende de un truco, sino de un orden. Con una lista y un criterio para elegir cuál pagar primero, cada mes avanzás.",
+    sections: [
+      { h: "1. Hacé la lista completa", p: ["Anotá cada deuda con lo que debés, la cuota, la tasa y el vencimiento: tarjetas, préstamos, cuotas, lo que le debés a alguien. Ver todo junto da miedo, pero es el primer paso para ordenarlo."] },
+      { h: "2. Frená las deudas nuevas", p: ["Mientras pagás, evitá sumar cuotas. Si usás la tarjeta, que sea solo por lo que podés pagar completo al vencimiento."] },
+      { h: "3. Elegí cuál pagar primero", p: ["Método avalancha: pagás el mínimo de todas y lo que sobra va a la de tasa más alta. Es el que menos intereses te cobra.", "Método bola de nieve: lo que sobra va a la deuda más chica. Pagás algo más de intereses, pero ves resultados rápido y eso ayuda a seguir."] },
+      { h: "4. Nunca solo el pago mínimo", p: ["El mínimo de la tarjeta casi no baja la deuda: el resto genera intereses muy altos. Aunque sea un poco más que el mínimo, se nota mes a mes."] },
+    ],
+    cta: { href: "/registro", label: "Ordenar mis deudas en Finan" },
+  },
 ];
 
 export const guideBySlug = (slug: string) => GUIDES.find((g) => g.slug === slug);

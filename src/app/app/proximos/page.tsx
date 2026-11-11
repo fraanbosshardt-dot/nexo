@@ -11,6 +11,7 @@ import { cancelObligationAction } from "@/app/actions/app";
 import { projectedAction } from "@/app/actions/modules";
 import { projectedItems } from "@/server/recurring";
 import { ConfirmSubmit } from "@/components/confirm-submit";
+import { ConfirmButton, SwipeRow } from "@/components/swipe-row";
 import { Help } from "@/components/help";
 
 // Un proyectado es un pago que se repite más adelante: se calcula al vuelo y se crea recién al pagarlo o cancelarlo.
@@ -94,8 +95,13 @@ export default async function Upcoming({ searchParams }: { searchParams: Promise
                   </div>
                 </div>
               );
+              const payHref = grainOn && isEstimatedGrain(o) ? loadSaleHref(o.dueDate) : `/app/proximos/${o.id}`;
+              const cancelQ = `¿Cancelar ${o.description} (${formatMoney(o.remaining, o.currency)})?`;
               return (
-                <div className="li" key={o.id}>
+                <SwipeRow key={o.id} actions={<>
+                  <Link className="sw-pay" href={payHref}>{grainOn && isEstimatedGrain(o) ? "Cargar" : rec ? "Cobrar" : "Pagar"}</Link>
+                  <form action={cancelObligationAction}><input type="hidden" name="id" value={o.id} /><ConfirmButton question={cancelQ}>Cancelar</ConfirmButton></form>
+                </>}>
                   <div className="dchip"><b className={o.overdue ? "neg" : ""}>{o.dueDate.getUTCDate()}</b><span className={o.overdue ? "neg" : ""}>{MES[o.dueDate.getUTCMonth()]}</span></div>
                   <div className="grow">
                     <div className="t">{o.description}</div>
@@ -108,8 +114,8 @@ export default async function Upcoming({ searchParams }: { searchParams: Promise
                   </div>
                   <b className={`num ${rec ? "pos" : "neg"}`}>{rec ? "+" : "−"}{formatMoney(o.remaining, o.currency)}</b>
                   <div className="li-acts">{grainOn && isEstimatedGrain(o) ? <Link className="btn sm" href={loadSaleHref(o.dueDate)}>Cargar venta</Link> : <Link className="btn sm" href={`/app/proximos/${o.id}`}>{rec ? "Cobrar" : "Pagar"}</Link>}
-                  <form action={cancelObligationAction}><input type="hidden" name="id" value={o.id} /><ConfirmSubmit className="dots" title="Cancelar: ya no se va a pagar ni cobrar" ariaLabel={`Cancelar ${o.description}`} question={`¿Cancelar ${o.description} (${formatMoney(o.remaining, o.currency)})?`} yes="Sí, cancelar">×</ConfirmSubmit></form></div>
-                </div>
+                  <form action={cancelObligationAction}><input type="hidden" name="id" value={o.id} /><ConfirmSubmit className="dots" title="Cancelar: ya no se va a pagar ni cobrar" ariaLabel={`Cancelar ${o.description}`} question={cancelQ} yes="Sí, cancelar">×</ConfirmSubmit></form></div>
+                </SwipeRow>
               );
             })}</div>
           </details>

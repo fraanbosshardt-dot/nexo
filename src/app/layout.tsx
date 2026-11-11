@@ -26,7 +26,11 @@ export const viewport: Viewport = { width: "device-width", initialScale: 1, view
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" suppressHydrationWarning className={roboto.variable}>
-      <body><Script id="nexo-big" strategy="beforeInteractive">{`try{var d=document.documentElement;if(localStorage.getItem("nexo-big")==="1")d.setAttribute("data-big","");var t=localStorage.getItem("nexo-theme");if(t==="light"||t==="dark")d.setAttribute("data-theme",t)}catch(e){}`}</Script></body>{children}<PwaRegister />
+      <body>
+        <Script id="nexo-big" strategy="beforeInteractive">{`try{var d=document.documentElement;if(localStorage.getItem("nexo-big")==="1")d.setAttribute("data-big","");var t=localStorage.getItem("nexo-theme");if(t==="light"||t==="dark")d.setAttribute("data-theme",t)}catch(e){}`}</Script>
+        {children}
+        <PwaRegister />
+      </body>
     </html>
   );
 }

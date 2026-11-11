@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import { canUse, requireWorkspace } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
@@ -22,7 +23,7 @@ export default async function Reports() {
   const y = (v: number) => T + (1 - v / (max.toNumber() || 1)) * (H - T - B);
   return (
     <>
-      <PageHead crumb="Análisis" title="Informes" desc={`Los últimos 6 meses, en ${cur}.`} />
+      <PageHead crumb="Análisis" title="Informes" desc={`Los últimos 6 meses, en ${cur}.`} actions={<><a className="btn" href="/app/exportar/excel" download>Excel</a><Link className="btn" href="/reporte">Reporte en PDF</Link></>} />
       {!has ? (
         <div className="empty">Todavía no hay movimientos para mostrar. Cuando cargues ingresos y gastos, ves acá cómo cambian mes a mes.</div>
       ) : (

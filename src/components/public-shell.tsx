@@ -50,7 +50,7 @@ async function SiteFooter() {
         <div className="ws-foot-top">
           <div className="ws-foot-brand">
             <Brand inverse />
-            <p>{BRAND.tagline}. Hecho en Argentina.</p>
+            <p>{BRAND.tagline}.</p>
             {nets.length > 0 && (
               <div className="ws-social">{nets.map((s) => (
                 <a key={s.key} href={socials[s.key]} target="_blank" rel="noopener noreferrer" aria-label={`${BRAND.name} en ${s.name}`}>

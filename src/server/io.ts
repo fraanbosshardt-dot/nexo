@@ -2,6 +2,7 @@
 import { createHash } from "node:crypto";
 import type { Db } from "./ledger";
 import { recordMovement, UserError } from "./ledger";
+import { readXlsx, writeXlsx } from "@/lib/xlsx";
 import { dec, parseAmount, ZERO } from "@/lib/money";
 import { addMonths, fmtDateNum, parseDate, period } from "@/lib/dates";
 import type Decimal from "decimal.js";
@@ -41,11 +42,50 @@ export const csvCell = (v: unknown) => {
   return `"${safe.replace(/"/g, '""')}"`;
 };
 
+const MOVE_HEAD = ["Fecha", "Concepto", "Tipo", "Corresponde a", "Cuenta", "Categoría", "Moneda", "Importe"];
+const TYPE_ES: Record<string, string> = { INCOME: "Ingreso", EXPENSE: "Gasto", TRANSFER: "Transferencia", ADJUSTMENT: "Corrección de saldo", DEBT_PAYMENT: "Cuota de deuda", CARD_PAYMENT: "Pago de tarjeta", INVESTMENT: "Inversión", DEBT_DISBURSEMENT: "Préstamo recibido" };
+async function movementList(db: Db, ws: string) {
+  return db.transaction.findMany({ where: { workspaceId: ws }, include: { account: true, category: true }, orderBy: { effectiveDate: "asc" } });
+}
+
 export async function exportMovementsCsv(db: Db, ws: string) {
-  const tx = await db.transaction.findMany({ where: { workspaceId: ws }, include: { account: true, category: true }, orderBy: { effectiveDate: "asc" } });
-  const head = ["Fecha", "Concepto", "Tipo", "Corresponde a", "Cuenta", "Categoría", "Moneda", "Importe"];
+  const tx = await movementList(db, ws);
   const lines = tx.map((t) => [fmtDateNum(t.effectiveDate), t.description, t.type, t.economicPeriod, t.account.name, t.category?.name ?? "", t.currency, (t.direction === "IN" ? "" : "-") + dec(t.amount).toFixed(2).replace(".", ",")].map(csvCell).join(";"));
-  return "﻿" + [head.map(csvCell).join(";"), ...lines].join("\r\n");
+  return "﻿" + [MOVE_HEAD.map(csvCell).join(";"), ...lines].join("\r\n");
+}
+
+// Excel de verdad (.xlsx): fechas como fecha y montos como número, listos para sumar o filtrar.
+export async function exportMovementsXlsx(db: Db, ws: string) {
+  const tx = await movementList(db, ws);
+  const rows = tx.map((t) => [t.effectiveDate, t.description, TYPE_ES[t.type] ?? t.type, t.economicPeriod, t.account.name, t.category?.name ?? "", t.currency, (t.direction === "IN" ? 1 : -1) * Number(t.amount)]);
+  return writeXlsx("Movimientos", MOVE_HEAD, rows);
+}
+
+// ---------- Otros formatos de importación: Excel y OFX ----------
+// Se pasan a CSV y siguen el mismo camino (columnas, duplicados y deshacer).
+
+const toCsv = (rows: string[][]) => rows.map((r) => r.map((c) => `"${String(c ?? "").replace(/"/g, '""')}"`).join(";")).join("\n");
+
+export function xlsxToCsv(buf: Buffer) {
+  const rows = readXlsx(buf);
+  if (rows.length < 2) throw new UserError("La planilla está vacía o solo tiene encabezados.");
+  return toCsv(rows);
+}
+
+// OFX/QFX (lo exportan muchos bancos): cada <STMTTRN> trae fecha (DTPOSTED), importe (TRNAMT) y concepto (NAME o MEMO).
+export function ofxToCsv(text: string) {
+  const tag = (block: string, t: string) => block.match(new RegExp(`<${t}>([^<\r\n]*)`, "i"))?.[1]?.trim() ?? "";
+  const rows: string[][] = [["Fecha", "Concepto", "Importe"]];
+  for (const m of text.matchAll(/<STMTTRN>([\s\S]*?)(?:<\/STMTTRN>|(?=<STMTTRN>)|<\/BANKTRANLIST>)/gi)) {
+    const b = m[1];
+    const d = tag(b, "DTPOSTED").match(/^(\d{4})(\d{2})(\d{2})/);
+    const amount = tag(b, "TRNAMT");
+    if (!d || !amount) continue;
+    const name = tag(b, "NAME"), memo = tag(b, "MEMO");
+    rows.push([`${d[3]}/${d[2]}/${d[1]}`, [name, memo].filter(Boolean).join(" · ") || "Movimiento importado", amount]);
+  }
+  if (rows.length < 2) throw new UserError("No encontramos movimientos en el archivo OFX.");
+  return toCsv(rows);
 }
 
 export async function exportBackup(db: Db, ws: string) {

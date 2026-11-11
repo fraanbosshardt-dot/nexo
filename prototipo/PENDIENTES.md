@@ -21,6 +21,8 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 - [ ] Z14. Mercado Pago ahora cobra el precio en pesos de Panel → Ajustes → Precio de Pro (el mismo que se muestra). Cargalo ahí; `MP_PRICE_MONTHLY`, `MP_PRICE_YEARLY` y `MP_CURRENCY` ya no se usan y se pueden borrar de Vercel.
 
 ### Probar con una persona real
+- [ ] T6. Deslizar un pago en Próximos pagos desde el celular (no se pudo probar con el dedo en la compu).
+- [ ] T7. Abrir en Excel el archivo de Exportar → Movimientos (Excel) y guardar un reporte en PDF desde el celular y la compu.
 - [ ] T4. Importar un extracto real de Mercado Pago (CSV desde la app o la web de MP) y revisar que entren bien los movimientos.
 - [ ] T5. Recibir los correos nuevos (confirmar correo, contraseña cambiada, ingreso nuevo) cuando esté cargada la clave de Resend.
 - [ ] T1. Ingreso al panel interno con Google, con tu cuenta.
@@ -32,22 +34,23 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 - [ ] P8. Notificaciones en el celular (además del email) para los vencimientos.
 - [ ] P6. Probar la lectura de PDF con resúmenes reales de varios bancos (Galicia, Santander, BBVA, Nación, Macro, Mercado Pago) y ajustar los formatos que no reconozca.
 - [ ] P4. Cuando esté publicado: dar de alta el sitio en Google Search Console y enviar el sitemap (/sitemap.xml).
-- [ ] P5. Más herramientas gratis que atraen búsquedas: plazo fijo, conversor de monedas, fondo de emergencia, presupuesto 50/30/20.
 - [ ] P1. Asistente con IA (Pro): hoy figura como "próximamente".
 - [ ] P2. Espacio compartido (Pro): invitar hasta 3 personas.
-- [ ] P9. Funciones Pro en Beta que faltan terminar: exportar a Excel y PDF, importar Excel y OFX, saldo día a día en el flujo de caja.
-- [ ] P10. Gestos en el celular: deslizar un movimiento para pagarlo o borrarlo.
 - [ ] P11. Modo sin conexión para ver los datos sin internet.
-- [ ] P12. "Letra más grande" guardada en la cuenta (hoy queda solo en el dispositivo).
 - [ ] P14. Facturas de AFIP para los cobros de Pro.
-- [ ] P15. En desarrollo aparece un aviso de React ("<div> cannot be a child of <html>") en todas las páginas: revisar el layout raíz. No afecta a los usuarios, pero puede esconder otros errores.
 
 ### Sitio: marketing y SEO (etapa 3)
-- [ ] M1. Escribir más guías (hay 4): fondo de emergencia, plazo fijo, presupuesto 50/30/20, aguinaldo.
 - [ ] M2. Newsletter.
 - [ ] M4. Testimonios de usuarios reales, cuando los haya (nunca inventados).
 
 ## Completado
+- [x] 11/11/2026 — P10. Gestos en el celular: en Próximos pagos, deslizar un pago o cobro hacia la izquierda muestra Pagar/Cobrar y Cancelar (con confirmación). En la compu no cambia nada.
+- [x] 11/11/2026 — P9. Funciones Pro en Beta terminadas: saldo día a día en el flujo de caja (próximos 60 días, con el día más bajo), exportar movimientos a Excel (.xlsx real), reporte del mes para imprimir o guardar como PDF, e importar Excel (.xlsx) y OFX/QFX del banco.
+- [x] 11/11/2026 — Sin "Hecho en Argentina" en el pie de página ni "Hecho para la Argentina" en Quiénes somos: la plataforma es para cualquier país.
+- [x] 11/11/2026 — P15. Arreglado el aviso de React: el contenido de todas las páginas quedaba fuera del <body> en el layout raíz.
+- [x] 11/11/2026 — P12. "Letra más grande" se guarda en la cuenta y se aplica en todos tus dispositivos.
+- [x] 11/11/2026 — P5. Cuatro herramientas gratis nuevas: plazo fijo, conversor de monedas (cotización oficial), fondo de emergencia y presupuesto 50/30/20, con preguntas frecuentes, imagen para compartir y en el sitemap.
+- [x] 11/11/2026 — M1. Cuatro guías nuevas (ya son 8): fondo de emergencia, cómo funciona el plazo fijo, regla 50/30/20 y cómo salir de las deudas (en lugar de aguinaldo, que solo aplica a algunos países).
 - [x] 11/11/2026 — Nombre nuevo de la app: Finan (en toda la app, correos, ícono con la F y el panel interno).
 - [x] 11/11/2026 — Mercado Pago: aplicación Finan creada (Suscripciones) y notificaciones (webhook) configuradas en modo prueba y productivo, con el evento Planes y suscripciones.
 - [x] 11/11/2026 — A20. Agro: stock de cereal sin vender con precio de referencia; suma al patrimonio y baja solo al cargar una venta (vuelve si se borra).

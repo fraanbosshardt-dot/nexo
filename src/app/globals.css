@@ -930,3 +930,22 @@ html[data-big] body{zoom:1.15}
 .card:has(> details[data-group][hidden]){display:none}
 .rule-close{gap:8px;align-items:center}
 .verify-ann{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;flex:1}.verify-ann .notice{margin:0;flex-basis:100%}
+/* Flujo de caja: saldo día a día */
+.day-row{display:block;padding:0}.day-row>summary{display:flex;align-items:center;gap:14px;padding:10px 0;cursor:pointer;list-style:none}.day-row>summary::-webkit-details-marker{display:none}
+/* Reporte para imprimir o guardar como PDF */
+.report{max-width:900px;margin:0 auto;padding:24px 20px 48px;background:var(--bg);color:var(--fg);font-size:14px}
+.report-bar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:24px}.report-bar .acts{display:flex;align-items:center;gap:8px}
+.report-h h1{font-size:24px;font-weight:500;margin:2px 0 4px}.report-h p{margin:0;color:var(--muted)}.report-brand{font-size:14px;color:var(--ink)}
+.report-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0}.report-kpis div{border:1px solid var(--line);border-radius:10px;padding:12px}.report-kpis small{display:block;color:var(--muted)}.report-kpis b{font-size:20px;font-weight:500}
+.report h2{font-size:16px;font-weight:500;margin:24px 0 8px}.report table{width:100%;border-collapse:collapse}.report th,.report td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}.report .n{text-align:right;white-space:nowrap}
+.report-f{margin-top:32px;color:var(--muted);font-size:12px}
+@media print{.no-print{display:none!important}.report{padding:0;max-width:none;background:#fff;color:#000}.report tr{break-inside:avoid}}
+/* Deslizar una fila en el celular para ver acciones */
+.swipe{position:relative;overflow:hidden;border-bottom:1px solid var(--line)}.swipe:last-child{border-bottom:0}
+.swipe>.swipe-front{position:relative;z-index:1;background:var(--surface);border-bottom:0;transition:transform .2s ease}
+.swipe-acts{position:absolute;inset:0 0 0 auto;width:168px;display:none;align-items:stretch}
+.swipe-acts>*{flex:1;display:flex;align-items:center;justify-content:center;border:0;margin:0;font:inherit;font-weight:500;font-size:14px;color:#fff;text-decoration:none}
+.swipe-acts form{display:flex}.swipe-acts form>button{flex:1;border:0;font:inherit;font-weight:500;color:#fff;background:var(--red)}
+.swipe-acts .sw-pay{background:var(--ink)}
+@media (max-width:640px){.swipe-acts{display:flex}}
+@media (prefers-reduced-motion:reduce){.swipe>.swipe-front{transition:none}}

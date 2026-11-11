@@ -12,6 +12,7 @@ import { roleFor } from "@/server/admin-team";
 import { announcement, announcementFor, systemSettings } from "@/server/settings";
 import { Icon } from "@/components/icons";
 import { ActionForm, Submit } from "@/components/forms";
+import { BigTextSync } from "@/components/big-text";
 import { resendVerifyAction } from "@/app/actions/app";
 
 // La app es privada: nunca se indexa.
@@ -42,6 +43,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   ]);
   const notice = announcementFor(ann, plan);
   return (
+    <><BigTextSync saved={user.bigText ?? null} />
     <Shell modules={modules} overdue={overdue} userName={user.name} plan={plan} isAdmin={!!role} logout={logoutAction}>
       {notice && (
         <div className={`notice ${notice.tone === "warn" ? "a" : "b"} app-ann`} role="status">
@@ -64,6 +66,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <p style={{ margin: 0 }}>{sys.maintenanceMsg}</p>
         </div>
       ) : children}
-    </Shell>
+    </Shell></>
   );
 }

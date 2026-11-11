@@ -18,7 +18,18 @@ export default async function Flow({ searchParams }: { searchParams: Promise<{ h
   const c = (["conf", "prob", "hipo"].includes(sp.c ?? "") ? sp.c : "prob") as Certainty;
   const cur = workspace.baseCurrency;
   const today = todayIn(workspace.timezone);
-  const { cashNow, rows } = await forecast(getDb(), workspace.id, { currency: cur, today, months: h, certainty: c });
+  const { cashNow, rows, events } = await forecast(getDb(), workspace.id, { currency: cur, today, months: h, certainty: c });
+  // Saldo día a día (Pro): los próximos 60 días, solo los días en que algo entra o sale.
+  const until = new Date(today.getTime() + 60 * 864e5);
+  const daily: { date: Date; items: typeof events; delta: (typeof cashNow); balance: typeof cashNow }[] = [];
+  let bal = cashNow;
+  for (const e of events.filter((x) => x.date <= until)) {
+    const last = daily[daily.length - 1];
+    bal = bal.plus(e.amount);
+    if (last && last.date.getTime() === e.date.getTime()) { last.items.push(e); last.delta = last.delta.plus(e.amount); last.balance = bal; }
+    else daily.push({ date: e.date, items: [e], delta: e.amount, balance: bal });
+  }
+  const lowest = daily.reduce<(typeof daily)[number] | null>((m, d) => (!m || d.balance.lt(m.balance) ? d : m), null);
   // ¿Hay ingresos que se repiten hasta el final del período? Si no, a futuro solo quedan los gastos y da déficit.
   const lastP = rows[rows.length - 1].period;
   const horizonEnd = new Date(Date.UTC(Number(lastP.slice(0, 4)), Number(lastP.slice(5, 7)), 0));
@@ -58,6 +69,19 @@ export default async function Flow({ searchParams }: { searchParams: Promise<{ h
               <td><div className="bar" style={{ height: 6 }}><i style={{ width: `${max.isZero() ? 0 : r.end.abs().dividedBy(max).times(100).toNumber()}%`, background: r.end.isNegative() ? "var(--red)" : "var(--ink)" }} /></div></td></tr>
           ))}</tbody>
         </table></div>
+      </div>
+      <div className="card">
+        <div className="chead"><div><h3>Día a día <span className="pill a">Beta</span></h3><p className="sub">Tu saldo después de cada día con cobros o pagos, en los próximos 60 días.</p></div>{lowest && long && <span className={`pill ${lowest.balance.isNegative() ? "r" : ""}`}>Lo más bajo: {f(lowest.balance)} el {fmtDate(lowest.date)}</span>}</div>
+        {!long ? (
+          <p className="sub">Con Pro ves el saldo de cada día, para saber exactamente qué día te quedás corto. <Link className="lnk" href="/app/configuracion?tab=plan">Probar Pro</Link></p>
+        ) : daily.length ? (
+          <div className="list">{daily.map((d) => (
+            <details className="li day-row" key={d.date.toISOString()}>
+              <summary><span className="grow"><b style={{ fontWeight: 500 }}>{fmtDate(d.date)}</b><span className="s"> · {d.items.length === 1 ? d.items[0].description : `${d.items.length} movimientos`}</span></span><span className={`num ${d.delta.isNegative() ? "neg" : "pos"}`}>{f(d.delta, { sign: true })}</span><b className={`num ${d.balance.isNegative() ? "neg" : ""}`} style={{ minWidth: 110, textAlign: "right" }}>{f(d.balance)}</b></summary>
+              {d.items.length > 1 && <div className="list" style={{ paddingLeft: 12 }}>{d.items.map((e, i) => <div className="li" key={i}><span className="grow s">{e.description}</span><span className={`num ${e.amount.isNegative() ? "neg" : "pos"}`}>{f(e.amount, { sign: true })}</span></div>)}</div>}
+            </details>
+          ))}</div>
+        ) : <p className="sub">No hay cobros ni pagos en los próximos 60 días.</p>}
       </div>
       <div className="card"><details className="more"><summary>¿Cómo se calcula?</summary><p className="sub" style={{ paddingTop: 6 }}>Arranca con el dinero de tus cuentas en {cur} (sin inversiones ni tarjetas). Suma los cobros y resta los pagos pendientes, las reglas recurrentes y los resúmenes de tarjeta estimados, en el orden de sus fechas. Cada mes empieza con el saldo final del anterior. Las cuentas en otras monedas no se mezclan.</p></details></div>
     </>

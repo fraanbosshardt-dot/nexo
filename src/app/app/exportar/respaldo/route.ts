@@ -8,5 +8,5 @@ export async function GET() {
   const json = await exportBackup(getDb(), workspace.id);
   await audit("data.backup_downloaded", { userId: user.id, workspaceId: workspace.id });
   const day = new Date().toISOString().slice(0, 10);
-  return new Response(json, { headers: { "content-type": "application/json; charset=utf-8", "content-disposition": `attachment; filename="nexo-respaldo-${day}.json"`, "cache-control": "no-store" } });
+  return new Response(json, { headers: { "content-type": "application/json; charset=utf-8", "content-disposition": `attachment; filename="finan-respaldo-${day}.json"`, "cache-control": "no-store" } });
 }

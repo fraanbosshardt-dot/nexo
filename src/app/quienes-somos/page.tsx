@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 const VALUES: [string, string][] = [
   ["Claro antes que complicado", "Nada de jerga financiera. Si algo necesita explicación, la ponemos al lado, en una línea."],
   ["Tus datos son tuyos", "No nos conectamos a tu banco, no vendemos información y podés llevarte o borrar todo cuando quieras."],
-  ["Hecho para la Argentina", "Pesos y dólares, cuotas sin interés, vencimientos, aguinaldo, ventas de cereal. La realidad de acá, no la de un manual."],
+  ["Hecho para la vida real", "Varias monedas, cuotas sin interés, sueldos que cambian, vencimientos que se juntan, ventas de cereal. La realidad de todos los días, no la de un manual."],
   ["Construido escuchando", "Cada mejora sale de lo que nos piden las personas que lo usan todos los días."],
 ];
 

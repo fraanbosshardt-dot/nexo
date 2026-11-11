@@ -30,6 +30,7 @@ model User {
   isAdmin        Boolean   @default(false)
   suspendedAt    DateTime?
   emailReminders Boolean   @default(true)
+  bigText        Boolean? // "Letra más grande" guardada en la cuenta (null: nunca la tocó)
   // Referidos: código propio para invitar, quién te invitó y cuándo se entregó el premio (1 mes de Pro a cada uno).
   referralCode       String?   @unique
   referredById       String?

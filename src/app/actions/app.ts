@@ -393,6 +393,11 @@ export async function updateMovementAction(_: FormState, fd: FormData): Promise<
   redirect("/app/movimientos?guardado=1");
 }
 
+export async function setBigTextAction(on: boolean) {
+  const { user } = await requireUser();
+  await getDb().user.update({ where: { id: user.id }, data: { bigText: !!on } });
+}
+
 // Reenviar el enlace para confirmar el correo: hasta 3 por hora.
 export async function resendVerifyAction(_: FormState, __?: FormData): Promise<FormState> {
   const { user } = await requireUser();

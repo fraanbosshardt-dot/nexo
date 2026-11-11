@@ -7,13 +7,17 @@ import { BRAND } from "@/lib/brand";
 
 export const metadata: Metadata = {
   title: "Herramientas gratis para tus finanzas",
-  description: "Calculadoras gratuitas y sin registro: ¿puedo comprarlo en cuotas?, cuotas de un préstamo con sistema francés o alemán, glosario de TNA, TEA y CFT, y guías prácticas.",
+  description: "Calculadoras gratuitas y sin registro: ¿puedo comprarlo en cuotas?, préstamos, plazo fijo, conversor de monedas, fondo de emergencia, presupuesto 50/30/20, glosario y guías.",
   alternates: { canonical: "/herramientas" },
 };
 
 const TOOLS: [string, IconName, string, string][] = [
   ["/herramientas/cuotas", "sliders", "¿Puedo comprarlo en cuotas?", "Poné cuánto tenés, cuánto te sobra por mes y el precio. Te dice si te alcanza y cómo queda tu plata mes a mes."],
   ["/herramientas/prestamo", "bank", "Calculadora de préstamos", "Cuota, intereses y cronograma completo con sistema francés, alemán o americano. Con la TEA equivalente."],
+  ["/herramientas/plazo-fijo", "chart", "Calculadora de plazo fijo", "Cuánto ganás según la TNA y los días, y cuánto juntás si lo renovás. Con la TEA."],
+  ["/herramientas/conversor-de-monedas", "swap", "Conversor de monedas", "Pesos, dólares, euros y más de 20 monedas con la cotización oficial del día."],
+  ["/herramientas/fondo-de-emergencia", "target", "Fondo de emergencia", "Cuánto necesitás según tus gastos fijos y en cuántos meses llegás."],
+  ["/herramientas/presupuesto-50-30-20", "list", "Presupuesto 50/30/20", "Repartí lo que cobrás entre necesidades, gustos y ahorro, y compará con lo que gastás hoy."],
   ["/glosario", "file", "Glosario financiero", "TNA, TEA, CFT, sistema francés y más, explicados en una línea y con ejemplos."],
   ["/guias", "help", "Guías prácticas", "Cómo ordenar el sueldo, cuándo conviene pagar en cuotas y más, paso a paso."],
 ];

@@ -436,12 +436,18 @@ export async function monthlyGrainAction(_: FormState, fd: FormData): Promise<Fo
 // ---------- Importar ----------
 
 export async function importAction(_: FormState, fd: FormData): Promise<FormState> {
-  const { user, workspace } = await requireWorkspace();
+  const { user, workspace, plan } = await requireWorkspace();
   try {
     const file = fd.get("file");
-    if (!(file instanceof File) || !file.size) throw new UserError("Elegí un archivo CSV.");
+    if (!(file instanceof File) || !file.size) throw new UserError("Elegí un archivo CSV, Excel u OFX.");
     if (file.size > 5_000_000) throw new UserError("El archivo supera 5 MB.");
-    const text = await file.text();
+    // Excel y OFX son Pro (Beta): se pasan a CSV y siguen el mismo camino.
+    const ext = file.name.toLowerCase().split(".").pop() ?? "";
+    const special = ext === "xlsx" || ext === "ofx" || ext === "qfx";
+    if (special && !(await canUse(plan, "informes"))) throw new UserError("Importar Excel u OFX es parte de Pro. Con Gratis podés importar CSV.");
+    if (ext === "xls") throw new UserError("Ese es el formato viejo de Excel (.xls). Abrilo en Excel y guardalo como .xlsx o como CSV.");
+    const { xlsxToCsv, ofxToCsv } = await import("@/server/io");
+    const text = ext === "xlsx" ? xlsxToCsv(Buffer.from(await file.arrayBuffer())) : special ? ofxToCsv(await file.text()) : await file.text();
     const map: Record<number, string> = {};
     for (const [k, v] of fd.entries()) if (k.startsWith("col:")) map[Number(k.slice(4))] = String(v);
     const accountId = str(fd, "accountId");
