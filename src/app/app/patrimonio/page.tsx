@@ -20,13 +20,16 @@ export default async function NetWorth() {
   await ensureFreshRates(db);
   const [nw, assets] = await Promise.all([netWorth(db, workspace.id, cur), assetsOverview(db, workspace.id)]);
   const fm = (v: Parameters<typeof formatMoney>[0]) => formatMoney(v, cur);
+  // Patrimonio en dólares, con la cotización oficial.
+  const usd = cur !== "USD" ? nw.rates.get("USD") : undefined;
+  const inUsd = usd ? nw.net.dividedBy(usd.rate) : null;
   return (
     <>
       <PageHead crumb="Patrimonio" title="Patrimonio neto" desc="Todo lo que tenés menos todo lo que debés. Las fechas de cobro y pago no lo cambian; las valuaciones sí." />
       <Tabs current="pat" items={[{ key: "pat", label: "Patrimonio neto", href: "/app/patrimonio" }, { key: "inv", label: "Inversiones", href: "/app/inversiones" }]} />
       <div className="card hero">
         <div><div className="lbl">Patrimonio neto</div><div className={`big ${nw.net.isNegative() ? "neg" : ""}`}>{fm(nw.net)}</div><p className="sub">En {cur}. Las cotizaciones se actualizan solas; si cargás una a mano, se usa esa.</p></div>
-        <div className="hero-side"><div className="hrow"><span>Lo que tenés</span><b>{fm(nw.assets)}</b></div><div className="hrow"><span>Lo que debés</span><b>{fm(nw.liabilities.neg())}</b></div></div>
+        <div className="hero-side"><div className="hrow"><span>Lo que tenés</span><b>{fm(nw.assets)}</b></div><div className="hrow"><span>Lo que debés</span><b>{fm(nw.liabilities.neg())}</b></div>{inUsd && <div className="hrow"><span>En dólares</span><b>{formatMoney(inUsd, "USD")}</b></div>}</div>
       </div>
       {nw.missingRates.length > 0 && (
         <div className="card"><div className="notice"><div>Para sumar lo que tenés en <b>{nw.missingRates.join(", ")}</b>, cargá su cotización. Sin ella no lo mezclamos con tus {cur}.</div></div>

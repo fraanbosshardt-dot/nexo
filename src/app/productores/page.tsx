@@ -23,7 +23,7 @@ const POINTS: [IconName, string, string][] = [
 ];
 const FAQ: [string, string][] = [
   ["¿Tengo que cargar cada venta a mano?", "Sí, cada venta lleva cantidad, precio y fecha de cobro. Tarda menos de un minuto y después el neto, los pendientes y el flujo se calculan solos."],
-  ["¿Qué pasa si vendo más de una vez en el mes?", "Podés cargar todas las ventas que quieras. Al cargar una venta elegís si reemplaza a la prevista de ese mes o si es una venta extra."],
+  ["¿Qué pasa si vendo más de una vez en el mes?", "Podés cargar todas las ventas que quieras. La primera venta del mes ocupa el lugar de la estimada, así no se cuenta dos veces."],
   ["¿Puedo corregir o borrar una venta?", "Sí. Si la editás se actualiza su cobro; si la borrás y ya estaba cobrada, se anula el ingreso y el saldo vuelve a como estaba."],
   ["¿Es gratis?", "Las cuentas, tarjetas, deudas y el flujo de caja son gratis. El módulo de ventas de granos es parte de Pro, y lo probás 14 días sin pagar."],
 ];
@@ -46,7 +46,7 @@ export default function Producers() {
           </div>
           <div className="lx-grain" aria-label="Ejemplo de ventas de cereal">
             <div className="lx-grain-h"><b>Ventas de cereal</b><small>Datos de ejemplo</small></div>
-            {[["10", "nov", "Soja · 700 qq", "Cobrado", "+$ 23.514.400", "ok"], ["10", "dic", "Maíz · 1.100 qq", "Por cobrar · proyectado", "+$ 20.649.200", "wait"], ["10", "ene", "Venta prevista", "Proyectada", "+$ 2.400.000", "wait"]].map(([d, m, t, s, v, k]) => (
+            {[["10", "nov", "Soja · 700 qq", "Cobrado", "+$ 23.514.400", "ok"], ["10", "dic", "Maíz · 1.100 qq", "Por cobrar · proyectado", "+$ 20.649.200", "wait"], ["10", "ene", "Venta estimada", "Estimada", "+$ 2.400.000", "wait"]].map(([d, m, t, s, v, k]) => (
               <div key={t + m} className={`lx-grain-r ${k}`}><span><b>{d}</b>{m}</span><span><b>{t}</b><small>{s}</small></span><b>{v}</b></div>
             ))}
           </div>

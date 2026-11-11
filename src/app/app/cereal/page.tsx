@@ -2,15 +2,15 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { canUse, requireWorkspace } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
-import { coverOlderSales, grainTimeline, monthlyGrainRules, type GrainRow } from "@/server/grain";
+import { grainTimeline, monthlyGrainRules, type GrainRow } from "@/server/grain";
 import { dec, formatMoney, ZERO } from "@/lib/money";
 import { fmtDate, fmtPeriod, isoDate, period, todayIn } from "@/lib/dates";
 import { PageHead, Stat } from "@/components/page";
 import { ActionForm, Submit } from "@/components/forms";
 import { ProGate } from "@/components/pro";
 import { ConfirmSubmit } from "@/components/confirm-submit";
-import { changeMonthlyGrainAction, deleteGrainSaleAction, grainSaleAction, monthlyGrainAction, stopMonthlyGrainAction } from "@/app/actions/modules";
-import { GrainForm } from "./grain-form";
+import { changeMonthlyGrainAction, deleteGrainSaleAction, deleteGrainStockAction, grainSaleAction, grainStockAction, monthlyGrainAction, stopMonthlyGrainAction } from "@/app/actions/modules";
+import { GrainForm, GRAINS } from "./grain-form";
 
 export const metadata: Metadata = { title: "Ventas de cereal" };
 const MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
@@ -30,9 +30,7 @@ export default async function Grain({ searchParams }: { searchParams: Promise<{ 
   const unit = sp.u === "t" ? "t" : "qq";
   const db = getDb();
   const today = todayIn(workspace.timezone);
-  // Ventas cargadas antes de la venta mensual: su mes no se cuenta dos veces.
-  await coverOlderSales(db, workspace.id, today);
-  const [{ sales, rows }, accounts, monthly] = await Promise.all([grainTimeline(db, workspace.id, today), db.account.findMany({ where: { workspaceId: workspace.id, active: true, type: { notIn: ["CREDIT_CARD", "INVESTMENT"] } } }), monthlyGrainRules(db, workspace.id, today)]);
+  const [{ sales, rows }, accounts, monthly, stock] = await Promise.all([grainTimeline(db, workspace.id, today), db.account.findMany({ where: { workspaceId: workspace.id, active: true, type: { notIn: ["CREDIT_CARD", "INVESTMENT"] } } }), monthlyGrainRules(db, workspace.id, today), db.grainStock.findMany({ where: { workspaceId: workspace.id }, orderBy: { grain: "asc" } })]);
   const plan0 = monthly[0];
   const cur = workspace.baseCurrency;
   const qty = (t: unknown) => `${dec(t as string).times(unit === "qq" ? 10 : 1).toDecimalPlaces(2).toNumber().toLocaleString("es-AR")} ${unit}`;
@@ -143,6 +141,27 @@ export default async function Grain({ searchParams }: { searchParams: Promise<{ 
       {sales.length > 0 && <div className="card" style={{ display: "flex", gap: 28, flexWrap: "wrap" }}><Stat label="Vendido" value={qty(sold)} /><Stat label="Cobrado" value={formatMoney(collected, cur)} tone="pos" /><Stat label="Falta cobrar" value={formatMoney(pending, cur)} /></div>}
 
       {rows.length > 0 && <div className="card"><div className="list gr-list">{list}</div></div>}
+
+      <div className="card">
+        <div className="chead"><div><h3>Cereal sin vender</h3><p className="sub">Lo que tenés guardado, con un precio de referencia por tonelada. Suma a tu patrimonio y, al cargar una venta, sale de acá.</p></div></div>
+        {stock.length > 0 && <div className="list">{stock.map((g) => (
+          <div className="li" key={g.id}>
+            <div className="grow"><div className="t">{g.grain} · {qty(g.tonnes)}</div><div className="s">{formatMoney(g.pricePerTonne, g.currency)} la tonelada</div></div>
+            <b className="num">{formatMoney(dec(g.tonnes).times(dec(g.pricePerTonne)), g.currency)}</b>
+            <form action={deleteGrainStockAction}><input type="hidden" name="id" value={g.id} /><ConfirmSubmit className="dots" ariaLabel={`Quitar el stock de ${g.grain}`} question={`¿Quitar el stock de ${g.grain.toLowerCase()}? Deja de sumar en tu patrimonio.`} yes="Sí, quitar">×</ConfirmSubmit></form>
+          </div>
+        ))}</div>}
+        <details className="more">
+          <summary>{stock.length ? "Cargar o actualizar un cereal" : "+ Cargar stock"}</summary>
+          <ActionForm action={grainStockAction} className="frow" style={{ flexWrap: "wrap", alignItems: "flex-end", paddingTop: 10 }}>
+            <label className="field" style={{ flex: "1 1 130px" }}>Cereal<select name="grain">{GRAINS.map((g) => <option key={g}>{g}</option>)}</select></label>
+            <label className="field" style={{ flex: "1 1 120px" }}>Cantidad<input name="quantity" inputMode="decimal" placeholder="0" /></label>
+            <label className="field" style={{ flex: "0 1 120px" }}>En<select name="unit" defaultValue={unit}><option value="qq">Quintales</option><option value="t">Toneladas</option></select></label>
+            <label className="field" style={{ flex: "1 1 160px" }}>Precio por tonelada<input name="price" inputMode="decimal" placeholder="Pizarra o lo que te ofrecen" /></label>
+            <Submit>Guardar stock</Submit>
+          </ActionForm>
+        </details>
+      </div>
 
       <div className="card">
         <div className="chead"><div>

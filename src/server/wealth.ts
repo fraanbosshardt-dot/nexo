@@ -104,13 +104,14 @@ export async function assetsOverview(db: Db, ws: string) {
 // ---------- Patrimonio neto ----------
 
 export async function netWorth(db: Db, ws: string, base: string) {
-  const [accounts, balances, invs, assets, debts, rates] = await Promise.all([
+  const [accounts, balances, invs, assets, debts, rates, stock] = await Promise.all([
     db.account.findMany({ where: { workspaceId: ws, active: true } }),
     accountBalances(db, ws),
     investmentsOverview(db, ws),
     assetsOverview(db, ws),
     db.debt.findMany({ where: { workspaceId: ws, status: "ACTIVE" } }),
     latestRates(db, ws, base),
+    db.grainStock.findMany({ where: { workspaceId: ws }, orderBy: { grain: "asc" } }),
   ]);
   type Line = { group: "Dinero" | "Inversiones" | "Bienes" | "Tarjetas" | "Deudas"; name: string; currency: string; amount: Decimal };
   const lines: Line[] = [];
@@ -121,6 +122,11 @@ export async function netWorth(db: Db, ws: string, base: string) {
   }
   for (const i of invs) lines.push({ group: "Inversiones", name: i.inv.name, currency: i.inv.currency, amount: i.value });
   for (const a of assets) lines.push({ group: "Bienes", name: a.asset.name, currency: a.asset.currency, amount: a.value });
+  // Cereal sin vender, al precio de referencia que cargaste.
+  for (const g of stock) {
+    const v = round2(dec(g.tonnes).times(dec(g.pricePerTonne)));
+    if (v.gt(0)) lines.push({ group: "Bienes", name: `${g.grain} en stock (${dec(g.tonnes).times(10).toDecimalPlaces(0).toNumber().toLocaleString("es-AR")} qq)`, currency: g.currency, amount: v });
+  }
   for (const d of debts) {
     const det = await debtDetail(db, ws, d.id);
     if (det && det.remainingCapital.gt(0)) lines.push({ group: "Deudas", name: d.creditor, currency: d.currency, amount: det.remainingCapital.neg() });

@@ -17,8 +17,12 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 - [ ] Z11. Activar copias automáticas de la base en Railway (con el plan Hobby). Hoy se hacen a mano antes de cada cambio.
 - [ ] Z12. Con el dominio nuevo: dar de alta Search Console y enviar /sitemap.xml.
 - [ ] Z8. Decidir cómo mostrar el flujo de caja cuando los ingresos no se repiten: "Estimar con mi promedio", "Simular un ingreso" o las dos.
+- [ ] Z13. Mover la app y la base a la costa este de EE.UU. (Vercel `iad1` y Railway us-east), más cerca de Latinoamérica: ~50-70 ms menos por pedido. Se hace desde Vercel y Railway; avisame y cambio `vercel.json`.
+- [ ] Z14. Mercado Pago ahora cobra el precio en pesos de Panel → Ajustes → Precio de Pro (el mismo que se muestra). Cargalo ahí; `MP_PRICE_MONTHLY`, `MP_PRICE_YEARLY` y `MP_CURRENCY` ya no se usan y se pueden borrar de Vercel.
 
 ### Probar con una persona real
+- [ ] T4. Importar un extracto real de Mercado Pago (CSV desde la app o la web de MP) y revisar que entren bien los movimientos.
+- [ ] T5. Recibir los correos nuevos (confirmar correo, contraseña cambiada, ingreso nuevo) cuando esté cargada la clave de Resend.
 - [ ] T1. Ingreso al panel interno con Google, con tu cuenta.
 - [ ] T2. La bienvenida nueva, de punta a punta.
 - [ ] T3. Consultas del sitio: abrirla desde el panel y responder una consulta.
@@ -35,8 +39,8 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 - [ ] P10. Gestos en el celular: deslizar un movimiento para pagarlo o borrarlo.
 - [ ] P11. Modo sin conexión para ver los datos sin internet.
 - [ ] P12. "Letra más grande" guardada en la cuenta (hoy queda solo en el dispositivo).
-- [ ] P13. Movimientos: "Listo, quedó guardado" aparece dos veces (cartel y aviso de abajo); dejar uno solo.
 - [ ] P14. Facturas de AFIP para los cobros de Pro.
+- [ ] P15. En desarrollo aparece un aviso de React ("<div> cannot be a child of <html>") en todas las páginas: revisar el layout raíz. No afecta a los usuarios, pero puede esconder otros errores.
 
 ### Sitio: marketing y SEO (etapa 3)
 - [ ] M1. Escribir más guías (hay 4): fondo de emergencia, plazo fijo, presupuesto 50/30/20, aguinaldo.
@@ -44,6 +48,26 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 - [ ] M4. Testimonios de usuarios reales, cuando los haya (nunca inventados).
 
 ## Completado
+- [x] 11/11/2026 — A20. Agro: stock de cereal sin vender con precio de referencia; suma al patrimonio y baja solo al cargar una venta (vuelve si se borra).
+- [x] 11/11/2026 — A21. Importar el extracto de Mercado Pago: el importador reconoce sus columnas (entradas y salidas separadas, fecha con hora) y saltea saldos y filas en cero.
+- [x] 11/11/2026 — A15. Ventas de cereal: el arreglo de ventas viejas pasa al mantenimiento de cada 15 minutos, ya no corre en cada visita.
+- [x] 11/11/2026 — A16. Primeros pasos según el uso: con el módulo Agro, en lugar de "Cargá tu sueldo" aparece "Cargá tu venta de cereal o estimá los meses".
+- [x] 11/11/2026 — A17. "Para confirmar" muestra el total y un botón "Ver N más en Próximos pagos" si hay más de 3.
+- [x] 11/11/2026 — P13. Movimientos: "Listo, quedó guardado" aparece una sola vez.
+- [x] 11/11/2026 — A11. El freno de intentos de ingreso también cuenta por conexión (30 fallos en 15 minutos), además de por correo.
+- [x] 11/11/2026 — A12. Confirmar el correo al registrarse con contraseña: se manda un enlace (firmado, vence en 7 días) y la app muestra un aviso con "Mandame el enlace" hasta confirmarlo. Con Google ya viene confirmado.
+- [x] 11/11/2026 — A13. Aviso por email al cambiar la contraseña y al entrar desde un navegador o dispositivo nuevo.
+- [x] 11/11/2026 — A14. Notificaciones de Mercado Pago: revisado y se dejan como están. Cada aviso vuelve a consultar el estado real en Mercado Pago, así que repetir uno viejo no cambia nada; rechazarlos por antigüedad podía perder reintentos de pagos reales.
+- [x] 11/11/2026 — A5. Inicio y Cuentas muestran el saldo de hoy: lo cargado con fecha futura no se suma antes de tiempo.
+- [x] 11/11/2026 — A6. "Prevista" pasa a "estimada" en toda la app (también en los datos guardados). Una venta estimada que pasó ya no aparece como "cobro atrasado": la alerta invita a cargar la venta.
+- [x] 11/11/2026 — A7. El CSV de movimientos ya no deja pasar fórmulas que Excel ejecute al abrirlo.
+- [x] 11/11/2026 — A8. Movimientos trae de a 200 desde la base y los totales se calculan ahí: no carga 20.000 filas de una vez.
+- [x] 11/11/2026 — A9. La tarea diaria solo revisa a quien quiere avisos y procesa de a 20 en paralelo, con hasta 5 minutos.
+- [x] 11/11/2026 — A10. Pruebas automáticas en GitHub (tipos y pruebas) en cada cambio a main.
+- [x] 11/11/2026 — A1. Un solo precio: Mercado Pago cobra el precio en pesos del panel, el mismo que se muestra. Sin precio cargado, el cobro queda apagado.
+- [x] 11/11/2026 — A2. Al cancelar Pro, o si Mercado Pago pausa la suscripción, Pro sigue hasta el fin del período pagado. Configuración muestra hasta cuándo.
+- [x] 11/11/2026 — A3. Un doble toque ya no registra el cobro o el pago dos veces: el pendiente se bloquea mientras se registra y el botón se desactiva.
+- [x] 11/11/2026 — A4. Inicio: la venta de cereal estimada no cuenta como plata segura en "te queda" ni en el fin de mes; se muestra aparte "si se cumple lo estimado".
 - [x] 10/11/2026 — Revisión de la landing (reporte) y todo lo que se podía hacer sin claves: Ingresar fuera de Google y Crear cuenta con su dirección, imágenes para compartir en calculadoras y páginas clave, descripciones completas, datos de la empresa para Google, "Ir a la app" si hay sesión (sin perder velocidad), precio en pesos desde el panel, secciones "Para quién es", "Todo lo que incluye" y "Herramientas gratis", Herramientas/Glosario/Novedades con el diseño nuevo, página Para productores, 4 guías (/guias), medición de visitas sin cookies (Vercel) y programa de referidos (1 mes de Pro para los dos, tope de 12).
 - [x] 09/11/2026 — Categorías editables (nombre y dónde van), botón ☰ que oculta o muestra el menú en la compu, "Para confirmar" ordenado, landing desde caché y estilos del sitio fuera de la app, pantallas recién vistas al instante, calendario con 7 días en el celular y revisión responsive de 31 páginas.
 - [x] 09/11/2026 — Landing con animaciones al bajar: cascada, celular con profundidad, números que cuentan, recorrido del celular por cada función, tabla con tildes, línea de pasos, barra de lectura, brillo en botones e inclinación de tarjetas.

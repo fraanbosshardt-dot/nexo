@@ -42,6 +42,7 @@ export async function signupAction(_: FormState, fd: FormData): Promise<FormStat
   const { applyProGrant } = await import("@/server/grants");
   await applyProGrant(db, user.email, ws.id);
   await createSession(user.id, { twoFactorVerified: true, remember: true });
+  try { const { sendVerifyEmail } = await import("@/server/account-mail"); await sendVerifyEmail(user); } catch (e) { console.error("confirmar correo", e); }
   redirect("/bienvenida");
 }
 
@@ -53,6 +54,11 @@ export async function loginAction(_: FormState, fd: FormData): Promise<FormState
   const since = new Date(Date.now() - 15 * 60 * 1000);
   const fails = await db.auditLog.count({ where: { action: "auth.login_failed", createdAt: { gte: since }, entityId: parsed.data.email } });
   if (fails >= 8) return { error: "Demasiados intentos. Probá de nuevo en 15 minutos." };
+  // Y por conexión: frena a quien prueba una contraseña común contra muchos correos.
+  const { headers } = await import("next/headers");
+  const h = await headers();
+  const ip = h.get("x-forwarded-for")?.split(",")[0].trim() ?? null;
+  if (ip && (await db.auditLog.count({ where: { action: "auth.login_failed", ip, createdAt: { gte: since } } })) >= 30) return { error: "Demasiados intentos desde esta conexión. Probá de nuevo en 15 minutos." };
   const user = await db.user.findUnique({ where: { email: parsed.data.email } });
   const ok = user && !user.deletedAt && (await verifyPassword(parsed.data.password, user.passwordHash));
   if (user && !user.deletedAt && !user.passwordHash && user.googleSub) return { error: "Esta cuenta entra con Google. Tocá «Continuar con Google»." };
@@ -60,6 +66,7 @@ export async function loginAction(_: FormState, fd: FormData): Promise<FormState
     await audit("auth.login_failed", { entity: "email", entityId: parsed.data.email });
     return { error: "El correo o la contraseña no coinciden." };
   }
+  try { const { notifyNewDevice } = await import("@/server/account-mail"); await notifyNewDevice(db, user, h.get("user-agent"), ip); } catch (e) { console.error("aviso de ingreso", e); }
   await createSession(user.id, { twoFactorVerified: !user.totpEnabledAt, remember: fd.get("remember") === "on" });
   await audit("auth.login", { userId: user.id });
   redirect(user.totpEnabledAt ? "/verificar" : "/app");
@@ -130,5 +137,10 @@ export async function resetPasswordAction(_: FormState, fd: FormData): Promise<F
     db.session.deleteMany({ where: { userId: r.userId } }), // cierra todas las sesiones abiertas
   ]);
   await audit("auth.password_reset", { userId: r.userId });
+  try {
+    const { sendPasswordChanged } = await import("@/server/account-mail");
+    const u = await db.user.findUnique({ where: { id: r.userId } });
+    if (u) await sendPasswordChanged(u);
+  } catch (e) { console.error("aviso de contraseña", e); }
   redirect("/ingresar?nueva=1");
 }

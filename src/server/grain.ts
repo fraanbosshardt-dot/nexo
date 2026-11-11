@@ -2,7 +2,7 @@
 // Cada venta crea su cobro: si ya se cobró, un ingreso; si no, un pendiente que entra en el flujo de caja.
 import type { Db } from "./ledger";
 import { paidSoFar, payObligation, recordMovement, reverseTransaction, UserError } from "./ledger";
-import { dec, round2, ZERO, type Money, type MoneyValue } from "@/lib/money";
+import { dec, Money, round2, ZERO, type MoneyValue } from "@/lib/money";
 import { period } from "@/lib/dates";
 import { changeRuleFrom, createRule, endRule, materializeOccurrence, occurrences, projectedItems } from "./recurring";
 
@@ -57,6 +57,7 @@ export async function createGrainSale(db: Db, ws: string, input: GrainInput & { 
     await db.obligation.update({ where: { id: obligationId }, data: { sourceType: "grain" } });
   }
   const sale = await db.grainSale.create({ data: { workspaceId: ws, ...saleData(input, fx, tax), obligationId } });
+  await moveStock(db, ws, input.grain, dec(input.tonnes).neg());
   if (obligationId) await db.obligation.update({ where: { id: obligationId }, data: { sourceId: sale.id } });
   if (input.replacePlanned !== false) await replacePlannedGrain(db, ws, input.collectDate);
   return sale;
@@ -94,20 +95,23 @@ export async function updateGrainSale(db: Db, ws: string, id: string, input: Gra
     }
     await tx.grainSale.update({ where: { id: sale.id }, data: saleData(input, fx, tax) });
   });
+  // El stock acompaña a la venta: vuelve lo de antes y sale lo nuevo (aunque cambie el cereal).
+  await moveStock(db, ws, sale.grain, dec(sale.tonnes));
+  await moveStock(db, ws, input.grain, dec(input.tonnes).neg());
   // "Ya la cobré" en una venta que seguía pendiente: se registra el cobro de lo que falta.
   if (input.collected && ob && ob.status !== "CANCELLED") {
     const fresh = await db.obligation.findUniqueOrThrow({ where: { id: ob.id }, include: { payments: true } });
     const left = dec(fresh.amount).minus(paidSoFar(fresh));
     if (fresh.status !== "SETTLED" && left.gt(0)) await payObligation(db, ws, { obligationId: ob.id, accountId: acc.id, amount: left, date: input.collectDate, userId: input.userId });
   }
-  // Si cambió el mes de cobro, la venta prevista vuelve al mes viejo y se reemplaza en el nuevo.
+  // Si cambió el mes de cobro, la venta estimada vuelve al mes viejo y se reemplaza en el nuevo.
   await restorePlannedGrain(db, ws, sale.collectDate);
   await replacePlannedGrain(db, ws, input.collectDate);
   return db.grainSale.findUniqueOrThrow({ where: { id: sale.id } });
 }
 
 // Borrar una venta: se anula lo que ya se haya cobrado (el saldo de la cuenta vuelve a como estaba), el cobro
-// pendiente deja de contar y, si esa venta reemplazaba a la prevista del mes, la prevista vuelve.
+// pendiente deja de contar y, si esa venta reemplazaba a la estimada del mes, la estimada vuelve.
 export async function deleteGrainSale(db: Db, ws: string, id: string, userId?: string | null) {
   const { sale, ob, live } = await saleWithCollection(db, ws, id);
   const reversed = live.reduce((a, p) => a.plus(p.direction === "IN" ? dec(p.amount) : dec(p.amount).neg()), ZERO);
@@ -116,6 +120,7 @@ export async function deleteGrainSale(db: Db, ws: string, id: string, userId?: s
     if (ob) await tx.obligation.update({ where: { id: ob.id }, data: { status: "CANCELLED", notes: "Venta de cereal borrada" } });
     await tx.grainSale.delete({ where: { id: sale.id } });
   });
+  await moveStock(db, ws, sale.grain, dec(sale.tonnes));
   await restorePlannedGrain(db, ws, sale.collectDate);
   return { reversed };
 }
@@ -128,6 +133,30 @@ export async function grainSales(db: Db, ws: string) {
     const o = s.obligationId ? byId.get(s.obligationId) : undefined;
     return { sale: s, ...grainNet(s), status: o?.status ?? "PENDING", paid: o ? paidSoFar(o) : ZERO };
   });
+}
+
+// ---------- Stock sin vender ----------
+// Lo que tenés guardado (silo, acopio) con un precio de referencia por tonelada: suma al patrimonio.
+// Al cargar una venta, sale del stock de ese cereal (si lo cargaste); al borrarla, vuelve.
+
+export async function setGrainStock(db: Db, ws: string, input: { grain: string; tonnes: MoneyValue; pricePerTonne: MoneyValue; currency: string }) {
+  const grain = input.grain.trim();
+  if (!grain) throw new UserError("Elegí el cereal.");
+  if (dec(input.tonnes).lt(0)) throw new UserError("La cantidad no puede ser negativa.");
+  if (!dec(input.pricePerTonne).gt(0)) throw new UserError("Poné un precio de referencia por tonelada.");
+  const data = { tonnes: dec(input.tonnes).toFixed(3), pricePerTonne: round2(input.pricePerTonne).toFixed(2), currency: input.currency };
+  return db.grainStock.upsert({ where: { workspaceId_grain: { workspaceId: ws, grain } }, create: { workspaceId: ws, grain, ...data }, update: data });
+}
+
+export async function deleteGrainStock(db: Db, ws: string, id: string) {
+  await db.grainStock.deleteMany({ where: { id, workspaceId: ws } });
+}
+
+async function moveStock(db: Db, ws: string, grain: string, deltaTonnes: Money) {
+  const st = await db.grainStock.findUnique({ where: { workspaceId_grain: { workspaceId: ws, grain } } });
+  if (!st) return;
+  const next = Money.max(ZERO, dec(st.tonnes).plus(deltaTonnes));
+  await db.grainStock.update({ where: { id: st.id }, data: { tonnes: next.toFixed(3) } });
 }
 
 // ---------- Una sola lista por mes ----------
@@ -171,11 +200,12 @@ export function isEstimatedGrain(o: { direction: string; status: string; recurri
 }
 export const loadSaleHref = (d: Date) => `/app/cereal?cargar=${d.toISOString().slice(0, 10)}#cargar`;
 
-// ---------- Venta mensual prevista ----------
-// Quien vende cereal todos los meses carga una "venta prevista" mensual (monto aproximado). Se proyecta como
-// cobro que se repite; cuando carga la venta real, reemplaza a la prevista de ese mes para no contarla dos veces.
+// ---------- Venta mensual estimada ----------
+// Quien vende cereal todos los meses carga una "venta estimada" mensual (monto aproximado). Se proyecta como
+// cobro que se repite; cuando carga la venta real, reemplaza a la estimada de ese mes para no contarla dos veces.
 
 export const GRAIN_CATEGORY = "Venta de cereal";
+export const ESTIMATED_DESCRIPTION = "Venta de cereal (estimada)";
 
 async function grainCategory(db: Db, ws: string) {
   return (await db.category.findFirst({ where: { workspaceId: ws, kind: "INCOME", name: GRAIN_CATEGORY, parentId: null } }))
@@ -194,13 +224,13 @@ export async function setupMonthlyGrain(db: Db, ws: string, input: { day: number
   if (!dec(input.amount).gt(0)) throw new UserError("Poné un monto aproximado por mes.");
   const acc = await db.account.findFirst({ where: { id: input.accountId, workspaceId: ws, active: true } });
   if (!acc) throw new UserError("Elegí la cuenta donde entra el dinero.");
-  if ((await monthlyGrainRules(db, ws, input.today)).length) throw new UserError("Ya tenés una venta mensual prevista. Cambiala desde acá mismo.");
+  if ((await monthlyGrainRules(db, ws, input.today)).length) throw new UserError("Ya estás estimando los meses sin venta. Cambialo desde acá mismo.");
   const cat = await grainCategory(db, ws);
   const y = input.today.getUTCFullYear(), m = input.today.getUTCMonth();
   const at = (yy: number, mm: number) => new Date(Date.UTC(yy, mm, Math.min(input.day, new Date(Date.UTC(yy, mm + 1, 0)).getUTCDate())));
   const first = at(y, m) >= input.today ? at(y, m) : at(y, m + 1);
-  const rule = await createRule(db, ws, { direction: "RECEIVABLE", description: "Venta de cereal (prevista)", amount: input.amount, currency: acc.currency, categoryId: cat.id, accountId: acc.id, frequency: "MONTHLY", dayOfMonth: input.day, startDate: first, variableAmount: true });
-  // Las ventas que ya estaban cargadas (por cobrar o cobradas) ocupan su mes: ahí no se suma la prevista.
+  const rule = await createRule(db, ws, { direction: "RECEIVABLE", description: ESTIMATED_DESCRIPTION, amount: input.amount, currency: acc.currency, categoryId: cat.id, accountId: acc.id, frequency: "MONTHLY", dayOfMonth: input.day, startDate: first, variableAmount: true });
+  // Las ventas que ya estaban cargadas (por cobrar o cobradas) ocupan su mes: ahí no se suma la estimada.
   await coverMonthsWithSales(db, ws, input.today);
   return rule;
 }
@@ -227,14 +257,14 @@ export async function stopMonthlyGrain(db: Db, ws: string, ruleId: string, today
   return endRule(db, ws, rule.id, today);
 }
 
-// En cada mes (desde este) que ya tiene una venta real, la prevista no se suma.
+// En cada mes (desde este) que ya tiene una venta real, la estimada no se suma.
 async function coverMonthsWithSales(db: Db, ws: string, today: Date) {
   const sales = await db.grainSale.findMany({ where: { workspaceId: ws, collectDate: { gte: monthOf(today).from } }, select: { collectDate: true } });
   const months = [...new Map(sales.map((s) => [period(s.collectDate), s.collectDate])).values()];
   for (const d of months) await replacePlannedGrain(db, ws, d);
 }
 
-// La venta real reemplaza a la prevista del mes en que se cobra (si todavía no se cobró ni se tocó).
+// La venta real reemplaza a la estimada del mes en que se cobra (si todavía no se cobró ni se tocó).
 export async function replacePlannedGrain(db: Db, ws: string, collectDate: Date) {
   const { from, to } = monthOf(collectDate);
   const rules = await monthlyGrainRules(db, ws, from);
@@ -251,7 +281,7 @@ export async function replacePlannedGrain(db: Db, ws: string, collectDate: Date)
   return replaced;
 }
 
-// Si en ese mes ya no queda ninguna venta real, la prevista que se había reemplazado vuelve a contar.
+// Si en ese mes ya no queda ninguna venta real, la estimada que se había reemplazado vuelve a contar.
 export async function restorePlannedGrain(db: Db, ws: string, collectDate: Date) {
   const { from, to } = monthOf(collectDate);
   if (await db.grainSale.count({ where: { workspaceId: ws, collectDate: { gte: from, lte: to } } })) return 0;

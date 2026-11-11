@@ -11,6 +11,7 @@ import { fmtDayMonth, periodEnd, period, todayIn } from "@/lib/dates";
 import { PageHead } from "@/components/page";
 import { quickConfirmAction } from "@/app/actions/app";
 import { InstallApp } from "@/components/pwa";
+import { OnceButton } from "@/components/forms";
 import { Help } from "@/components/help";
 import { QuickButtons } from "@/components/quick-buttons";
 import { categoryIcon, ICON_TONE } from "@/lib/category-icon";
@@ -27,16 +28,18 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ l
   const today = todayIn(workspace.timezone);
   const cur = workspace.baseCurrency;
   // Lo principal primero (saldo y pendientes). El consejo y lo último cargado se muestran apenas estén, sin frenar el resto.
-  const [d, open, incomeRules, expenseRules, expenses] = await Promise.all([
+  const [d, open, incomeRules, expenseRules, expenses, grainSales] = await Promise.all([
     dashboard(db, workspace.id, cur, today), openObligations(db, workspace.id, today),
     db.recurringRule.count({ where: { workspaceId: workspace.id, direction: "RECEIVABLE" } }),
     db.recurringRule.count({ where: { workspaceId: workspace.id, direction: "PAYABLE" } }),
     db.transaction.count({ where: { workspaceId: workspace.id, type: "EXPENSE" } }),
+    grainOn ? db.grainSale.count({ where: { workspaceId: workspace.id } }) : 0,
   ]);
   // Primeros pasos: se tachan solos y desaparecen cuando están todos.
   const steps: [boolean, string, string][] = [
     [true, "Cargá tu primera cuenta", "/app/cuentas"],
-    [incomeRules > 0, "Cargá tu sueldo o lo que cobrás seguido", "/app/recurrentes?nueva=1"],
+    // Para un productor, lo que cobra seguido es la venta de cereal.
+    grainOn ? [incomeRules > 0 || grainSales > 0, "Cargá tu venta de cereal o estimá los meses", "/app/cereal"] : [incomeRules > 0, "Cargá tu sueldo o lo que cobrás seguido", "/app/recurrentes?nueva=1"],
     [expenseRules > 0, "Cargá tus gastos fijos (luz, expensas, alquiler)", "/app/recurrentes?nueva=1"],
     [expenses > 0, "Anotá un gasto del día", "/app/movimientos/nuevo"],
   ];
@@ -64,8 +67,11 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ l
 
   // ¿Cuánto puedo gastar? Lo que tenés menos lo que tenés que pagar antes de tu próximo cobro.
   const base = open.filter((o) => o.currency === cur);
+  // Lo estimado (venta mensual de cereal sin cargar) no es plata segura: no entra en "te queda" ni en el fin de mes.
+  const sure = base.filter((o) => !isEstimatedGrain(o));
+  const estimatedIn = base.filter((o) => isEstimatedGrain(o) && o.dueDate <= periodEnd(period(today))).reduce((s, o) => s.plus(o.remaining), ZERO);
   // Próximo cobro: el siguiente después de hoy (lo de hoy se confirma en "Para confirmar").
-  const nextIn = base.find((o) => o.direction === "RECEIVABLE" && o.dueDate > today);
+  const nextIn = sure.find((o) => o.direction === "RECEIVABLE" && o.dueDate > today);
   const until = nextIn?.dueDate ?? periodEnd(period(today));
   const owed = base.filter((o) => o.direction === "PAYABLE" && (o.overdue || o.dueDate < until)).reduce((s, o) => s.plus(o.remaining), ZERO);
   const left = d.cash.minus(owed);
@@ -75,11 +81,12 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ l
   const toCollect = base.filter((o) => o.direction === "RECEIVABLE");
   const toCollectTotal = toCollect.reduce((s, o) => s.plus(o.remaining), ZERO);
   const monthEnd = periodEnd(period(today));
-  const endOfMonth = d.cash.plus(base.filter((o) => o.direction === "RECEIVABLE" && o.dueDate <= monthEnd).reduce((s, o) => s.plus(o.remaining), ZERO)).minus(base.filter((o) => o.direction === "PAYABLE" && o.dueDate <= monthEnd).reduce((s, o) => s.plus(o.remaining), ZERO));
+  const endOfMonth = d.cash.plus(sure.filter((o) => o.direction === "RECEIVABLE" && o.dueDate <= monthEnd).reduce((s, o) => s.plus(o.remaining), ZERO)).minus(base.filter((o) => o.direction === "PAYABLE" && o.dueDate <= monthEnd).reduce((s, o) => s.plus(o.remaining), ZERO));
   const in7 = new Date(today.getTime() + 7 * 864e5);
   const week = open.filter((o) => o.overdue || o.dueDate <= in7).slice(0, 5);
   // Lo que vence hoy o ya venció: primero los cobros. Se confirma con un toque o se cambia el monto y la fecha.
-  const toConfirm = open.filter((o) => o.dueDate <= today).sort((a, b) => (a.direction === b.direction ? 0 : a.direction === "RECEIVABLE" ? -1 : 1)).slice(0, 3);
+  const dueNow = open.filter((o) => o.dueDate <= today).sort((a, b) => (a.direction === b.direction ? 0 : a.direction === "RECEIVABLE" ? -1 : 1));
+  const toConfirm = dueNow.slice(0, 3);
 
   return (
     <>
@@ -104,6 +111,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ l
           {toCollect.length > 0 && <Link className="hrow" href="/app/proximos?ver=cobrar"><span>Por cobrar ({toCollect.length})</span><b className="pos">{formatMoney(toCollectTotal, cur, { sign: true })}</b></Link>}
           {toCollect.length > 0 && <div className="sub hero-help">Por cobrar todavía no está en tus cuentas <Help term="porcobrar" /></div>}
           <Link className="hrow" href="/app/flujo"><span>A fin de mes terminás con</span><b className={endOfMonth.isNegative() ? "neg" : ""}>{fm(endOfMonth)}</b></Link>
+          {estimatedIn.gt(0) && <div className="sub hero-help">Si se cumple lo estimado del cereal, {fm(estimatedIn, { sign: true })} más</div>}
           {d.cardDebt.gt(0) && <Link className="hrow" href="/app/tarjetas"><span>Debés en tarjetas</span><b>{fm(d.cardDebt.neg())}</b></Link>}
           {d.others.map((o) => <div className="hrow" key={o.id}><span>{o.name}</span><b>{formatMoney(o.balance, o.currency)}</b></div>)}
         </div>
@@ -112,7 +120,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ l
       {listo && <p className="notice g" role="status">{listo === "cobro" ? "Listo, registramos el cobro." : "Listo, registramos el pago."}</p>}
       {toConfirm.length > 0 && (
         <div className="card cf-card">
-          <div className="chead"><div><h3>Para confirmar</h3><p className="sub">Tocá cuando ya esté hecho</p></div><span className="pill b">{toConfirm.length}</span></div>
+          <div className="chead"><div><h3>Para confirmar</h3><p className="sub">Tocá cuando ya esté hecho</p></div><span className="pill b">{dueNow.length}</span></div>
           <div className="list">{toConfirm.map((o) => {
             const rec = o.direction === "RECEIVABLE";
             const isToday = o.dueDate.getTime() === today.getTime();
@@ -134,12 +142,13 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ l
                   <div className="s">{rec ? "Esperabas" : "Son"} {formatMoney(o.remaining, o.currency)}{isToday ? "" : ` · era el ${fmtDayMonth(o.dueDate)}`}</div>
                 </div>
                 <div className="cf-acts">
-                  <form action={quickConfirmAction}><input type="hidden" name="obligationId" value={o.id} /><button className="btn pri sm" type="submit">{rec ? "Sí, lo cobré" : "Sí, lo pagué"}</button></form>
+                  <form action={quickConfirmAction}><input type="hidden" name="obligationId" value={o.id} /><OnceButton>{rec ? "Sí, lo cobré" : "Sí, lo pagué"}</OnceButton></form>
                   <Link className="btn sm" href={`/app/proximos/${o.id}`}>Otro monto o fecha</Link>
                 </div>
               </div>
             );
           })}</div>
+          {dueNow.length > toConfirm.length && <div className="acts" style={{ justifyContent: "center", paddingTop: 10 }}><Link className="btn sm" href="/app/proximos">Ver {dueNow.length - toConfirm.length} más en Próximos pagos</Link></div>}
         </div>
       )}
       {stepsLeft > 0 && (

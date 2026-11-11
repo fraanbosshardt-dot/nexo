@@ -252,7 +252,12 @@ export async function quickConfirmAction(fd: FormData) {
     || (await db.account.findFirst({ where: { workspaceId: workspace.id, active: true, currency: ob.currency, type: { notIn: ["CREDIT_CARD", "INVESTMENT"] } }, orderBy: { createdAt: "asc" } }));
   if (!acc) redirect(`/app/proximos/${ob.id}`);
   const { remaining } = await import("@/server/ledger");
-  await payObligation(db, workspace.id, { obligationId: ob.id, accountId: acc.id, amount: remaining(ob), date: todayIn(workspace.timezone), userId: user.id, settle: true });
+  try {
+    await payObligation(db, workspace.id, { obligationId: ob.id, accountId: acc.id, amount: remaining(ob), date: todayIn(workspace.timezone), userId: user.id, settle: true });
+  } catch (e) {
+    // Segundo toque: el primero ya lo cerró. No se registra otra vez.
+    if (!(e instanceof UserError)) throw e;
+  }
   revalidatePath("/app", "layout");
   redirect(`/app?listo=${ob.direction === "RECEIVABLE" ? "cobro" : "pago"}`);
 }
@@ -386,6 +391,18 @@ export async function updateMovementAction(_: FormState, fd: FormData): Promise<
   } catch (e) { return fail(e); }
   revalidatePath("/app", "layout");
   redirect("/app/movimientos?guardado=1");
+}
+
+// Reenviar el enlace para confirmar el correo: hasta 3 por hora.
+export async function resendVerifyAction(_: FormState, __?: FormData): Promise<FormState> {
+  const { user } = await requireUser();
+  if (user.emailVerified) return { ok: "Tu correo ya está confirmado." };
+  const db = getDb();
+  if ((await db.auditLog.count({ where: { action: "auth.verify_sent", userId: user.id, createdAt: { gte: new Date(Date.now() - 3600_000) } } })) >= 3) return { error: "Ya te mandamos varios enlaces. Revisá también en spam o probá en una hora." };
+  const { sendVerifyEmail } = await import("@/server/account-mail");
+  await sendVerifyEmail(user);
+  await audit("auth.verify_sent", { userId: user.id });
+  return { ok: `Te mandamos un enlace nuevo a ${user.email}.` };
 }
 
 export async function emailRemindersAction(fd: FormData) {

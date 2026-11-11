@@ -1,5 +1,6 @@
 "use client";
 import { createContext, startTransition, useActionState, useContext, useState, type ReactNode } from "react";
+import { useFormStatus } from "react-dom";
 
 export type FormState = { error?: string; ok?: string } | null;
 type Action = (state: FormState, fd: FormData) => Promise<FormState>;
@@ -38,6 +39,12 @@ export function Submit({ children, className = "btn pri", pending = "Guardando�
       {busy ? pending : children}
     </button>
   );
+}
+
+// Botón para formularios simples (action={...}): se desactiva apenas se toca, así no se envía dos veces.
+export function OnceButton({ children, className = "btn pri sm", pending = "Guardando…" }: { children: ReactNode; className?: string; pending?: string }) {
+  const { pending: busy } = useFormStatus();
+  return <button className={className} type="submit" disabled={busy} aria-busy={busy}>{busy ? pending : children}</button>;
 }
 
 export function PasswordStrength({ name = "password", id = "su-pass" }: { name?: string; id?: string }) {

@@ -34,7 +34,12 @@ export async function categoryReport(db: Db, ws: string, currency: string, endPe
 
 // ---------- Exportar ----------
 
-const csvCell = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+// Un texto que empieza con =, +, @ o - (sin ser un número) Excel lo ejecuta como fórmula: se le antepone un apóstrofo.
+export const csvCell = (v: unknown) => {
+  const s = String(v ?? "");
+  const safe = /^[=+@\t\r]/.test(s) || /^-(?![\d.,]+$)/.test(s) ? `'${s}` : s;
+  return `"${safe.replace(/"/g, '""')}"`;
+};
 
 export async function exportMovementsCsv(db: Db, ws: string) {
   const tx = await db.transaction.findMany({ where: { workspaceId: ws }, include: { account: true, category: true }, orderBy: { effectiveDate: "asc" } });
@@ -86,13 +91,24 @@ export function parseCsv(text: string): { headers: string[]; rows: string[][] } 
   return { headers: rows[0] ?? [], rows: rows.slice(1) };
 }
 
-export function guessColumn(h: string): "fecha" | "concepto" | "importe" | "categoria" | "ignorar" {
-  const s = h.toLowerCase();
+// Reconoce las columnas de bancos, planillas y el extracto de Mercado Pago (DATE, DESCRIPTION, NET_CREDIT_AMOUNT,
+// NET_DEBIT_AMOUNT, TRANSACTION_NET_AMOUNT…). El saldo de cada fila se ignora.
+export type ColumnKind = "fecha" | "concepto" | "importe" | "credito" | "debito" | "categoria" | "ignorar";
+export function guessColumn(h: string): ColumnKind {
+  const s = h.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  if (/saldo|balance/.test(s)) return "ignorar";
   if (/fech|date/.test(s)) return "fecha";
-  if (/concep|descr|detalle|memo/.test(s)) return "concepto";
+  if (/net_credit|credito|entrada/.test(s)) return "credito";
+  if (/net_debit|debito|salida/.test(s)) return "debito";
+  if (/concep|descr|detalle|memo|transaction_type|tipo de operacion/.test(s)) return "concepto";
   if (/import|monto|amount|valor|total/.test(s)) return "importe";
   if (/categ/.test(s)) return "categoria";
   return "ignorar";
+}
+
+export function autoMap(text: string): Record<number, ColumnKind> {
+  const { headers } = parseCsv(text);
+  return Object.fromEntries(headers.map((h, i) => [i, guessColumn(h)]));
 }
 
 export type ImportPreview = { ok: { date: Date; description: string; amount: Decimal; category: string; key: string }[]; errors: { line: number; reason: string }[]; duplicates: number };
@@ -100,14 +116,17 @@ export type ImportPreview = { ok: { date: Date; description: string; amount: Dec
 export async function previewImport(db: Db, ws: string, accountId: string, text: string, map: Record<number, string>): Promise<ImportPreview> {
   const { rows } = parseCsv(text);
   const col = (k: string) => Number(Object.entries(map).find(([, v]) => v === k)?.[0] ?? -1);
-  const [cf, cc, ci, ck] = [col("fecha"), col("concepto"), col("importe"), col("categoria")];
-  if (cf < 0 || ci < 0) throw new UserError("Indicá qué columna es la fecha y cuál el importe.");
+  const [cf, cc, ci, ck, cin, cout] = [col("fecha"), col("concepto"), col("importe"), col("categoria"), col("credito"), col("debito")];
+  // Entradas y salidas en columnas separadas (como Mercado Pago): el importe es entrada menos salida.
+  const split = cin >= 0 || cout >= 0;
+  if (cf < 0 || (ci < 0 && !split)) throw new UserError("Indicá qué columna es la fecha y cuál el importe.");
   const ok: ImportPreview["ok"] = [], errors: ImportPreview["errors"] = [];
   rows.forEach((r, i) => {
     const date = parseDate(r[cf]);
-    const amount = parseAmount(r[ci]);
+    const amount = split ? (parseAmount(r[cin] || "0") ?? ZERO).minus(parseAmount(r[cout] || "0") ?? ZERO) : parseAmount(r[ci]);
     if (!date) return errors.push({ line: i + 2, reason: "Fecha inválida (dd/mm/aaaa)" });
-    if (!amount || amount.isZero()) return errors.push({ line: i + 2, reason: "Importe inválido" });
+    if (amount?.isZero()) return; // filas sin movimiento (saldo inicial, totales)
+    if (!amount) return errors.push({ line: i + 2, reason: "Importe inválido" });
     const description = (cc >= 0 ? r[cc] : "") || "Movimiento importado";
     const key = "imp:" + createHash("sha256").update(`${accountId}|${date.toISOString()}|${amount.toFixed(2)}|${description}`).digest("hex").slice(0, 32);
     ok.push({ date, description, amount, category: ck >= 0 ? r[ck] ?? "" : "", key });

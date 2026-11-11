@@ -51,11 +51,21 @@ export async function savePlanSettings(db: Db, value: PlanSettings) {
   await db.appSetting.upsert({ where: { key: "plans" }, create: { key: "plans", value }, update: { value } });
 }
 
-// Plan efectivo: Pro pago, o prueba gratis vigente.
-export function effectivePlan(sub: { plan: string; status: string; trialEndsAt: Date | null } | null | undefined): "FREE" | "PRO" {
+// Plan efectivo: Pro pago, o prueba gratis vigente. Si se canceló o el pago quedó pendiente, Pro sigue hasta el fin
+// del período ya pagado.
+export function effectivePlan(sub: { plan: string; status: string; trialEndsAt: Date | null; currentPeriodEnd?: Date | null } | null | undefined, now = new Date()): "FREE" | "PRO" {
   if (!sub) return "FREE";
-  if (sub.status === "TRIALING") return sub.trialEndsAt && sub.trialEndsAt > new Date() ? "PRO" : "FREE";
-  return sub.plan === "PRO" && sub.status === "ACTIVE" ? "PRO" : "FREE";
+  if (sub.status === "TRIALING") return sub.trialEndsAt && sub.trialEndsAt > now ? "PRO" : "FREE";
+  if (sub.plan !== "PRO") return "FREE";
+  if (sub.status === "ACTIVE") return "PRO";
+  return sub.currentPeriodEnd && sub.currentPeriodEnd > now ? "PRO" : "FREE";
+}
+
+// Hasta cuándo cubre un pago: un mes o un año desde que se pagó.
+export function paidUntil(paidAt: Date, cycle: string | null | undefined) {
+  const d = new Date(paidAt);
+  d.setUTCMonth(d.getUTCMonth() + (cycle === "yearly" ? 12 : 1));
+  return d;
 }
 
 export async function hasFeature(db: Db, plan: "FREE" | "PRO", key: FeatureKey) {

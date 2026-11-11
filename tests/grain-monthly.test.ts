@@ -21,14 +21,14 @@ beforeAll(async () => {
 afterAll(async () => { await t.stop(); });
 
 const sale = (collect: string, collected = false) => createGrainSale(db, ws, { saleDate: d(collect), grain: "Soja", tonnes: "30", pricePerTonne: "300000", priceCurrency: "ARS", taxPct: "1.2", collectDate: d(collect), accountId: acc, collected });
-const planned = async () => (await projectedItems(db, ws, today, d("2027-12-31"))).filter((p) => p.description === "Venta de cereal (prevista)").map((p) => p.occurrence.toISOString().slice(0, 7));
+const planned = async () => (await projectedItems(db, ws, today, d("2027-12-31"))).filter((p) => p.description === "Venta de cereal (estimada)").map((p) => p.occurrence.toISOString().slice(0, 7));
 
 describe("venta mensual de cereal", () => {
   it("se proyecta todos los meses y no se puede duplicar", async () => {
     const r = await setupMonthlyGrain(db, ws, { day: 15, amount: "8000000", accountId: acc, today });
     expect(r.variableAmount).toBe(true);
     expect(r.startDate.toISOString().slice(0, 10)).toBe("2026-11-15");
-    await expect(setupMonthlyGrain(db, ws, { day: 10, amount: "1", accountId: acc, today })).rejects.toThrow(/Ya tenés/);
+    await expect(setupMonthlyGrain(db, ws, { day: 10, amount: "1", accountId: acc, today })).rejects.toThrow(/Ya estás estimando/);
     expect((await planned()).slice(0, 3)).toEqual(["2026-11", "2026-12", "2027-01"]);
   });
 
@@ -49,7 +49,7 @@ describe("venta mensual de cereal", () => {
   });
 
   it("si la prevista del mes ya se cobró, la venta real no la toca", async () => {
-    const nov = await db.obligation.findFirstOrThrow({ where: { workspaceId: ws, description: "Venta de cereal (prevista)", occurrenceDate: d("2026-11-15") } });
+    const nov = await db.obligation.findFirstOrThrow({ where: { workspaceId: ws, description: "Venta de cereal (estimada)", occurrenceDate: d("2026-11-15") } });
     await payObligation(db, ws, { obligationId: nov.id, accountId: acc, amount: "7500000", date: d("2026-11-15"), settle: true });
     await sale("2026-11-25", true);
     expect((await db.obligation.findUniqueOrThrow({ where: { id: nov.id } })).status).toBe("SETTLED");

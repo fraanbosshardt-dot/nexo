@@ -16,7 +16,8 @@ export function SavedToast() {
     const t = setTimeout(() => { setShow(false); const n = new URLSearchParams(sp); n.delete("guardado"); router.replace(n.size ? `${path}?${n}` : path, { scroll: false }); }, 9000);
     return () => clearTimeout(t);
   }, [id, sp, path, router]);
-  if (!show || !id) return null;
+  // En Movimientos ya está el cartel con "Cargar otro" y "Ver o anular": no se repite.
+  if (!show || !id || path === "/app/movimientos") return null;
   return (
     <div className="toast" role="status" style={{ display: "flex", gap: 16, alignItems: "center" }}>
       <span>{id === "1" ? "Cambios guardados" : "Guardado"}</span>

@@ -19,7 +19,7 @@ export default async function AccountDetail({ params }: { params: Promise<{ id: 
   const db = getDb();
   const a = await db.account.findFirst({ where: { id, workspaceId: workspace.id } });
   if (!a) notFound();
-  const [balances, mv] = await Promise.all([accountBalances(db, workspace.id), listMovements(db, workspace.id, { accountId: a.id, take: 100 })]);
+  const [balances, mv] = await Promise.all([accountBalances(db, workspace.id, todayIn(workspace.timezone)), listMovements(db, workspace.id, { accountId: a.id, take: 100 })]);
   const bal = balances.get(a.id) ?? ZERO;
   const p = period(todayIn(workspace.timezone));
   const mes = mv.filter((t) => period(t.effectiveDate) === p);

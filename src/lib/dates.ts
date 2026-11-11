@@ -27,7 +27,7 @@ export function parseDate(input: string | null | undefined): Date | null {
   const t = input.trim();
   let y: number, m: number, d: number;
   const ar = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  const iso = t.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const iso = t.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ][\d:.]+(?:Z|[+-]\d{2}:?\d{2})?)?$/); // también con hora (Mercado Pago)
   if (ar) [d, m, y] = [Number(ar[1]), Number(ar[2]), Number(ar[3])];
   else if (iso) [y, m, d] = [Number(iso[1]), Number(iso[2]), Number(iso[3])];
   else return null;

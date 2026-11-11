@@ -14,6 +14,7 @@ export const dynamic = "force-dynamic";
 export default async function SystemPage() {
   await requireAdmin();
   const db = getDb();
+  const bill = await billingConfig(db);
   const t0 = performance.now();
   await db.$queryRaw`SELECT 1`;
   const dbMs = Math.round(performance.now() - t0);
@@ -46,7 +47,7 @@ export default async function SystemPage() {
             <dt>Cotizaciones</dt><dd>{lastRate ? ok((rateAge ?? 99) < 36, `Del ${when(lastRate.fetchedAt)}`) : ok(false, "Sin datos")}</dd>
             <dt>Lecturas de PDF este mes</dt><dd>{int(pdf)} (límite {sys.pdfLimit} por cliente)</dd>
             <dt>Correos (Resend)</dt><dd>{ok(emailEnabled(), emailEnabled() ? "Activado" : "Falta la clave")}</dd>
-            <dt>Cobros (Mercado Pago)</dt><dd>{ok(billingConfig().enabled, billingConfig().enabled ? "Activado" : "Falta configurar")}</dd>
+            <dt>Cobros (Mercado Pago)</dt><dd>{ok(bill.enabled, bill.enabled ? "Activado" : "Falta configurar")}</dd>
             <dt>Ingreso con Google</dt><dd>{ok(googleEnabled(), googleEnabled() ? "Activado" : "Falta configurar")}</dd>
           </dl>
         </div>

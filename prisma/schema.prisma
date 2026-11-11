@@ -90,6 +90,7 @@ model Workspace {
   recurringRules RecurringRule[]
   debts          Debt[]
   creditCards    CreditCard[]
+  grainStocks    GrainStock[]
   budgets        Budget[]
   goals          Goal[]
   investments    Investment[]
@@ -589,6 +590,20 @@ model GrainSale {
   @@index([workspaceId])
 }
 
+// Cereal guardado sin vender (silo, acopio): se valúa con un precio de referencia y suma al patrimonio.
+model GrainStock {
+  id            String    @id @default(cuid())
+  workspaceId   String
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  grain         String
+  tonnes        Decimal   @db.Decimal(14, 3)
+  pricePerTonne Decimal   @db.Decimal(18, 2)
+  currency      String    @default("ARS")
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([workspaceId, grain])
+}
+
 // ---------- Cotizaciones, importaciones y auditoría ----------
 
 model ExchangeRate {
@@ -597,10 +612,10 @@ model ExchangeRate {
   workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   base        String // "USD"
   quote       String // "ARS"
-  kind        String // "oficial" | "mep" | "blue" | "tarjeta" | "manual"
+  kind        String // "api" (cotización oficial automática) | "manual"
   buy         Decimal?   @db.Decimal(18, 6)
   sell        Decimal    @db.Decimal(18, 6)
-  source      String // "dolarapi" | "bcra" | "manual"
+  source      String // "open.er-api.com" | "manual"
   fetchedAt   DateTime
 
   @@index([base, quote, kind, fetchedAt])

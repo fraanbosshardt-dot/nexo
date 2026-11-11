@@ -58,10 +58,11 @@ export async function createAccount(
 }
 
 // Saldo = saldo inicial + entradas − salidas. Se calcula siempre desde el libro.
-export async function accountBalances(db: Db, ws: string): Promise<Map<string, Decimal>> {
+// Con asOf, el saldo a esa fecha: lo cargado con fecha posterior todavía no está en la cuenta.
+export async function accountBalances(db: Db, ws: string, asOf?: Date): Promise<Map<string, Decimal>> {
   const [accounts, sums] = await Promise.all([
     db.account.findMany({ where: { workspaceId: ws }, select: { id: true, initialBalance: true } }),
-    db.transaction.groupBy({ by: ["accountId", "direction"], where: { workspaceId: ws }, _sum: { amount: true } }),
+    db.transaction.groupBy({ by: ["accountId", "direction"], where: { workspaceId: ws, ...(asOf ? { effectiveDate: { lte: asOf } } : {}) }, _sum: { amount: true } }),
   ]);
   const out = new Map<string, Decimal>(accounts.map((a) => [a.id, dec(a.initialBalance)]));
   for (const s of sums) {
@@ -186,6 +187,8 @@ export async function payObligation(
   input: { obligationId: string; accountId: string; amount: MoneyValue; date: Date; userId?: string | null; settle?: boolean; updateFuture?: boolean },
 ) {
   return db.$transaction(async (tx) => {
+    // Bloquea el pendiente hasta terminar: dos toques seguidos no registran el pago dos veces.
+    await tx.$queryRaw`SELECT "id" FROM "Obligation" WHERE "id" = ${input.obligationId} AND "workspaceId" = ${ws} FOR UPDATE`;
     const ob = await tx.obligation.findFirst({ where: { id: input.obligationId, workspaceId: ws }, include: { payments: true } });
     if (!ob) throw new UserError("No encontramos ese pendiente.");
     if (ob.status === "SETTLED" || ob.status === "CANCELLED") throw new UserError("Ese pendiente ya está cerrado.");
@@ -286,7 +289,7 @@ export async function recordTransfer(
 
 export async function adjustBalance(db: Db, ws: string, input: { accountId: string; targetBalance: MoneyValue; date: Date; userId?: string | null }) {
   const account = await ownAccount(db, ws, input.accountId);
-  const current = (await accountBalances(db, ws)).get(account.id) ?? ZERO;
+  const current = (await accountBalances(db, ws, input.date)).get(account.id) ?? ZERO;
   const diff = round2(input.targetBalance).minus(current);
   await db.account.update({ where: { id: account.id }, data: { lastReconciledAt: new Date() } });
   if (diff.isZero()) return { diff, transactionId: null };
@@ -419,7 +422,7 @@ export async function monthSummary(db: Db, ws: string, p: string, currency: stri
 export async function dashboard(db: Db, ws: string, currency: string, today: Date) {
   const [accounts, balances, summary] = await Promise.all([
     db.account.findMany({ where: { workspaceId: ws, active: true }, orderBy: { createdAt: "asc" } }),
-    accountBalances(db, ws),
+    accountBalances(db, ws, today),
     monthSummary(db, ws, period(today), currency, today),
   ]);
   const inBase = accounts.filter((a) => a.currency === currency);

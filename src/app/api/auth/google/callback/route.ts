@@ -70,6 +70,13 @@ export async function GET(req: NextRequest) {
   if (r.linked) await audit("auth.google_linked", { userId: r.userId, meta: { passwordCleared: r.passwordCleared } });
 
   const user = await db.user.findUniqueOrThrow({ where: { id: r.userId } });
+  if (!r.created) {
+    try {
+      const h = await headers();
+      const { notifyNewDevice } = await import("@/server/account-mail");
+      await notifyNewDevice(db, user, h.get("user-agent"), h.get("x-forwarded-for")?.split(",")[0].trim() ?? null);
+    } catch (e) { console.error("aviso de ingreso", e); }
+  }
   await createSession(user.id, { twoFactorVerified: !user.totpEnabledAt, remember: true });
   await audit("auth.login", { userId: user.id, meta: { via: "google" } });
   redirect(r.created ? "/bienvenida" : user.totpEnabledAt ? "/verificar" : "/app");

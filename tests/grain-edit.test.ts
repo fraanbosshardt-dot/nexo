@@ -23,8 +23,8 @@ const input = (collect: string, over: Partial<GrainInput> = {}): GrainInput => (
 const balance = async () => Number((await accountBalances(db, ws)).get(acc)?.toString() ?? 0);
 // Meses en que cuenta la venta prevista: las que ya están guardadas como pendientes y las proyectadas.
 const plannedMonths = async () => {
-  const saved = await db.obligation.findMany({ where: { workspaceId: ws, description: "Venta de cereal (prevista)", status: "PENDING", dueDate: { gte: today } } });
-  const proj = (await projectedItems(db, ws, today, d("2027-06-30"))).filter((p) => p.description === "Venta de cereal (prevista)");
+  const saved = await db.obligation.findMany({ where: { workspaceId: ws, description: "Venta de cereal (estimada)", status: "PENDING", dueDate: { gte: today } } });
+  const proj = (await projectedItems(db, ws, today, d("2027-06-30"))).filter((p) => p.description === "Venta de cereal (estimada)");
   return [...new Set([...saved.map((o) => o.dueDate.toISOString().slice(0, 7)), ...proj.map((p) => p.occurrence.toISOString().slice(0, 7))])].sort();
 };
 

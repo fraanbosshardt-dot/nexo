@@ -15,7 +15,7 @@ import { cancelDebt, createDebt, payDebtOnAccount } from "@/server/debts";
 import { addContribution, copyBudget, saveBudget } from "@/server/planning";
 import { addValuation, createAsset, createInvestment, investmentMove, saveManualRate } from "@/server/wealth";
 import { createGrainSale } from "@/server/grain";
-import { applyImport, previewImport, revertImport } from "@/server/io";
+import { applyImport, autoMap, previewImport, revertImport } from "@/server/io";
 import { FREE_LIMITS } from "@/server/plans";
 import type { FormState } from "./auth";
 
@@ -399,7 +399,28 @@ export async function stopMonthlyGrainAction(fd: FormData) {
   redirect("/app/cereal?listo=mensual-terminada");
 }
 
-// Venta mensual prevista: un cobro que se repite todos los meses, con monto aproximado.
+// Stock de cereal sin vender (suma al patrimonio).
+export async function grainStockAction(_: FormState, fd: FormData): Promise<FormState> {
+  const { workspace, plan } = await requireWorkspace();
+  try {
+    if (!(await canUse(plan, "cereal"))) throw new UserError("El módulo Agro es parte de Pro.");
+    const { setGrainStock } = await import("@/server/grain");
+    const qty = money(fd, "quantity", "la cantidad");
+    const tonnes = fd.get("unit") === "t" ? qty : qty.dividedBy(10);
+    await setGrainStock(getDb(), workspace.id, { grain: str(fd, "grain"), tonnes, pricePerTonne: money(fd, "price", "el precio por tonelada"), currency: workspace.baseCurrency });
+  } catch (e) { return fail(e); }
+  revalidatePath("/app/cereal");
+  return { ok: "Stock guardado. Ya suma en tu patrimonio." };
+}
+
+export async function deleteGrainStockAction(fd: FormData) {
+  const { workspace } = await requireWorkspace();
+  const { deleteGrainStock } = await import("@/server/grain");
+  await deleteGrainStock(getDb(), workspace.id, str(fd, "id"));
+  revalidatePath("/app/cereal");
+}
+
+// Venta mensual estimada: un cobro que se repite todos los meses, con monto aproximado.
 export async function monthlyGrainAction(_: FormState, fd: FormData): Promise<FormState> {
   const { workspace, plan } = await requireWorkspace();
   try {
@@ -432,17 +453,6 @@ export async function importAction(_: FormState, fd: FormData): Promise<FormStat
     await audit("import.applied", { userId: user.id, workspaceId: workspace.id, entity: "importBatch", entityId: b.id, meta: { rows: b.rows } });
   } catch (e) { return fail(e); }
   redirect(done("/app/importar?ok=1"));
-}
-
-function autoMap(text: string) {
-  const first = text.replace(/^﻿/, "").split(/\r?\n/)[0] ?? "";
-  const delim = [";", "\t", ","].map((d) => [d, first.split(d).length] as const).sort((a, b) => b[1] - a[1])[0][0];
-  const m: Record<number, string> = {};
-  first.split(delim).forEach((h, i) => {
-    const s = h.toLowerCase();
-    m[i] = /fech|date/.test(s) ? "fecha" : /concep|descr|detalle/.test(s) ? "concepto" : /import|monto|amount|valor|total/.test(s) ? "importe" : /categ/.test(s) ? "categoria" : "ignorar";
-  });
-  return m;
 }
 
 export async function revertImportAction(fd: FormData) {
@@ -492,7 +502,7 @@ export async function checkoutAction(fd: FormData) {
     if (!c.ok) redirect(`/app/configuracion?tab=plan&cupon=${encodeURIComponent(c.error)}`);
     discount = { code: c.coupon.code, percentOff: c.coupon.percentOff };
   }
-  const link = await startCheckout(workspace.id, user.email, cycle, `${appUrl()}/app/configuracion?tab=plan&pago=1`, discount);
+  const link = await startCheckout(getDb(), workspace.id, user.email, cycle, `${appUrl()}/app/configuracion?tab=plan&pago=1`, discount);
   await audit("billing.checkout_started", { userId: user.id, workspaceId: workspace.id, meta: { cycle, coupon: discount?.code } });
   redirect(link);
 }

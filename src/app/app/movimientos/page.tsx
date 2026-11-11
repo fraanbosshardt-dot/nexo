@@ -2,9 +2,9 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { requireWorkspace } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
-import { listMovements } from "@/server/ledger";
-import { formatMoney, ZERO } from "@/lib/money";
-import { addMonths, fmtPeriod, period, todayIn } from "@/lib/dates";
+import type { Prisma } from "@/generated/prisma/client";
+import { dec, formatMoney, ZERO } from "@/lib/money";
+import { addMonths, fmtPeriod, period, periodEnd, periodStart, todayIn } from "@/lib/dates";
 import { PageHead } from "@/components/page";
 import { categoryIcon, ICON_TONE } from "@/lib/category-icon";
 import { Icon, type IconName } from "@/components/icons";
@@ -25,21 +25,31 @@ export default async function Movements({ searchParams }: { searchParams: Promis
   let from = iso(sp.desde), to = iso(sp.hasta);
   if (from && to && from > to) [from, to] = [to, from];
   const ranged = !!(from || to);
-  // Se traen todos los del período (los totales siempre son exactos) y se muestran de a 200 con "Ver más".
-  const all = await listMovements(getDb(), workspace.id, ranged ? { from: from ?? undefined, to: to ?? undefined, take: 20000 } : { period: p, take: 20000 });
-  const showN = Math.min(20000, Math.max(200, Number(sp.n) || 200));
+  // La lista viene filtrada y de a 200 desde la base ("Ver más" suma 200). Los totales se calculan en la base, siempre exactos.
+  const showN = Math.min(5000, Math.max(200, Number(sp.n) || 200));
   const fmtD = (d: Date) => `${d.getUTCDate()} de ${MESES[d.getUTCMonth()]} de ${d.getUTCFullYear()}`;
   const rangeLabel = ranged ? (from && to ? `Del ${fmtD(from)} al ${fmtD(to)}` : from ? `Desde el ${fmtD(from)}` : `Hasta el ${fmtD(to!)}`) : "";
-  const rows = all
-    .filter((t) => (tipo === "ALL" ? !(t.type === "TRANSFER" && t.direction === "IN") : tipo === "TRANSFER" ? t.type === "TRANSFER" && t.direction === "OUT" : t.type === tipo))
-    .filter((t) => !q || `${t.description} ${t.category?.name ?? ""} ${t.account.name}`.toLowerCase().includes(q));
+  const when = ranged ? { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) } : { gte: periodStart(p), lte: periodEnd(p) };
+  const byType: Prisma.TransactionWhereInput = tipo === "ALL" ? { NOT: { type: "TRANSFER", direction: "IN" } } : tipo === "TRANSFER" ? { type: "TRANSFER", direction: "OUT" } : { type: tipo as "INCOME" | "EXPENSE" };
+  const text = (v: string) => ({ contains: v, mode: "insensitive" as const });
+  const where: Prisma.TransactionWhereInput = {
+    workspaceId: workspace.id, effectiveDate: when, ...byType,
+    ...(q ? { OR: [{ description: text(q) }, { category: { name: text(q) } }, { account: { name: text(q) } }] } : {}),
+  };
+  const cur = workspace.baseCurrency;
+  const db = getDb();
+  const [list, total, sums] = await Promise.all([
+    db.transaction.findMany({ where, include: { account: { select: { name: true, currency: true } }, category: { select: { name: true } }, reversedBy: { select: { id: true } } }, orderBy: [{ effectiveDate: "desc" }, { createdAt: "desc" }], take: showN }),
+    db.transaction.count({ where }),
+    db.transaction.groupBy({ by: ["type", "direction"], where: { workspaceId: workspace.id, effectiveDate: when, currency: cur, reversalOfId: null, reversedBy: null, type: { in: ["INCOME", "EXPENSE", "DEBT_PAYMENT"] } }, _sum: { amount: true } }),
+  ]);
   const rangeQ: Record<string, string> = ranged ? { ...(sp.desde ? { desde: sp.desde } : {}), ...(sp.hasta ? { hasta: sp.hasta } : {}) } : { mes: p };
   const link = (o: Record<string, string>) => `/app/movimientos?${new URLSearchParams({ mes: p, ...(tipo !== "ALL" ? { tipo } : {}), ...(q ? { q } : {}), ...o })}`;
-  const cur = workspace.baseCurrency;
-  const real = all.filter((t) => t.currency === cur && !t.reversedBy && !t.reversalOfId);
-  const inc = real.filter((t) => t.type === "INCOME").reduce((s, t) => (t.direction === "IN" ? s.plus(t.amount) : s.minus(t.amount)), ZERO);
-  const out = real.filter((t) => t.type === "EXPENSE" || t.type === "DEBT_PAYMENT").reduce((s, t) => (t.direction === "OUT" ? s.plus(t.amount) : s.minus(t.amount)), ZERO);
-  const visible = rows.slice(0, showN);
+  const sum = (types: string[], dir: "IN" | "OUT") => sums.filter((x) => types.includes(x.type)).reduce((s, x) => { const v = dec(x._sum.amount ?? 0); return x.direction === dir ? s.plus(v) : s.minus(v); }, ZERO);
+  const inc = sum(["INCOME"], "IN");
+  const out = sum(["EXPENSE", "DEBT_PAYMENT"], "OUT");
+  const rows = list;
+  const visible = list;
   const byDay = new Map<string, typeof rows>();
   for (const t of visible) { const k = t.effectiveDate.toISOString().slice(0, 10); byDay.set(k, [...(byDay.get(k) ?? []), t]); }
 
@@ -101,7 +111,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
                 </div>
               );
             })}
-            {rows.length > visible.length && <div className="acts" style={{ justifyContent: "center", paddingTop: 14 }}><Link className="btn" href={`/app/movimientos?${new URLSearchParams({ ...rangeQ, ...(tipo !== "ALL" ? { tipo } : {}), ...(q ? { q } : {}), n: String(showN + 200) })}`}>Ver más ({rows.length - visible.length} más)</Link></div>}
+            {total > visible.length && <div className="acts" style={{ justifyContent: "center", paddingTop: 14 }}><Link className="btn" href={`/app/movimientos?${new URLSearchParams({ ...rangeQ, ...(tipo !== "ALL" ? { tipo } : {}), ...(q ? { q } : {}), n: String(showN + 200) })}`}>Ver más ({total - visible.length} más)</Link></div>}
           </div>
         ) : (
           <div className="empty">

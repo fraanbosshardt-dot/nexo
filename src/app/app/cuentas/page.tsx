@@ -18,7 +18,7 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
   const { workspace, plan } = await requireWorkspace();
   const sp = await searchParams;
   const db = getDb();
-  const [accounts, balances] = await Promise.all([db.account.findMany({ where: { workspaceId: workspace.id, type: { not: "CREDIT_CARD" } }, orderBy: { createdAt: "asc" } }), accountBalances(db, workspace.id)]);
+  const [accounts, balances] = await Promise.all([db.account.findMany({ where: { workspaceId: workspace.id, type: { not: "CREDIT_CARD" } }, orderBy: { createdAt: "asc" } }), accountBalances(db, workspace.id, todayIn(workspace.timezone))]);
   const act = accounts.filter((a) => a.active), ina = accounts.filter((a) => !a.active);
   const cur = workspace.baseCurrency;
   const total = (f: (a: (typeof accounts)[number]) => boolean, c = cur) => act.filter((a) => a.currency === c && f(a)).reduce((s, a) => s.plus(balances.get(a.id) ?? ZERO), ZERO);

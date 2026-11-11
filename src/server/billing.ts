@@ -1,20 +1,21 @@
 // Cobro de Pro con suscripciones de Mercado Pago (preapproval).
-// Se activa cargando MP_ACCESS_TOKEN, MP_WEBHOOK_SECRET, MP_CURRENCY y los precios en esa moneda.
+// Se activa cargando MP_ACCESS_TOKEN y MP_WEBHOOK_SECRET. El precio es uno solo: el de Panel → Ajustes → Precio de Pro,
+// el mismo que se muestra en la web y en la app.
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { Db } from "./ledger";
 import { UserError } from "./ledger";
+import { paidUntil, planSettings } from "./plans";
 
 const API = "https://api.mercadopago.com";
 
-export function billingConfig() {
+export async function billingConfig(db: Db) {
   const token = process.env.MP_ACCESS_TOKEN;
-  const currency = process.env.MP_CURRENCY || "ARS";
-  const monthly = Number(process.env.MP_PRICE_MONTHLY || 0), yearly = Number(process.env.MP_PRICE_YEARLY || 0);
-  return { enabled: !!token && monthly > 0 && yearly > 0, token, currency, monthly, yearly };
+  const ars = (await planSettings(db)).pricesArs;
+  return { enabled: !!token && !!ars, token, currency: "ARS", monthly: ars?.monthly ?? 0, yearly: ars?.yearly ?? 0 };
 }
 
 async function mp<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const { token } = billingConfig();
+  const token = process.env.MP_ACCESS_TOKEN;
   if (!token) throw new UserError("Los cobros todavía no están activados.");
   const r = await fetch(`${API}${path}`, { ...init, headers: { authorization: `Bearer ${token}`, "content-type": "application/json", ...(init.headers ?? {}) }, signal: AbortSignal.timeout(10000), cache: "no-store" });
   if (!r.ok) throw new UserError("Mercado Pago no respondió. Probá de nuevo en un momento.");
@@ -27,8 +28,8 @@ type Preapproval = { id: string; status: "pending" | "authorized" | "paused" | "
 // La referencia externa lleva el espacio y, si hay, el cupón: "espacio|CUPON".
 export const splitRef = (ref: string | undefined) => { const [ws, coupon] = (ref ?? "").split("|"); return { ws: ws || null, coupon: coupon || null }; };
 
-export async function startCheckout(ws: string, payerEmail: string, cycle: "monthly" | "yearly", backUrl: string, discount?: { code: string; percentOff: number }) {
-  const c = billingConfig();
+export async function startCheckout(db: Db, ws: string, payerEmail: string, cycle: "monthly" | "yearly", backUrl: string, discount?: { code: string; percentOff: number }) {
+  const c = await billingConfig(db);
   const base = cycle === "yearly" ? c.yearly : c.monthly;
   const amount = discount ? Math.round(base * (100 - discount.percentOff)) / 100 : base;
   if (!c.enabled) throw new UserError("Los cobros todavía no están activados.");
@@ -49,6 +50,7 @@ export async function startCheckout(ws: string, payerEmail: string, cycle: "mont
 export async function cancelSubscription(db: Db, ws: string) {
   const sub = await db.subscription.findUnique({ where: { workspaceId: ws } });
   if (sub?.provider === "mercadopago" && sub.providerRef) await mp(`/preapproval/${sub.providerRef}`, { method: "PUT", body: JSON.stringify({ status: "cancelled" }) });
+  // Pro sigue hasta el fin del período pagado (effectivePlan mira currentPeriodEnd).
   await db.subscription.update({ where: { workspaceId: ws }, data: { status: "CANCELED", canceledAt: new Date() } });
 }
 
@@ -79,7 +81,8 @@ export async function applyNotification(db: Db, type: string, id: string) {
     await db.subscription.upsert({
       where: { workspaceId: ws },
       create: { workspaceId: ws, plan: active ? "PRO" : "FREE", status: active ? "ACTIVE" : p.status === "cancelled" ? "CANCELED" : "PAST_DUE", provider: "mercadopago", providerRef: p.id, billingCycle: cycle, couponCode: coupon },
-      update: { plan: active ? "PRO" : p.status === "cancelled" ? "FREE" : undefined, status: active ? "ACTIVE" : p.status === "cancelled" ? "CANCELED" : "PAST_DUE", provider: "mercadopago", providerRef: p.id, billingCycle: cycle, trialEndsAt: active ? null : undefined, couponCode: coupon ?? undefined, canceledAt: p.status === "cancelled" ? new Date() : undefined },
+      // Cancelada o pausada: el plan queda en Pro y effectivePlan lo corta al terminar el período pagado.
+      update: { plan: active ? "PRO" : undefined, status: active ? "ACTIVE" : p.status === "cancelled" ? "CANCELED" : "PAST_DUE", provider: "mercadopago", providerRef: p.id, billingCycle: cycle, trialEndsAt: active ? null : undefined, couponCode: coupon ?? undefined, canceledAt: p.status === "cancelled" ? new Date() : undefined },
     });
   }
   if (type === "subscription_authorized_payment") {
@@ -92,5 +95,9 @@ export async function applyNotification(db: Db, type: string, id: string) {
       create: { workspaceId: sub.workspaceId, provider: "mercadopago", providerRef: String(pay.id), amount: pay.transaction_amount.toFixed(2), currency: pay.currency_id, status, paidAt: status === "approved" ? new Date(pay.date_created ?? Date.now()) : null },
       update: { status, paidAt: status === "approved" ? new Date(pay.date_created ?? Date.now()) : null },
     });
+    if (status === "approved") {
+      const until = paidUntil(new Date(pay.date_created ?? Date.now()), sub.billingCycle);
+      if (!sub.currentPeriodEnd || sub.currentPeriodEnd < until) await db.subscription.update({ where: { id: sub.id }, data: { currentPeriodEnd: until } });
+    }
   }
 }

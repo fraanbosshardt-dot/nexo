@@ -929,3 +929,4 @@ html[data-big] body{zoom:1.15}
 [data-q][hidden],details[data-group][hidden]{display:none!important}
 .card:has(> details[data-group][hidden]){display:none}
 .rule-close{gap:8px;align-items:center}
+.verify-ann{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;flex:1}.verify-ann .notice{margin:0;flex-basis:100%}

@@ -23,7 +23,7 @@ export default async function Billing() {
     db.invoice.findMany({ include: { workspace: { include: { members: { take: 1, include: { user: { select: { id: true, email: true } } } } } } }, orderBy: { createdAt: "desc" }, take: 50 }),
     db.coupon.findMany({ orderBy: { createdAt: "desc" } }),
   ]);
-  const bill = billingConfig();
+  const bill = await billingConfig(db);
   const active = subs.filter((s) => s.status === "ACTIVE"), pastDue = subs.filter((s) => s.status === "PAST_DUE");
   const renewing = active.filter((s) => s.currentPeriodEnd && s.currentPeriodEnd <= soon).length;
   const rejected = invoices.filter((i) => i.status === "rejected").length;
@@ -31,7 +31,7 @@ export default async function Billing() {
   return (
     <>
       <PageHead title="Cobros y cupones" desc="Suscripciones de Mercado Pago, pagos y descuentos." actions={owner ? <a className="btn" href="/admin/export/pagos">Descargar pagos (Excel)</a> : undefined} />
-      {!bill.enabled && <p className="notice a">Los cobros con Mercado Pago todavía no están activados: faltan MP_ACCESS_TOKEN, MP_WEBHOOK_SECRET y los precios en Vercel. Mientras tanto, podés regalar Pro desde Clientes.</p>}
+      {!bill.enabled && <p className="notice a">Los cobros con Mercado Pago todavía no están activados: faltan MP_ACCESS_TOKEN y MP_WEBHOOK_SECRET en Vercel, o el precio de Pro en pesos en Ajustes. Mientras tanto, podés regalar Pro desde Clientes.</p>}
       <Stats items={[["Suscripciones activas", int(active.length)], ["Con pago pendiente", int(pastDue.length)], ["Renuevan en 7 días", int(renewing)], ["Pagos rechazados", int(rejected), "en los últimos 50"]]} />
 
       <div className="card">
