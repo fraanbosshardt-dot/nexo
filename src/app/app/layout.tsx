@@ -65,11 +65,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
       )}
       {!user.emailVerified && (
-        <div className="notice a app-ann" role="status">
-          <Icon name="info" />
-          <ActionForm action={resendVerifyAction} className="verify-ann">
-            <span>Confirmá tu correo ({user.email}) para recibir avisos y poder recuperar la contraseña.</span>
-            <Submit className="btn sm" pending="Enviando…">Mandame el enlace</Submit>
+        <div className="vbanner" role="status">
+          <span className="vbanner-ic" aria-hidden="true"><Icon name="info" /></span>
+          <ActionForm action={resendVerifyAction} className="vbanner-body">
+            <span className="vbanner-txt"><b>Confirmá tu correo</b><span>Te mandamos un enlace a <b className="vbanner-mail">{user.email}</b>. Así recibís avisos y podés recuperar la contraseña.</span></span>
+            <Submit className="btn sm pri" pending="Enviando…">Mandame el enlace</Submit>
           </ActionForm>
         </div>
       )}

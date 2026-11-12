@@ -2,6 +2,7 @@
 // Fila que se desliza a la izquierda en el celular para mostrar acciones (pagar, cancelar…).
 // En la compu no cambia nada: los botones siguen en la fila. Un toque afuera la vuelve a cerrar.
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { ConfirmSubmit } from "./confirm-submit";
 
 const WIDTH = 168; // ancho del panel de acciones
 
@@ -41,5 +42,5 @@ export function SwipeRow({ children, actions, className = "li" }: { children: Re
 
 // Botón de envío que pide confirmación nativa (en el panel deslizable no entra la confirmación en línea).
 export function ConfirmButton({ question, children }: { question: string; children: ReactNode }) {
-  return <button type="submit" onClick={(e) => { if (!window.confirm(question)) e.preventDefault(); }}>{children}</button>;
+  return <ConfirmSubmit className="" question={question} yes="Sí, cancelar">{children}</ConfirmSubmit>;
 }
