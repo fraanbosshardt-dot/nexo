@@ -191,7 +191,7 @@
 .nx .obx-choice:hover{background:var(--nx-sunk)} .nx .obx-choice.on{border-color:var(--nx-accent);background:var(--nx-accent-soft)}
 .nx .obx-incs{display:flex;flex-direction:column;gap:12px}
 .nx .obx-inc{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) 100px;gap:10px;align-items:end;padding:14px;border-radius:16px;background:var(--nx-sunk)}
-.nx .obx-inc .obx-var{grid-column:1/-1;font-size:13.5px}
+.nx .obx-inc .obx-var{grid-column:1/-1;font-size:13.5px;align-items:center;justify-self:start;min-height:32px}.nx .obx-inc .obx-var input{margin:0;flex:none}
 .nx .obx-preview{position:sticky;top:24px;align-self:start;display:flex;flex-direction:column;gap:12px;padding:24px;border-radius:24px;background:var(--nx-accent-soft);color:var(--nx-accent-ink)}
 .nx .obx-pv-lbl{font-size:12.5px;font-weight:500;letter-spacing:.02em}
 .nx .obx-phone{background:var(--nx-bg);color:var(--nx-ink);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:6px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
@@ -283,7 +283,7 @@
 }
 
 /* Bienvenida: los pasos van dentro de la tarjeta, como cuatro tramos que se llenan */
-.nx .obx-top{justify-content:center;height:56px;background:transparent}
+.nx .obx-top{justify-content:center;height:56px;background:var(--nx-canvas)}
 .nx .obx-mhero-bar{display:none!important}
 .nx .obx-track{display:flex;flex-direction:column;gap:10px;margin-bottom:4px}
 .nx .obx-track-now{font-size:13px;color:var(--nx-ink3)}
