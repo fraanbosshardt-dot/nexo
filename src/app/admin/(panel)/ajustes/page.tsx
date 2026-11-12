@@ -42,7 +42,7 @@ export default async function AdminSettings() {
         </div>
         <div className="chead" style={{ marginTop: 8 }}><h3>Funciones Pro</h3><span className="sub">Marcá las que también querés dar gratis</span></div>
         <div className="list">{PRO_FEATURES.map((f) => (
-          <label className="li" key={f.key} style={{ cursor: "pointer" }}><div className="grow"><div className="t">{f.name}{f.beta && <> <span className="pill a">Beta</span></>}</div><div className="s">{settings.freeAlso.includes(f.key) ? "Incluida en Gratis" : "Solo Pro"}</div></div><span className="sw-t"><input type="checkbox" name="freeAlso" value={f.key} defaultChecked={settings.freeAlso.includes(f.key)} aria-label={`Dar gratis: ${f.name}`} /><span /></span></label>
+          <label className="li" key={f.key} style={{ cursor: "pointer" }}><div className="grow"><div className="t">{f.name}{f.beta && <> <span className="pill beta">Beta</span></>}</div><div className="s">{settings.freeAlso.includes(f.key) ? "Incluida en Gratis" : "Solo Pro"}</div></div><span className="sw-t"><input type="checkbox" name="freeAlso" value={f.key} defaultChecked={settings.freeAlso.includes(f.key)} aria-label={`Dar gratis: ${f.name}`} /><span /></span></label>
         ))}</div>
         <div><Submit>Guardar</Submit></div>
       </ActionForm>

@@ -16,6 +16,21 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 - [ ] F9. Deudas: refinanciar (rearmar las cuotas desde la que sigue sin perder lo pagado).
 - [ ] F10. Deudas: subir el cronograma en Excel (además de PDF y pegado).
 
+### Revisión general 12/11/2026 (recomendaciones)
+- [ ] R1. Seguridad: pasar la política de contenido (CSP) a "nonce" para no permitir scripts en línea (hoy Next los necesita con 'unsafe-inline'). Mejora la protección contra inyección de código.
+- [ ] R2. Seguridad: copias automáticas de la base (ver Z11) y probar una restauración una vez.
+- [ ] R3. Seguridad: aviso por correo cuando se activa o desactiva el doble factor, se cambia la contraseña o se comparte el espacio (hoy solo en contraseña e ingreso nuevo).
+- [ ] R4. Inicio: un resumen de tarjetas y préstamos del mes ("este mes pagás $ X entre tarjetas y cuotas").
+- [ ] R5. Movimientos: elegir varios y cambiarles la categoría o borrarlos juntos.
+- [ ] R6. Cuentas: historial del saldo (gráfico chico por cuenta).
+- [ ] R7. Próximos pagos: pagar varios juntos (ej.: todos los servicios del mes).
+- [ ] R8. Flujo de caja: decidir Z8 (ingresos que no se repiten).
+- [ ] R9. Informes: comparar dos meses y exportar a PDF desde la misma pantalla.
+- [ ] R10. Alertas: avisar cuotas de préstamo o resumen de tarjeta que vencen y la cuenta no alcanza.
+- [ ] R11. Simulador: sumar un préstamo o una compra en cuotas para ver cómo queda el flujo.
+- [ ] R12. Configuración: cerrar sesión en todos los dispositivos visible arriba en Seguridad; y descargar todos los datos en un clic (ya existe Exportar: hacerlo más visible).
+- [ ] R13. Probar en el celular con la pantalla visible: confirmaciones nuevas, sugerencias de especies, deslizar, Presupuestos y Tarjetas (en esta sesión el panel del navegador estaba oculto).
+
 ### Necesitan algo tuyo
 - [ ] Z2. Cargar las claves reales en Vercel para activar lo que ya está programado: RESEND_API_KEY y EMAIL_FROM (emails), CRON_SECRET (tarea diaria), MP_ACCESS_TOKEN y MP_WEBHOOK_SECRET (Mercado Pago: el Access Token de producción y la clave secreta de Webhooks de la aplicación Finan). Están explicadas en .env.example.
 - [ ] Z3. Decidir el precio de Pro en pesos (u otra moneda) para Mercado Pago.
@@ -55,6 +70,7 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 - [ ] M4. Testimonios de usuarios reales, cuando los haya (nunca inventados).
 
 ## Completado
+- [x] 12/11/2026 — Revisión general: todas las pantallas de la app cargan sin errores ni valores raros; sin vulnerabilidades conocidas en las librerías; encabezados de seguridad, cookies, límite de intentos de ingreso y de doble factor, aislamiento entre espacios y permisos del panel interno revisados. Arreglado: la búsqueda de especies ahora exige el doble factor verificado como el resto. Ayuda actualizada (tarjeta en dos modos, préstamos, inversiones, presupuesto). Etiqueta "Beta" con su propio estilo.
 - [x] 12/11/2026 — Diseño: las confirmaciones ("¿Eliminar…?", "¿Cancelar…?", "¿Adelantar…?") ahora son un cuadro centrado con la pregunta, la explicación y dos botones (Cancelar / Sí…), igual en toda la app (también al deslizar en Próximos pagos). El aviso para confirmar el correo quedó como una tarjeta ordenada con ícono, texto y botón. "+ Agregar una categoría" en Presupuestos se ve como un botón.
 - [x] 12/11/2026 — Inversiones: al escribir la especie aparecen sugerencias con nombre y precio (código o nombre: "gal", "apple", "btc"), para acciones, CEDEARs, bonos, ON, letras, exterior y cripto. Las que terminan en D/C se reconocen en dólares cuando existe la misma sin esa letra (GGALD sí, YPFD sigue en pesos). Cada inversión se puede tener en la moneda que elijas (si cotiza en otra, se convierte con la cotización oficial). Se pueden eliminar inversiones (la plata vuelve a la cuenta) y bienes.
 - [x] 12/11/2026 — F11. Inversiones completas: especies con nominales y precio automático (data912 para acciones, CEDEARs, bonos, ON y letras de Argentina; Yahoo para acciones y ETF del exterior; CoinGecko para cripto), bonos calculados cada 100 nominales, costo promedio, ganancia (y la ya cobrada al vender), comprar más o vender moviendo o no una cuenta, precio a mano cuando no hay cotización. Los FCI van con el valor de la cuotaparte a mano (CAFCI no permite el acceso automático). Resumen en la moneda principal y en dólares. Patrimonio: botón para ver todo en dólares (cotización oficial). Precios guardados y actualizados cada 15 minutos como mucho; si una fuente falla, se usa el último precio.

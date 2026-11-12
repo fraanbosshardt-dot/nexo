@@ -7,7 +7,8 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   const s = await getSession();
-  if (!s) return Response.json([], { status: 401 });
+  // Con la sesión abierta y, si tiene doble factor, ya verificado (como el resto de las rutas).
+  if (!s || (s.user.totpEnabledAt && !s.twoFactorVerified)) return Response.json([], { status: 401 });
   const u = new URL(req.url);
   const cls = u.searchParams.get("tipo") as AssetClass;
   const q = (u.searchParams.get("q") ?? "").slice(0, 40);

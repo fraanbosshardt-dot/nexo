@@ -167,7 +167,7 @@ export default async function Settings({ searchParams }: { searchParams: Promise
           {refStats.invited > refStats.rewarded && <p className="sub" style={{ margin: "10px 0 0" }}>{refStats.invited - refStats.rewarded} {refStats.invited - refStats.rewarded === 1 ? "persona se registró y todavía no terminó" : "personas se registraron y todavía no terminaron"} la bienvenida.</p>}
           {refStats.left === 0 && <p className="sub" style={{ margin: "10px 0 0" }}>Llegaste al máximo de premios por invitar. ¡Gracias por recomendarnos!</p>}
         </div>
-        <div className="card"><div className="chead"><h3>Qué suma Pro</h3></div><div className="list">{PLAN_FEATURES.filter((f) => f.plan === "pro").map((f) => <div className="li" key={f.name}><span className="pill b">Pro</span><div className="grow">{f.name}</div>{f.beta && <span className="pill a">Beta</span>}</div>)}</div><p className="foot-note" style={{ marginTop: 10 }}>Beta: en desarrollo. Se suma a Pro sin costo extra apenas esté lista.</p></div>
+        <div className="card"><div className="chead"><h3>Qué suma Pro</h3></div><div className="list">{PLAN_FEATURES.filter((f) => f.plan === "pro").map((f) => <div className="li" key={f.name}><span className="pill b">Pro</span><div className="grow">{f.name}</div>{f.beta && <span className="pill beta">Beta</span>}</div>)}</div><p className="foot-note" style={{ marginTop: 10 }}>Beta: en desarrollo. Se suma a Pro sin costo extra apenas esté lista.</p></div>
         {invoices.length > 0 && (
           <div className="card"><div className="chead"><h3>Facturas</h3></div><div className="tw"><table>
             <thead><tr><th>Fecha</th><th>Detalle</th><th>Estado</th><th className="n">Importe</th></tr></thead>

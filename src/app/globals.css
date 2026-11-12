@@ -1087,3 +1087,7 @@ html[data-big] body{zoom:1.15}
 .bud-add select{appearance:none;-webkit-appearance:none;max-width:100%;min-height:42px;padding:0 40px 0 16px;border:1px dashed var(--line-2);border-radius:999px;background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a8f98' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 14px center;color:var(--blue);font:inherit;font-size:14px;font-weight:500;cursor:pointer}
 .bud-add select:hover{border-color:var(--ink);background-color:var(--surface-2)}
 .bud-add select:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+/* Etiqueta "Beta": chica, redondeada y con color suave (no un recuadro) */
+.pill.beta{height:18px;padding:0 8px;border-radius:999px;font-size:11px;font-weight:600;letter-spacing:.02em;background:#FEF3C7;color:#92400E;box-shadow:none;vertical-align:2px;margin-left:6px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .pill.beta{background:#3F3413;color:#FDD663}}
+:root[data-theme="dark"] .pill.beta{background:#3F3413;color:#FDD663}

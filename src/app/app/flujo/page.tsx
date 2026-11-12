@@ -71,7 +71,7 @@ export default async function Flow({ searchParams }: { searchParams: Promise<{ h
         </table></div>
       </div>
       <div className="card">
-        <div className="chead"><div><h3>Día a día <span className="pill a">Beta</span></h3><p className="sub">Tu saldo después de cada día con cobros o pagos, en los próximos 60 días.</p></div>{lowest && long && <span className={`pill ${lowest.balance.isNegative() ? "r" : ""}`}>Lo más bajo: {f(lowest.balance)} el {fmtDate(lowest.date)}</span>}</div>
+        <div className="chead"><div><h3>Día a día <span className="pill beta">Beta</span></h3><p className="sub">Tu saldo después de cada día con cobros o pagos, en los próximos 60 días.</p></div>{lowest && long && <span className={`pill ${lowest.balance.isNegative() ? "r" : ""}`}>Lo más bajo: {f(lowest.balance)} el {fmtDate(lowest.date)}</span>}</div>
         {!long ? (
           <p className="sub">Con Pro ves el saldo de cada día, para saber exactamente qué día te quedás corto. <Link className="lnk" href="/app/configuracion?tab=plan">Probar Pro</Link></p>
         ) : daily.length ? (
