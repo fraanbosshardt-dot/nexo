@@ -1,6 +1,6 @@
 // Alertas y consejos con reglas fijas sobre los datos del usuario (sin IA externa).
 import type { Db } from "./ledger";
-import { openObligations } from "./ledger";
+import { accountBalances, openObligations } from "./ledger";
 import { forecast } from "./forecast";
 import { isEstimatedGrain, loadSaleHref } from "./grain";
 import { budgetFor, goalsOverview } from "./planning";
@@ -26,6 +26,19 @@ export async function insights(db: Db, ws: string, currency: string, today: Date
   if (red.length) out.push({ level: "urgent", title: `Tu saldo baja de cero en ${fmtPeriod(red[0].period).toLowerCase()}`, detail: `El punto más bajo es ${f(red[0].min)}. Revisá los pagos de ese mes o mové algún gasto.`, href: "/app/flujo" });
   const neg = rows.filter((r) => r.result.lt(0));
   if (neg.length >= 2) out.push({ level: "warn", title: `${neg.length} de los próximos 6 meses terminan con menos plata`, detail: neg.map((r) => fmtPeriod(r.period)).join(", "), href: "/app/flujo" });
+
+  // ¿Alcanza la plata para lo que vence en los próximos 10 días? (cuentas de dinero en la moneda principal)
+  {
+    const in10 = new Date(today.getTime() + 10 * 864e5);
+    const due = open.filter((o) => o.direction === "PAYABLE" && o.currency === currency && o.dueDate <= in10);
+    const need = due.reduce((s, o) => s.plus(o.remaining), ZERO);
+    if (need.gt(0)) {
+      const [accs, bal] = await Promise.all([db.account.findMany({ where: { workspaceId: ws, active: true, currency, type: { notIn: ["CREDIT_CARD", "INVESTMENT"] } }, select: { id: true } }), accountBalances(db, ws)]);
+      const cash = accs.reduce((s, a) => s.plus(bal.get(a.id) ?? ZERO), ZERO);
+      const heavy = due.filter((o) => o.source === "card" || o.source === "debt");
+      if (cash.lt(need)) out.push({ level: "urgent", title: `No te alcanza para lo que vence en 10 días: faltan ${f(need.minus(cash))}`, detail: `Vencen ${f(need)}${heavy.length ? ` (incluye ${heavy.map((o) => o.description).slice(0, 2).join(" y ")})` : ""} y en tus cuentas hay ${f(cash)}. Mirá qué podés mover o pagar en parte.`, href: "/app/proximos" });
+    }
+  }
 
   const week = new Date(today.getTime() + 7 * 864e5);
   const soon = open.filter((o) => !o.overdue && o.direction === "PAYABLE" && o.dueDate <= week);

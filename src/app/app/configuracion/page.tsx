@@ -73,8 +73,19 @@ export default async function Settings({ searchParams }: { searchParams: Promise
   if (t === "seguridad") {
     const qr = user.totpEnabledAt ? null : await twoFactorQr();
     const sessions = await getDb().session.findMany({ where: { userId: user.id, revokedAt: null, expiresAt: { gt: new Date() } }, orderBy: { createdAt: "desc" } });
+    const others = sessions.filter((x) => x.id !== session.id).length;
     body = (
       <>
+        <div className="card sec-sum">
+          <div className="chead"><div><h3>Estado de tu cuenta</h3><p className="sub">Lo importante para que nadie más pueda entrar.</p></div></div>
+          <div className="sec-items">
+            <div className={`sec-item ${user.totpEnabledAt ? "ok" : "warn"}`}><span className="sec-dot" aria-hidden="true">{user.totpEnabledAt ? "✓" : "!"}</span><span><b>Verificación en dos pasos</b><span className="sub">{user.totpEnabledAt ? "Activada" : "Desactivada: activala abajo"}</span></span></div>
+            <div className={`sec-item ${user.emailVerified ? "ok" : "warn"}`}><span className="sec-dot" aria-hidden="true">{user.emailVerified ? "✓" : "!"}</span><span><b>Correo confirmado</b><span className="sub">{user.emailVerified ? user.email : "Falta confirmarlo (mirá el aviso arriba)"}</span></span></div>
+            <div className={`sec-item ${others ? "warn" : "ok"}`}><span className="sec-dot" aria-hidden="true">{others ? others : "✓"}</span><span><b>Sesiones abiertas</b><span className="sub">{others ? `${others} además de esta` : "Solo esta"}</span></span>
+              {others > 0 && <form action={revokeOtherSessionsAction} style={{ marginLeft: "auto" }}><ConfirmSubmit className="btn sm" question={`¿Cerrar las otras ${others} sesiones? En esos dispositivos vas a tener que volver a ingresar.`} yes="Sí, cerrarlas">Cerrar las demás</ConfirmSubmit></form>}</div>
+            <div className="sec-item ok"><span className="sec-dot" aria-hidden="true">↓</span><span><b>Tus datos</b><span className="sub">Llevátelos cuando quieras</span></span><a className="btn sm" href="/app/configuracion/mis-datos" style={{ marginLeft: "auto" }}>Descargar todo</a></div>
+          </div>
+        </div>
         <div className="card">
           <div className="chead"><div><h3>Verificación en dos pasos</h3><p className="sub">Además de la contraseña, te pide un código de Google Authenticator al entrar.</p></div>{user.totpEnabledAt && <span className="pill g">Activa</span>}</div>
           {user.totpEnabledAt ? (

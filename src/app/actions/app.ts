@@ -373,6 +373,7 @@ export async function confirm2faAction(_: FormState, fd: FormData): Promise<Form
   await db.user.update({ where: { id: user.id }, data: { totpEnabledAt: new Date() } });
   await db.session.update({ where: { id: session.id }, data: { twoFactorVerified: true } });
   await audit("auth.2fa_enabled", { userId: user.id });
+  try { const { sendSecurityNotice } = await import("@/server/account-mail"); await sendSecurityNotice(user, "2fa_on"); } catch (e) { console.error("aviso 2fa", e); }
   revalidatePath("/app/configuracion");
   return { ok: "Verificación en dos pasos activada." };
 }
@@ -383,6 +384,7 @@ export async function disable2faAction(_: FormState, fd: FormData): Promise<Form
   if (!verifyTotp(decryptSecret(user.totpSecretEnc), String(fd.get("code") ?? ""))) return { error: "Para desactivarla, escribí un código válido." };
   await getDb().user.update({ where: { id: user.id }, data: { totpEnabledAt: null, totpSecretEnc: null } });
   await audit("auth.2fa_disabled", { userId: user.id });
+  try { const { sendSecurityNotice } = await import("@/server/account-mail"); await sendSecurityNotice(user, "2fa_off"); } catch (e) { console.error("aviso 2fa", e); }
   revalidatePath("/app/configuracion");
   return { ok: "Verificación en dos pasos desactivada." };
 }
@@ -443,6 +445,58 @@ export async function deleteObligationAction(_: FormState, fd: FormData): Promis
   } catch (e) { return fail(e); }
   revalidatePath("/app", "layout");
   redirect("/app/proximos?borrado=1");
+}
+
+// Pagar o cobrar varios pendientes juntos, por lo que falta de cada uno, desde una cuenta y en una fecha.
+export async function bulkPayAction(_: FormState, fd: FormData): Promise<FormState> {
+  const { user, workspace } = await requireWorkspace();
+  const ids = [...new Set(fd.getAll("ids").map(String))].slice(0, 200);
+  if (!ids.length) return { error: "Elegí al menos un pago o cobro." };
+  const db = getDb();
+  const acc = await db.account.findFirst({ where: { id: String(fd.get("accountId") ?? ""), workspaceId: workspace.id, active: true } });
+  if (!acc) return { error: "Elegí la cuenta." };
+  let when: Date;
+  try { when = date(fd.get("date"), "la fecha"); } catch (e) { return fail(e); }
+  const { remaining } = await import("@/server/ledger");
+  const obs = await db.obligation.findMany({ where: { workspaceId: workspace.id, id: { in: ids }, status: { in: ["PENDING", "PARTIAL"] } }, include: { payments: true } });
+  let ok = 0;
+  const skipped: string[] = [];
+  for (const o of obs) {
+    if (o.currency !== acc.currency) { skipped.push(`${o.description} (es en ${o.currency})`); continue; }
+    try { await payObligation(db, workspace.id, { obligationId: o.id, accountId: acc.id, amount: remaining(o), date: when, userId: user.id, settle: true }); ok++; }
+    catch (e) { if (e instanceof UserError) skipped.push(o.description); else throw e; }
+  }
+  await audit("obligation.bulk_paid", { userId: user.id, workspaceId: workspace.id, meta: { ok, skipped: skipped.length } });
+  revalidatePath("/app", "layout");
+  return { ok: `Listo, registramos ${ok} ${ok === 1 ? "pago o cobro" : "pagos y cobros"} desde ${acc.name}.${skipped.length ? ` No se registraron: ${skipped.slice(0, 3).join(", ")}${skipped.length > 3 ? "…" : ""}.` : ""}` };
+}
+
+// Varios movimientos a la vez: cambiarles la categoría o eliminarlos.
+export async function bulkMovementsAction(_: FormState, fd: FormData): Promise<FormState> {
+  const { user, workspace } = await requireWorkspace();
+  const ids = [...new Set(fd.getAll("ids").map(String))].slice(0, 500);
+  if (!ids.length) return { error: "Elegí al menos un movimiento." };
+  const db = getDb();
+  if (fd.get("do") === "del") {
+    let ok = 0;
+    const skipped: string[] = [];
+    for (const id of ids) {
+      try { await deleteMovement(db, workspace.id, id); ok++; } catch (e) { if (e instanceof UserError) skipped.push(e.message); else throw e; }
+    }
+    await audit("tx.bulk_deleted", { userId: user.id, workspaceId: workspace.id, meta: { ok, skipped: skipped.length } });
+    revalidatePath("/app", "layout");
+    return skipped.length ? { ok: `Eliminamos ${ok}. ${skipped.length} no se pudieron: ${[...new Set(skipped)][0]}` } : { ok: `Listo, eliminamos ${ok} ${ok === 1 ? "movimiento" : "movimientos"}.` };
+  }
+  const catId = String(fd.get("categoryId") ?? "");
+  const cat = catId ? await db.category.findFirst({ where: { id: catId, workspaceId: workspace.id } }) : null;
+  if (catId && !cat) return { error: "No encontramos esa categoría." };
+  if (!catId) return { error: "Elegí la categoría nueva." };
+  // Solo cambian los del mismo tipo (una categoría de gasto no se pone a un ingreso).
+  const r = await db.transaction.updateMany({ where: { workspaceId: workspace.id, id: { in: ids }, type: cat!.kind === "INCOME" ? "INCOME" : "EXPENSE" }, data: { categoryId: cat!.id } });
+  await audit("tx.bulk_category", { userId: user.id, workspaceId: workspace.id, meta: { n: r.count } });
+  revalidatePath("/app", "layout");
+  const other = ids.length - r.count;
+  return { ok: `Listo, ${r.count} ${r.count === 1 ? "movimiento pasó" : "movimientos pasaron"} a ${cat!.name}.${other ? ` ${other} no cambiaron porque son de otro tipo (ingreso, gasto o transferencia).` : ""}` };
 }
 
 // Borrar un movimiento cargado por error (se va del todo, con lo que dependía de él).

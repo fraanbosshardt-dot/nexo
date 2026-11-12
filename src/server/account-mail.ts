@@ -45,6 +45,27 @@ export async function sendPasswordChanged(user: { email: string; name: string })
   });
 }
 
+// Avisos de seguridad de la cuenta (doble factor, espacio compartido). Si no fuiste vos, se ve enseguida.
+export async function sendSecurityNotice(user: { email: string; name: string }, what: "2fa_on" | "2fa_off" | "member_joined", extra?: string) {
+  const { appUrl, sendEmail } = await mail();
+  const t = {
+    "2fa_on": ["Activaste la verificación en dos pasos", "Activaste la verificación en dos pasos en tu cuenta de Finan. Desde ahora, al ingresar te pedimos el código de tu app."],
+    "2fa_off": ["Desactivaste la verificación en dos pasos", "Se desactivó la verificación en dos pasos de tu cuenta de Finan. Te recomendamos volver a activarla en Configuración → Seguridad."],
+    "member_joined": ["Alguien se sumó a tu espacio", `${extra ?? "Una persona"} aceptó tu invitación y ya puede ver tu espacio en Finan. Lo podés quitar cuando quieras en Configuración → Compartir.`],
+  }[what];
+  return sendEmail({
+    to: user.email,
+    subject: `${t[0]} · Finan`,
+    text: `Hola ${user.name.split(" ")[0]}:
+
+${t[1]}
+
+Si no fuiste vos, cambiá tu contraseña en ${appUrl()}/recuperar y escribinos desde Ayuda.
+
+Finan`,
+  });
+}
+
 // Primer ingreso desde un navegador o dispositivo que esta cuenta nunca usó (no se avisa en el primer ingreso de todos).
 export async function notifyNewDevice(db: PrismaClient, user: { id: string; email: string; name: string }, userAgent: string | null, ip: string | null, sessionId?: string) {
   if (!userAgent) return;

@@ -25,7 +25,9 @@ export default async function Simulator({ searchParams }: { searchParams: Promis
     const financed = sp.interes === "con" ? parseAmount(sp.total ?? "") : null;
     const first = parseDate(sp.primera ?? "") ?? new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + 1, 10));
     const cushion = parseAmount(sp.colchon ?? "") ?? ZERO;
-    const r = price && price.gt(0) ? await canAfford(getDb(), workspace.id, { currency: cur, today, price, installments: n, financedTotal: financed, firstDue: first, cushion }) : null;
+    const loan = sp.tipo === "prestamo";
+    // Préstamo: "precio" es lo que te prestan (entra ahora) y el total a devolver son las cuotas.
+    const r = price && price.gt(0) ? await canAfford(getDb(), workspace.id, { currency: cur, today, price, installments: n, financedTotal: loan ? financed ?? price : financed, firstDue: first, cushion, inflow: loan ? price : null }) : null;
     return (
       <>
         <PageHead crumb="Planificar" title="Simulador" desc="Probá una decisión antes de tomarla. Nada de esto cambia tus datos." />
@@ -33,12 +35,14 @@ export default async function Simulator({ searchParams }: { searchParams: Promis
         <div className="split sim">
           {/* Al calcular, la pantalla baja sola hasta el resultado (en el celular queda debajo del formulario). */}
           <form className="card" method="get" action="/app/simulador#resultado" style={{ display: "flex", flexDirection: "column", gap: 12, alignSelf: "start" }}>
-            <h3>¿Qué querés comprar?</h3>
-            <label className="field">Precio de contado<input name="precio" inputMode="decimal" placeholder="0,00" defaultValue={sp.precio ?? ""} /></label>
+            <h3>¿Qué querés probar?</h3>
+            <label className="field">Es…<select name="tipo" defaultValue={loan ? "prestamo" : "compra"}><option value="compra">Una compra en cuotas</option><option value="prestamo">Un préstamo (te prestan plata)</option></select></label>
+            <label className="field">{loan ? "¿Cuánto te prestan?" : "Precio de contado"}<input name="precio" inputMode="decimal" placeholder="0,00" defaultValue={sp.precio ?? ""} /></label>
             <div className="frow"><label className="field">Cuotas<select name="cuotas" defaultValue={String(n)}>{[1, 2, 3, 6, 9, 12, 18, 24, 36].map((x) => <option key={x} value={x}>{x === 1 ? "En un pago" : `${x} cuotas`}</option>)}</select></label>
               <label className="field">Primera cuota<input name="primera" type="date" defaultValue={isoDate(first)} /></label></div>
             <div className="frow"><label className="field">Interés<select name="interes" defaultValue={sp.interes ?? "sin"}><option value="sin">Sin interés</option><option value="con">Con interés</option></select></label>
-              <label className="field">Total financiado<input name="total" inputMode="decimal" placeholder="Solo si es con interés" defaultValue={sp.total ?? ""} /></label></div>
+              <label className="field">{loan ? "Total a devolver (todas las cuotas)" : "Total financiado"}<input name="total" inputMode="decimal" placeholder={loan ? "Ej.: cuota × cantidad" : "Solo si es con interés"} defaultValue={sp.total ?? ""} /></label></div>
+            {loan && <p className="sub" style={{ margin: 0 }}>Para un préstamo, elegí “Con interés” y poné cuánto devolvés en total. La plata entra este mes y las cuotas salen después.</p>}
             <label className="field">Colchón mínimo que querés mantener<input name="colchon" inputMode="decimal" placeholder="0,00" defaultValue={sp.colchon ?? ""} /></label>
             <div><button className="btn pri" type="submit">Calcular</button></div>
             <p className="sub">Mira tu dinero de hoy y todo lo que ya sabés que entra y sale, mes a mes, y le suma las cuotas.</p>
@@ -47,7 +51,8 @@ export default async function Simulator({ searchParams }: { searchParams: Promis
             {!r ? <div className="empty">Cargá el precio y las cuotas para ver si te alcanza.</div> : (
               <>
                 <div className={`card verdict ${r.ok ? "yes" : "no"}`}>
-                  <div className="verdict-big">{r.ok ? "Sí, podés" : "No te conviene"}</div>
+                  <div className="verdict-big">{r.ok ? (loan ? "Sí, lo podés pagar" : "Sí, podés") : "No te conviene"}</div>
+                  {loan && price && <p className="sub" style={{ margin: "4px 0 0" }}>Te prestan {fm(price)} y devolvés {fm(r.total)}: el préstamo te cuesta {fm(r.total.minus(price))}.</p>}
                   <p style={{ margin: "6px 0 0" }}>{r.installments > 1 ? `${r.installments} cuotas de ${fm(r.cuota)}` : `Un pago de ${fm(r.total)}`}. {r.ok
                     ? `Tu saldo más bajo sería ${fm(r.worst.min)}${r.worst.minDate ? ` (${fmtDate(r.worst.minDate)})` : ""}, sin bajar de tu colchón.`
                     : `En ${fmtPeriod(r.worst.period).toLowerCase()} tu saldo bajaría a ${fm(r.worst.min)}${r.cushion.gt(0) ? `, por debajo de tu colchón de ${fm(r.cushion)}` : ""}.`}</p>

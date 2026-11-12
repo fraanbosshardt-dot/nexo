@@ -14,6 +14,28 @@ import { ACCOUNT_TYPE_LABEL } from "@/lib/labels";
 
 export const metadata: Metadata = { title: "Cuenta" };
 
+const MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+
+// Línea simple del saldo (sin librerías): un punto por mes y el valor del último.
+function BalanceLine({ data, currency }: { data: { label: string; value: number }[]; currency: string }) {
+  if (data.length < 2) return null;
+  const W = 600, H = 120, pad = 10;
+  const vals = data.map((d) => d.value), min = Math.min(0, ...vals), max = Math.max(...vals, 1);
+  const x = (i: number) => pad + (i * (W - 2 * pad)) / (data.length - 1);
+  const y = (v: number) => H - pad - ((v - min) / (max - min || 1)) * (H - 2 * pad);
+  const pts = data.map((d, i) => `${x(i)},${y(d.value)}`).join(" ");
+  return (
+    <figure className="bal-line" aria-label={`Saldo de los últimos meses: ${data.map((d) => `${d.label} ${formatMoney(d.value, currency)}`).join(", ")}`}>
+      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-hidden="true">
+        {min < 0 && <line x1={pad} x2={W - pad} y1={y(0)} y2={y(0)} className="bal-zero" />}
+        <polyline points={pts} className="bal-path" />
+        {data.map((d, i) => <circle key={i} cx={x(i)} cy={y(d.value)} r={i === data.length - 1 ? 5 : 3} className={d.value < 0 ? "bal-dot neg" : "bal-dot"} />)}
+      </svg>
+      <figcaption className="bal-labels">{data.map((d, i) => <span key={i}>{d.label}</span>)}</figcaption>
+    </figure>
+  );
+}
+
 export default async function AccountDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { workspace } = await requireWorkspace();
@@ -26,6 +48,12 @@ export default async function AccountDetail({ params }: { params: Promise<{ id: 
   const mes = mv.filter((t) => period(t.effectiveDate) === p);
   const ent = mes.filter((t) => t.direction === "IN").reduce((s, t) => s.plus(t.amount.toString()), ZERO);
   const sal = mes.filter((t) => t.direction === "OUT").reduce((s, t) => s.plus(t.amount.toString()), ZERO);
+  // Cómo fue el saldo: al cierre de cada uno de los últimos 6 meses (y hoy). Saldo de hoy menos lo que se movió después.
+  const today = todayIn(workspace.timezone);
+  const ends = Array.from({ length: 6 }, (_, k) => new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - 5 + k, 0)));
+  const after = await db.transaction.findMany({ where: { workspaceId: workspace.id, accountId: a.id, effectiveDate: { gt: ends[0], lte: today } }, select: { effectiveDate: true, direction: true, amount: true } });
+  const hist = [...ends.map((e) => ({ label: MES[e.getUTCMonth()], value: after.filter((t) => t.effectiveDate > e).reduce((s, t) => (t.direction === "IN" ? s.minus(t.amount.toString()) : s.plus(t.amount.toString())), bal).toNumber() })), { label: "hoy", value: bal.toNumber() }]
+    .filter((h, i, arr) => i === arr.length - 1 || ends[i] >= new Date(Date.UTC(a.initialDate.getUTCFullYear(), a.initialDate.getUTCMonth(), 0)));
   return (
     <>
       <Link className="lk" href="/app/cuentas">← Cuentas</Link>
@@ -40,6 +68,12 @@ export default async function AccountDetail({ params }: { params: Promise<{ id: 
           <div className="hrow"><span>Saldo inicial</span><b>{formatMoney(a.initialBalance, a.currency)} <span className="mut" style={{ fontWeight: 400 }}>· {fmtDate(a.initialDate)}</span></b></div>
         </div>
       </div>
+      {hist.length > 2 && (
+        <div className="card">
+          <div className="chead"><h3>Cómo fue el saldo</h3><span className="sub">Al cierre de cada mes</span></div>
+          <BalanceLine data={hist} currency={a.currency} />
+        </div>
+      )}
       <div className="card">
         <div className="chead"><h3>Movimientos</h3><span className="sub">{mv.length} {mv.length === 1 ? "movimiento" : "movimientos"}</span></div>
         {mv.length ? <div className="list">{mv.map((t) => (

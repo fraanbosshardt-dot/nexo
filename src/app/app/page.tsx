@@ -161,6 +161,24 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ l
       )}
       <InstallApp />
       {modules.alertas && <Suspense fallback={null}><Tip ws={workspace.id} cur={cur} today={today} open={open} skipLate={dueNow.length > 0} /></Suspense>}
+      {(() => {
+        // Este mes: cuánto se va en tarjetas y cuotas de préstamos (lo que más pesa y más se olvida).
+        const end = periodEnd(period(today));
+        const mine = open.filter((o) => o.direction === "PAYABLE" && o.currency === cur && o.dueDate <= end);
+        const sum = (f: (o: (typeof mine)[number]) => boolean) => mine.filter(f).reduce((s, o) => s.plus(o.remaining), ZERO);
+        const cards = sum((o) => o.source === "card"), loans = sum((o) => o.source === "debt"), rest = sum((o) => o.source !== "card" && o.source !== "debt");
+        if (!cards.gt(0) && !loans.gt(0)) return null;
+        return (
+          <div className="card month-due">
+            <div className="chead"><div><h3>Este mes todavía pagás</h3><p className="sub">Lo que vence hasta fin de mes y no pagaste</p></div><b className="num month-due-total">{fm(cards.plus(loans).plus(rest))}</b></div>
+            <div className="month-due-row">
+              {cards.gt(0) && <Link href="/app/tarjetas" className="month-due-item"><span className="sub">Tarjetas</span><b className="num">{fm(cards)}</b></Link>}
+              {loans.gt(0) && <Link href="/app/deudas" className="month-due-item"><span className="sub">Cuotas de préstamos</span><b className="num">{fm(loans)}</b></Link>}
+              {rest.gt(0) && <Link href="/app/proximos" className="month-due-item"><span className="sub">Otros pagos</span><b className="num">{fm(rest)}</b></Link>}
+            </div>
+          </div>
+        );
+      })()}
       <div className="grid g2">
         <div className="card">
           <div className="chead"><h3>Esta semana</h3><Link className="lk" href="/app/proximos">Ver todo</Link></div>

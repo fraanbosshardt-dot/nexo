@@ -17,18 +17,9 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 - [ ] F10. Deudas: subir el cronograma en Excel (además de PDF y pegado).
 
 ### Revisión general 12/11/2026 (recomendaciones)
-- [ ] R1. Seguridad: pasar la política de contenido (CSP) a "nonce" para no permitir scripts en línea (hoy Next los necesita con 'unsafe-inline'). Mejora la protección contra inyección de código.
+- [ ] R1. Seguridad (falta la parte grande): pasar la política de contenido (CSP) a "nonce" para no permitir scripts en línea (hoy Next los necesita con 'unsafe-inline'). Mejora la protección contra inyección de código.
 - [ ] R2. Seguridad: copias automáticas de la base (ver Z11) y probar una restauración una vez.
-- [ ] R3. Seguridad: aviso por correo cuando se activa o desactiva el doble factor, se cambia la contraseña o se comparte el espacio (hoy solo en contraseña e ingreso nuevo).
-- [ ] R4. Inicio: un resumen de tarjetas y préstamos del mes ("este mes pagás $ X entre tarjetas y cuotas").
-- [ ] R5. Movimientos: elegir varios y cambiarles la categoría o borrarlos juntos.
-- [ ] R6. Cuentas: historial del saldo (gráfico chico por cuenta).
-- [ ] R7. Próximos pagos: pagar varios juntos (ej.: todos los servicios del mes).
 - [ ] R8. Flujo de caja: decidir Z8 (ingresos que no se repiten).
-- [ ] R9. Informes: comparar dos meses y exportar a PDF desde la misma pantalla.
-- [ ] R10. Alertas: avisar cuotas de préstamo o resumen de tarjeta que vencen y la cuenta no alcanza.
-- [ ] R11. Simulador: sumar un préstamo o una compra en cuotas para ver cómo queda el flujo.
-- [ ] R12. Configuración: cerrar sesión en todos los dispositivos visible arriba en Seguridad; y descargar todos los datos en un clic (ya existe Exportar: hacerlo más visible).
 - [ ] R13. Probar en el celular con la pantalla visible: confirmaciones nuevas, sugerencias de especies, deslizar, Presupuestos y Tarjetas (en esta sesión el panel del navegador estaba oculto).
 
 ### Necesitan algo tuyo
@@ -70,6 +61,7 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 - [ ] M4. Testimonios de usuarios reales, cuando los haya (nunca inventados).
 
 ## Completado
+- [x] 12/11/2026 — Mejoras de la revisión: avisos por correo al activar o desactivar el doble factor y cuando alguien se suma a tu espacio (R3); en Inicio, "Este mes todavía pagás" separado en tarjetas, cuotas y otros (R4); en Movimientos, "Elegir varios" para cambiar la categoría o eliminar juntos (R5); en Cuentas, la línea del saldo de los últimos 6 meses (R6); en Próximos pagos, "Pagar varios juntos" desde una cuenta (R7); en Informes, comparar dos meses por categoría (R9); en Alertas, aviso si lo que vence en 10 días no alcanza con la plata de las cuentas (R10); en el Simulador, probar un préstamo (R11); en Configuración → Seguridad, el estado de la cuenta con cerrar las demás sesiones y descargar los datos (R12). Seguridad: encabezados nuevos (aislar la ventana, recursos solo del mismo sitio, forzar HTTPS en todo). Falta R1 completo (nonce), R2 (copias de la base) y R8 (decisión del flujo).
 - [x] 12/11/2026 — Revisión general: todas las pantallas de la app cargan sin errores ni valores raros; sin vulnerabilidades conocidas en las librerías; encabezados de seguridad, cookies, límite de intentos de ingreso y de doble factor, aislamiento entre espacios y permisos del panel interno revisados. Arreglado: la búsqueda de especies ahora exige el doble factor verificado como el resto. Ayuda actualizada (tarjeta en dos modos, préstamos, inversiones, presupuesto). Etiqueta "Beta" con su propio estilo.
 - [x] 12/11/2026 — Diseño: las confirmaciones ("¿Eliminar…?", "¿Cancelar…?", "¿Adelantar…?") ahora son un cuadro centrado con la pregunta, la explicación y dos botones (Cancelar / Sí…), igual en toda la app (también al deslizar en Próximos pagos). El aviso para confirmar el correo quedó como una tarjeta ordenada con ícono, texto y botón. "+ Agregar una categoría" en Presupuestos se ve como un botón.
 - [x] 12/11/2026 — Inversiones: al escribir la especie aparecen sugerencias con nombre y precio (código o nombre: "gal", "apple", "btc"), para acciones, CEDEARs, bonos, ON, letras, exterior y cripto. Las que terminan en D/C se reconocen en dólares cuando existe la misma sin esa letra (GGALD sí, YPFD sigue en pesos). Cada inversión se puede tener en la moneda que elijas (si cotiza en otra, se convierte con la cotización oficial). Se pueden eliminar inversiones (la plata vuelve a la cuenta) y bienes.

@@ -77,6 +77,11 @@ export async function acceptInviteAction(_: FormState, fd: FormData): Promise<Fo
   try {
     const ws = await acceptInvite(getDb(), String(fd.get("token") ?? ""), user);
     await audit("sharing.accepted", { userId: user.id, workspaceId: ws });
+    // Se avisa al dueño del espacio: si no invitó a nadie, lo ve enseguida.
+    try {
+      const owner = await getDb().membership.findFirst({ where: { workspaceId: ws, role: "OWNER" }, include: { user: { select: { email: true, name: true } } } });
+      if (owner) { const { sendSecurityNotice } = await import("@/server/account-mail"); await sendSecurityNotice(owner.user, "member_joined", `${user.name} (${user.email})`); }
+    } catch (e) { console.error("aviso compartir", e); }
   } catch (e) { return fail(e); }
   (await cookies()).delete(INVITE_COOKIE);
   revalidatePath("/app", "layout");

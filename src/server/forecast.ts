@@ -103,11 +103,13 @@ export async function forecast(db: Db, ws: string, opts: { currency: string; tod
 export async function canAfford(
   db: Db,
   ws: string,
-  input: { currency: string; today: Date; price: MoneyValue; installments: number; financedTotal?: MoneyValue | null; firstDue: Date; cushion?: MoneyValue },
+  input: { currency: string; today: Date; price: MoneyValue; installments: number; financedTotal?: MoneyValue | null; firstDue: Date; cushion?: MoneyValue; inflow?: MoneyValue | null },
 ) {
   const n = Math.max(1, Math.min(48, input.installments));
   const total = round2(input.financedTotal ?? input.price);
   const cushion = round2(input.cushion ?? 0);
+  // Préstamo: la plata entra ahora y después salen las cuotas.
+  const inflow = round2(input.inflow ?? 0);
   const firstOffset = (input.firstDue.getUTCFullYear() - input.today.getUTCFullYear()) * 12 + input.firstDue.getUTCMonth() - input.today.getUTCMonth();
   const months = Math.min(60, Math.max(3, firstOffset + n + 2));
   const base = await forecast(db, ws, { currency: input.currency, today: input.today, months });
@@ -119,7 +121,7 @@ export async function canAfford(
       const thisMonth = k >= 0 && k < cuotas.length ? cuotas[k] : ZERO;
       const before = paid;
       paid = paid.plus(thisMonth);
-      return { ...r, cuota: thisMonth, end: r.end.minus(paid), min: r.min.minus(before).minus(thisMonth) };
+      return { ...r, cuota: thisMonth, end: r.end.minus(paid).plus(inflow), min: r.min.minus(before).minus(thisMonth).plus(inflow) };
     });
   };
   const withPurchase = scenario(parts, firstOffset);

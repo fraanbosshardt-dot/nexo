@@ -13,6 +13,9 @@ import { projectedItems } from "@/server/recurring";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { ConfirmButton, SwipeRow } from "@/components/swipe-row";
 import { Help } from "@/components/help";
+import { ActionForm, Submit } from "@/components/forms";
+import { bulkPayAction } from "@/app/actions/app";
+import { SelectAll } from "../movimientos/select-all";
 
 // Un proyectado es un pago que se repite más adelante: se calcula al vuelo y se crea recién al pagarlo o cancelarlo.
 type Row = OpenItem & { proj?: { ruleId: string; occ: string; variable: boolean } };
@@ -20,17 +23,17 @@ type Row = OpenItem & { proj?: { ruleId: string; occ: string; variable: boolean 
 export const metadata: Metadata = { title: "Próximos pagos" };
 const MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 
-export default async function Upcoming({ searchParams }: { searchParams: Promise<{ ver?: string; guardado?: string; listo?: string; corregido?: string; borrado?: string }> }) {
+export default async function Upcoming({ searchParams }: { searchParams: Promise<{ ver?: string; guardado?: string; listo?: string; corregido?: string; borrado?: string; elegir?: string }> }) {
   const { workspace, modules, plan } = await requireWorkspace();
   const grainOn = !!modules.cereal && (await canUse(plan, "cereal"));
-  const { ver, guardado, listo, corregido, borrado } = await searchParams;
+  const { ver, guardado, listo, corregido, borrado, elegir } = await searchParams;
   const cur = workspace.baseCurrency;
   const today = todayIn(workspace.timezone);
   const in7 = new Date(today.getTime() + 7 * 864e5);
   const thisMonth = period(today);
   // Se muestran los próximos 12 meses completos (hasta fin del mes, dentro de un año). Pendientes y proyectados, en paralelo.
   const horizon = periodEnd(addMonths(thisMonth, 12));
-  const [all, projRaw] = await Promise.all([openObligations(getDb(), workspace.id, today), projectedItems(getDb(), workspace.id, today, horizon)]);
+  const [all, projRaw, accounts] = await Promise.all([openObligations(getDb(), workspace.id, today), projectedItems(getDb(), workspace.id, today, horizon), getDb().account.findMany({ where: { workspaceId: workspace.id, active: true, type: { notIn: ["CREDIT_CARD", "INVESTMENT"] } }, orderBy: [{ position: "asc" }, { createdAt: "asc" }], select: { id: true, name: true, currency: true } })]);
   const proj: Row[] = projRaw.map((p) => ({
     id: `p-${p.ruleId}-${p.occurrence.toISOString().slice(0, 10)}`, direction: p.direction, description: p.description, currency: p.currency, dueDate: p.dueDate,
     economicPeriod: period(p.occurrence), amount: p.amount, remaining: p.amount, certainty: "PROBABLE", overdue: false, status: "PENDING", category: null,
@@ -70,7 +73,31 @@ export default async function Upcoming({ searchParams }: { searchParams: Promise
       <div className="seg" style={{ alignSelf: "flex-start" }}>
         {[["", "Todo"], ["pagar", "A pagar"], ["cobrar", "A cobrar"]].map(([k, l]) => <Link key={k} className={`segl ${(ver ?? "") === k ? "on" : ""}`} href={k ? `/app/proximos?ver=${k}` : "/app/proximos"}>{l}</Link>)}
       </div>
-      {shown.length === 0 ? (
+      <div className="acts" style={{ justifyContent: "flex-end", marginBottom: -6 }}>
+        {elegir ? <Link className="btn sm" href={ver ? `/app/proximos?ver=${ver}` : "/app/proximos"}>Listo</Link> : all.length > 1 && <Link className="btn sm" href={`/app/proximos?elegir=1${ver ? `&ver=${ver}` : ""}`}>Pagar varios juntos</Link>}
+      </div>
+      {elegir ? (() => {
+        // Lo atrasado y lo de este mes (sin proyectados ni ventas de cereal estimadas): se paga lo que falta de cada uno.
+        const cand = all.filter((o) => (o.overdue || period(o.dueDate) === thisMonth) && !(grainOn && isEstimatedGrain(o)) && (ver === "cobrar" ? o.direction === "RECEIVABLE" : ver === "pagar" ? o.direction === "PAYABLE" : true));
+        return (
+          <ActionForm action={bulkPayAction} id="bulkpay" className="card bulk-bar" style={{ position: "static" }}>
+            <div className="bulk-top"><b>Elegí los que ya pagaste o cobraste</b><SelectAll form="bulkpay" /></div>
+            {cand.length ? <div className="list">{cand.map((o) => (
+              <label className="li sel-row" key={o.id}>
+                <input type="checkbox" name="ids" value={o.id} form="bulkpay" aria-label={`Elegir ${o.description}`} />
+                <div className="grow"><div className="t">{o.description}</div><div className="s">{o.direction === "RECEIVABLE" ? "A cobrar" : "A pagar"} · {o.overdue ? <span className="neg">venció el {fmtDayMonth(o.dueDate)}</span> : `vence el ${fmtDayMonth(o.dueDate)}`}</div></div>
+                <b className={`num ${o.direction === "RECEIVABLE" ? "pos" : "neg"}`}>{o.direction === "RECEIVABLE" ? "+" : "−"}{formatMoney(o.remaining, o.currency)}</b>
+              </label>
+            ))}</div> : <div className="empty">No hay nada atrasado ni de este mes.</div>}
+            <div className="bulk-acts">
+              <select name="accountId" aria-label="Cuenta" defaultValue={accounts[0]?.id}>{accounts.map((a) => <option key={a.id} value={a.id}>{a.name} ({a.currency})</option>)}</select>
+              <input type="date" name="date" aria-label="Fecha" defaultValue={today.toISOString().slice(0, 10)} style={{ minHeight: 40, border: "1px solid var(--line-2)", borderRadius: 8, padding: "0 10px", background: "var(--surface)", color: "var(--fg)" }} />
+              <Submit>Registrar los elegidos</Submit>
+            </div>
+            <p className="sub" style={{ margin: 0 }}>Se registra lo que falta de cada uno, desde esa cuenta. Los resúmenes de tarjeta se pagan completos; si pagaste otro monto, hacelo de a uno.</p>
+          </ActionForm>
+        );
+      })() : shown.length === 0 ? (
         <div className="empty">
           <p style={{ margin: "0 0 12px" }}>{ver === "cobrar" ? "No tenés nada por cobrar." : ver === "pagar" ? "No tenés nada por pagar." : "No tenés nada por pagar ni por cobrar."}</p>
           <Link className="btn" href="/app/movimientos/nuevo?estado=pendiente">+ Agregar un pago o cobro</Link>

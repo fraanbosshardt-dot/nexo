@@ -8,13 +8,17 @@ import { addMonths, fmtPeriod, period, periodEnd, periodStart, todayIn } from "@
 import { PageHead } from "@/components/page";
 import { categoryIcon, ICON_TONE } from "@/lib/category-icon";
 import { Icon, type IconName } from "@/components/icons";
+import { ActionForm, Submit } from "@/components/forms";
+import { ConfirmSubmit } from "@/components/confirm-submit";
+import { bulkMovementsAction } from "@/app/actions/app";
+import { SelectAll } from "./select-all";
 
 export const metadata: Metadata = { title: "Movimientos" };
 const DIAS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
 const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 const TYPE_LABEL: Record<string, string> = { TRANSFER: "Transferencia", ADJUSTMENT: "Corrección de saldo", DEBT_PAYMENT: "Cuota de deuda", CARD_PAYMENT: "Pago de tarjeta", INVESTMENT: "Inversión", DEBT_DISBURSEMENT: "Préstamo recibido" };
 
-export default async function Movements({ searchParams }: { searchParams: Promise<{ mes?: string; tipo?: string; q?: string; desde?: string; hasta?: string; n?: string; guardado?: string; borrado?: string; unido?: string }> }) {
+export default async function Movements({ searchParams }: { searchParams: Promise<{ mes?: string; tipo?: string; q?: string; desde?: string; hasta?: string; n?: string; guardado?: string; borrado?: string; unido?: string; elegir?: string }> }) {
   const { workspace } = await requireWorkspace();
   const sp = await searchParams;
   const p = /^\d{4}-\d{2}$/.test(sp.mes ?? "") ? sp.mes! : period(todayIn(workspace.timezone));
@@ -49,6 +53,10 @@ export default async function Movements({ searchParams }: { searchParams: Promis
   const inc = sum(["INCOME"], "IN");
   const out = sum(["EXPENSE", "DEBT_PAYMENT"], "OUT");
   const rows = list;
+  // Modo "Elegir varios": casillas en cada movimiento y una barra para cambiar la categoría o eliminar.
+  const sel = sp.elegir === "1";
+  const catRows = sel ? await db.category.findMany({ where: { workspaceId: workspace.id, archived: false }, orderBy: [{ kind: "asc" }, { parentId: "asc" }, { name: "asc" }] }) : [];
+  const cats = catRows.filter((c) => !c.parentId).flatMap((p) => [{ id: p.id, kind: p.kind, label: p.name }, ...catRows.filter((c) => c.parentId === p.id).map((c) => ({ id: c.id, kind: c.kind, label: `${p.name} › ${c.name}` }))]);
   const visible = list;
   const byDay = new Map<string, typeof rows>();
   for (const t of visible) { const k = t.effectiveDate.toISOString().slice(0, 10); byDay.set(k, [...(byDay.get(k) ?? []), t]); }
@@ -87,6 +95,20 @@ export default async function Movements({ searchParams }: { searchParams: Promis
       <div className="seg" style={{ alignSelf: "flex-start" }}>
         {[["ALL", "Todos"], ["INCOME", "Ingresos"], ["EXPENSE", "Gastos"], ["TRANSFER", "Transferencias"]].map(([k, l]) => <Link key={k} className={`segl ${tipo === k ? "on" : ""}`} href={`/app/movimientos?${new URLSearchParams({ ...rangeQ, ...(k !== "ALL" ? { tipo: k } : {}), ...(q ? { q } : {}) })}`}>{l}</Link>)}
       </div>
+      <div className="acts" style={{ justifyContent: "flex-end", marginBottom: -6 }}>
+        {sel ? <Link className="btn sm" href={link({})}>Listo</Link> : rows.length > 0 && <Link className="btn sm" href={link({ elegir: "1" })}>Elegir varios</Link>}
+      </div>
+      {sel && (
+        <ActionForm action={bulkMovementsAction} id="bulk" className="card bulk-bar">
+          <div className="bulk-top"><b>Elegí los movimientos</b><SelectAll form="bulk" /></div>
+          <div className="bulk-acts">
+            <select name="categoryId" aria-label="Categoría nueva" defaultValue=""><option value="">Cambiar categoría a…</option>{cats.map((c) => <option key={c.id} value={c.id}>{c.kind === "INCOME" ? "Ingreso" : "Gasto"}: {c.label}</option>)}</select>
+            <Submit className="btn" name="do" value="cat">Cambiar categoría</Submit>
+            <ConfirmSubmit className="btn danger" question="¿Eliminar los movimientos elegidos? Se borran del todo y los saldos vuelven a como estaban. No se puede deshacer." yes="Sí, eliminar">Eliminar</ConfirmSubmit>
+            <input type="hidden" name="do" value="del" />
+          </div>
+        </ActionForm>
+      )}
       <div className="card">
         {rows.length ? (
           <div className="list">
@@ -98,7 +120,13 @@ export default async function Movements({ searchParams }: { searchParams: Promis
                   {list.map((t) => {
                     const off = !!(t.reversedBy || t.reversalOfId);
                     const isIn = t.direction === "IN";
-                    return (
+                    return sel ? (
+                        <label className="li sel-row" key={t.id} style={{ opacity: off ? 0.55 : 1 }}>
+                          <input type="checkbox" name="ids" value={t.id} form="bulk" aria-label={`Elegir ${t.description}`} />
+                          <div className="grow"><div className="t">{t.description}</div><div className="s">{[TYPE_LABEL[t.type], t.category?.name, t.account.name].filter(Boolean).join(" · ")}</div></div>
+                          <b className={`num ${t.type === "TRANSFER" ? "" : isIn ? "pos" : "neg"}`}>{isIn ? "+" : "−"}{formatMoney(t.amount, t.currency)}</b>
+                        </label>
+                      ) : (
                       <Link className="li" key={t.id} href={`/app/movimientos/${t.id}`} style={{ color: "inherit", opacity: off ? 0.55 : 1 }}>
                         {(() => { const ic = t.type === "TRANSFER" ? "swap" : categoryIcon(t.category?.name ?? (t.direction === "IN" ? "ingreso" : null)); return <span className={`cat-ic m-only t-${ICON_TONE[ic as keyof typeof ICON_TONE] ?? "s"}`}><Icon name={ic as IconName} /></span>; })()}
                         <div className="grow">
