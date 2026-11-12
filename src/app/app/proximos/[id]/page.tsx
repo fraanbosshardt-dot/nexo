@@ -44,7 +44,9 @@ export default async function PayPage({ params, searchParams }: { params: Promis
   const recurring = !!ob.recurringRuleId;
   // Resumen de tarjeta: pagar menos que el total es posible; lo que falta pasa al próximo resumen.
   const stmt = ob.sourceType === "card" ? await db.cardStatement.findUnique({ where: { obligationId: ob.id }, include: { card: { select: { financeRate: true } } } }) : null;
-  const settleDefault = (inc || recurring) && !stmt;
+  const isDebt = ob.sourceType === "debt";
+  // Cuotas de préstamo: lo que pagaste es la cuota de ese mes (si vino distinta, queda el importe real).
+  const settleDefault = (inc || recurring || isDebt) && !stmt;
   // ¿Ya lo cargaste a mano en Movimientos? Así no se registra dos veces.
   const already = !ob.sourceType && ob.payments.length === 0 ? await matchingPaid(db, workspace.id, ob) : null;
   // Corregir o eliminar: la tarjeta y el cereal se manejan desde su pantalla.
@@ -107,7 +109,8 @@ export default async function PayPage({ params, searchParams }: { params: Promis
             <label className="field">{inc ? "Entra en" : "Sale de"}<select name="accountId" defaultValue={preferred}>{accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>
             {!stmt && <><label className="simtg"><input type="checkbox" name="settle" defaultChecked={settleDefault} /><span><b style={{ fontWeight: 500 }}>Fue el total</b><br /><span className="sub">{inc ? "Si cobraste otro monto (más o menos), queda registrado así y no queda nada pendiente." : "Si la factura vino por otro monto, queda así y no queda nada pendiente."} Destildalo si fue una parte y falta el resto.</span></span></label>
             <div className="sub help-line">¿Qué es “Fue el total”? <Help term="total" /></div></>}
-            {recurring && <label className="simtg"><input type="checkbox" name="updateFuture" /><span>Usar este monto para los próximos meses</span></label>}
+            {(recurring || isDebt) && <label className="simtg"><input type="checkbox" name="updateFuture" /><span>Usar este monto para las próximas {isDebt ? "cuotas" : "veces"}</span></label>}
+            {isDebt && <p className="sub" style={{ margin: 0 }}>Si la cuota vino distinta (impuestos, seguro, tasa variable), poné lo que pagaste: queda como el valor real de esa cuota en el cronograma.</p>}
             <div className="acts" style={{ justifyContent: "flex-end" }}><Link className="btn" href="/app/proximos">Cancelar</Link><Submit>{inc ? "Registrar cobro" : "Registrar pago"}</Submit></div>
           </ActionForm>
         ) : <div className="empty">Necesitás una cuenta activa en {ob.currency}. <Link className="lk" href="/app/cuentas?nueva=1">Crear cuenta</Link></div>}

@@ -1010,3 +1010,20 @@ html[data-big] body{zoom:1.15}
 .cuota-tot{display:flex;justify-content:space-between;padding:8px 44px 0 36px;border-top:1px solid var(--line);font-size:14px;color:var(--muted)}.cuota-tot b{color:var(--fg)}
 .lnkbtn{border:0;background:none;padding:0;color:var(--blue);font:inherit;font-size:14px;cursor:pointer;text-align:left}.lnkbtn:hover{text-decoration:underline}
 @media (max-width:640px){.cuotas{padding:12px}.cuota-row{grid-template-columns:18px minmax(0,1.25fr) minmax(0,1fr) 36px;gap:4px}.cuota-row input{padding-inline:8px}.cuota-tot{padding:8px 40px 0 22px}}
+/* Cargar resumen: cuotas que siguen (opcional) y pie con el botón */
+.stm-carry{border:1px solid var(--line);border-radius:12px;padding:4px 14px}
+.stm-carry-body{display:flex;flex-direction:column;gap:12px;padding:6px 0 12px}
+.carry-row{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) 90px auto;gap:10px;align-items:end}
+.stm-foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid var(--line);padding-top:16px;margin-top:4px}
+.stm-foot .sub{margin:0;max-width:52ch}
+@media (max-width:640px){.carry-row{grid-template-columns:1fr 1fr}.carry-row>label:first-child{grid-column:1/-1}.stm-foot{flex-direction:column;align-items:stretch}.stm-foot .btn{width:100%}}
+/* Lista de tarjetas: la tarjeta a un lado y los datos al otro, con aire */
+.ctile{display:grid;grid-template-columns:minmax(0,190px) minmax(0,1fr);gap:22px;align-items:center;text-decoration:none;color:inherit}
+.ctile:hover{background:var(--canvas)}
+.ccard-sm{min-height:0;aspect-ratio:1.586;padding:14px 16px;font-size:12px}
+.ctile-info{display:flex;flex-direction:column;gap:8px;min-width:0}
+.ctile-info>.sub{margin:0}
+.ctile-amt{font-size:24px;line-height:1.15}
+.ctile-kv{display:flex;flex-wrap:wrap;gap:6px 22px;margin:2px 0 0}.ctile-kv>div{display:flex;flex-direction:column;gap:1px}.ctile-kv dt{font-size:12px;color:var(--muted)}.ctile-kv dd{margin:0;font-weight:500;font-size:14px}
+.ctile-cta{font-size:13.5px;color:var(--blue)}
+@media (max-width:640px){.ctile{grid-template-columns:1fr;gap:14px}.ccard-sm{max-width:240px}}

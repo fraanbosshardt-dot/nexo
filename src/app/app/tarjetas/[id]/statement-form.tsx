@@ -84,10 +84,12 @@ export function StatementForm({ cardId, closing, due, pdf, pdfLeft, currency, se
       )}
       {usdOnly && <p className="notice" role="status" style={{ margin: 0 }}>Este resumen también tiene US$ {usdOnly} en dólares. Para cargarlo, activá “También tiene consumos en otra moneda” en Editar tarjeta y volvé a subir el PDF.</p>}
       {!simple && <>
-      <div className="field">
-        <span>Compras en cuotas que siguen después de este resumen</span>
+      <details className="more stm-carry" open={rows.length > 0}>
+        <summary>¿Este resumen trae compras en cuotas que siguen? (opcional)</summary>
+        <div className="stm-carry-body">
+          <p className="sub" style={{ margin: 0 }}>Por ejemplo, si trae la cuota 3 de 6 de una heladera, ponés lo que pagás por mes y “3” en Faltan. Así aparecen solas en los próximos resúmenes.</p>
         {rows.map((r, i) => (
-          <div className="frow" key={i} style={{ gridTemplateColumns: "minmax(0,2fr) minmax(0,1fr) 110px auto", alignItems: "end" }}>
+          <div className="carry-row" key={i}>
             <label className="field">Qué compraste<input name="carryDescription" value={r.description} onChange={(e) => setRow(i, "description", e.target.value)} maxLength={120} /></label>
             <label className="field">Cuota<input name="carryAmount" inputMode="decimal" value={r.amount} onChange={(e) => setRow(i, "amount", e.target.value)} /></label>
             <label className="field">Faltan<input name="carryRemaining" inputMode="numeric" value={r.remaining} onChange={(e) => setRow(i, "remaining", e.target.value.replace(/\D/g, "").slice(0, 2))} /></label>
@@ -95,8 +97,8 @@ export function StatementForm({ cardId, closing, due, pdf, pdfLeft, currency, se
           </div>
         ))}
         <div><button type="button" className="btn sm" onClick={() => setRows((x) => [...x, { description: "", amount: "", remaining: "" }])}>+ Agregar una compra en cuotas</button></div>
-        <span className="sub" style={{ fontWeight: 400 }}>Por ejemplo, si este resumen trae la cuota 3 de 6 de una heladera, ponés la cuota y “3” en Faltan. Así aparecen solas en los próximos resúmenes.</span>
-      </div>
+        </div>
+      </details>
       {simple && <p className="sub" style={{ margin: 0 }}>El total se anota como un gasto de ese mes (categoría “Tarjeta de crédito”) y aparece en Próximos pagos para pagarlo. No lo cargues además como gasto en Movimientos: se contaría dos veces.</p>}
       {warn.length > 0 && <div className="notice" role="status" style={{ display: "flex", flexDirection: "column", gap: 4 }}>{warn.map((w) => <span key={w}>⚠️ {w}</span>)}</div>}
       {!simple && missing.length > 0 && (
@@ -110,9 +112,12 @@ export function StatementForm({ cardId, closing, due, pdf, pdfLeft, currency, se
           <input type="hidden" name="addPurchases" value={JSON.stringify(missing.filter((m) => m.on).map(({ date, description, amount }) => ({ date, description, amount })))} />
         </div>
       )}
-      <p className="sub" style={{ margin: 0 }}>La deuda que traés se carga como saldo de la tarjeta, no como un gasto nuevo: esas compras ya las hiciste antes de usar Finan.</p>
+
       </>}
-      <div className="acts" style={{ justifyContent: "flex-end" }}><Submit>Guardar resumen</Submit></div>
+      <div className="stm-foot">
+        <p className="sub">{simple ? "Se guarda como el gasto de la tarjeta de ese mes." : "Lo que debías antes de usar Finan se carga como saldo de la tarjeta, no como un gasto nuevo."}</p>
+        <Submit>Guardar resumen</Submit>
+      </div>
     </ActionForm>
   );
 }

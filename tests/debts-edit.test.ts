@@ -71,3 +71,15 @@ describe("editar un préstamo", () => {
     expect(pend.description).toMatch(/^Renombrado/);
   });
 });
+
+describe("pagar una cuota que vino distinta", () => {
+  it("el importe pagado queda como la cuota real y no deja resto pendiente", async () => {
+    const debt = await createDebt(db, ws, { ...base, creditor: "Variable" });
+    const obs = await db.obligation.findMany({ where: { sourceType: "debt", sourceId: debt.id }, orderBy: { dueDate: "asc" } });
+    await payObligation(db, ws, { obligationId: obs[0].id, accountId: banco, amount: "130", date: d("2026-12-10"), settle: true, updateFuture: true });
+    expect((await db.obligation.findUniqueOrThrow({ where: { id: obs[0].id } })).status).toBe("SETTLED");
+    const inst = await db.debtInstallment.findMany({ where: { debtId: debt.id }, orderBy: { number: "asc" } });
+    expect([inst[0].total.toString(), inst[1].total.toString()]).toEqual(["130", "130"]);
+    expect(Number((await db.obligation.findUniqueOrThrow({ where: { id: obs[1].id } })).amount)).toBe(130);
+  });
+});

@@ -24,21 +24,24 @@ export default async function Cards({ searchParams }: { searchParams: Promise<{ 
     const fm = (v: Parameters<typeof formatMoney>[0]) => formatMoney(v, c.card.currency);
     const ch = c.child, chNext = ch?.status.open[0];
     return (
-      <Link key={c.card.id} href={`/app/tarjetas/${c.card.id}`} className="card dcard tcard-mini" style={{ textDecoration: "none", color: "inherit" }}>
-        <div className="ccard" style={{ maxWidth: 240 }}><div className="row"><span>{c.card.issuer || "Tarjeta"}</span></div><div className="nm">•••• {c.card.last4 ?? "····"}</div><div className="row"><span>{c.card.name}</span></div></div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
-          <div className="sub" style={{ margin: 0 }}>{!next && !chNext ? "Al día" : st.overdue || ch?.status.overdue ? `Atrasado · venció el ${fmtDate((next ?? chNext)!.dueDate)}` : `A pagar · vence el ${fmtDate((next ?? chNext)!.dueDate)}`}</div>
-          <b className={`num ${st.overdue ? "neg" : !next && !chNext ? "pos" : ""}`} style={{ fontSize: 22, fontWeight: 400 }}>
-            {next ? fm(st.owed) : !chNext ? "Sin resúmenes sin pagar" : ""}{chNext ? `${next ? " + " : ""}${formatMoney(ch!.status.owed, ch!.card.currency)}` : ""}
-          </b>
-          <div className="sub">Próximo resumen {fm(c.nextAmount)}{ch && ch.nextAmount.gt(0) ? ` + ${formatMoney(ch.nextAmount, ch.card.currency)}` : ""}</div>
-          {c.usagePct != null && (
-            <div title={`Usás el ${c.usagePct}% del límite`}>
-              <div className="bar" style={{ maxWidth: 240 }}><i style={{ width: `${Math.min(100, c.usagePct)}%`, background: c.overAlert ? "var(--red)" : "var(--ink)" }} /></div>
-              <div className={`sub ${c.overAlert ? "neg" : ""}`}>Usás el {c.usagePct}% del límite · disponible {fm(c.available)}</div>
-            </div>
+      <Link key={c.card.id} href={`/app/tarjetas/${c.card.id}`} className="card ctile">
+        <div className="ccard ccard-sm"><div className="row"><span>{c.card.issuer || "Tarjeta"}</span></div><div className="nm">•••• {c.card.last4 ?? "····"}</div><div className="row"><span>{c.card.name}</span></div></div>
+        <div className="ctile-info">
+          {!next && !chNext ? (
+            <><div className="num ctile-amt pos">Al día</div><div className="sub">No tenés resúmenes sin pagar</div></>
+          ) : (
+            <><div className="sub">{st.overdue || ch?.status.overdue ? `Atrasado · venció el ${fmtDate((next ?? chNext)!.dueDate)}` : `A pagar · vence el ${fmtDate((next ?? chNext)!.dueDate)}`}</div>
+              <div className={`num ctile-amt ${st.overdue || ch?.status.overdue ? "neg" : ""}`}>{next ? fm(st.owed) : ""}{chNext ? `${next ? " + " : ""}${formatMoney(ch!.status.owed, ch!.card.currency)}` : ""}</div></>
           )}
-          {!c.card.statements.length && !next && <div className="sub" style={{ color: "var(--blue)" }}>¿Ya debías algo? Cargá tu último resumen →</div>}
+          <dl className="ctile-kv">
+            <div><dt>Próximo resumen</dt><dd>{!c.card.statements.length && c.nextAmount.isZero() ? "—" : <>{fm(c.nextAmount)}{ch && ch.nextAmount.gt(0) ? ` + ${formatMoney(ch.nextAmount, ch.card.currency)}` : ""}</>}</dd></div>
+            {c.usagePct != null && <div><dt>Disponible</dt><dd>{fm(c.available)}</dd></div>}
+          </dl>
+          {c.usagePct != null && c.usagePct > 0 && (
+            <div><div className="bar"><i style={{ width: `${Math.min(100, c.usagePct)}%`, background: c.overAlert ? "var(--red)" : "var(--ink)" }} /></div>
+              <div className={`sub ${c.overAlert ? "neg" : ""}`} style={{ marginTop: 4 }}>Usás el {c.usagePct}% del límite</div></div>
+          )}
+          {!c.card.statements.length && !next && <span className="ctile-cta">Cargá tu último resumen →</span>}
         </div>
       </Link>
     );

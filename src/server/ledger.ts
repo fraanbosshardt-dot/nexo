@@ -247,6 +247,20 @@ export async function payObligation(
         await tx.recurringRule.updateMany({ where: { id: ob.recurringRuleId, workspaceId: ws }, data: { amount: money(amount) } });
         await tx.obligation.updateMany({ where: { workspaceId: ws, recurringRuleId: ob.recurringRuleId, status: "PENDING", dueDate: { gt: ob.dueDate } }, data: { amount: money(amount) } });
       }
+      // Cuota de préstamo que vino distinta: el cronograma toma el importe real (la diferencia va como interés y gastos).
+      if (ob.sourceType === "debt" && ob.sourceId) {
+        const fix = async (obligationId: string, value: Decimal) => {
+          const inst = await tx.debtInstallment.findFirst({ where: { obligationId } });
+          if (!inst) return;
+          const interest = value.minus(dec(inst.capital));
+          await tx.debtInstallment.update({ where: { id: inst.id }, data: { total: money(value), ...(interest.gte(0) ? { interest: money(interest) } : { capital: money(value), interest: "0" }) } });
+        };
+        await fix(ob.id, total);
+        if (input.updateFuture) {
+          const next = await tx.obligation.findMany({ where: { workspaceId: ws, sourceType: "debt", sourceId: ob.sourceId, status: "PENDING", dueDate: { gt: ob.dueDate } }, select: { id: true } });
+          for (const n of next) { await tx.obligation.update({ where: { id: n.id }, data: { amount: money(amount) } }); await fix(n.id, round2(amount)); }
+        }
+      }
     }
     const updated = await refreshStatus(tx, ob.id);
     if (ob.sourceType === "debt" && ob.sourceId && updated.status === "SETTLED") {
