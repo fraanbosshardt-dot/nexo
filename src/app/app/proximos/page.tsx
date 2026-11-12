@@ -23,17 +23,18 @@ type Row = OpenItem & { proj?: { ruleId: string; occ: string; variable: boolean 
 export const metadata: Metadata = { title: "Próximos pagos" };
 const MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 
-export default async function Upcoming({ searchParams }: { searchParams: Promise<{ ver?: string; guardado?: string; listo?: string; corregido?: string; borrado?: string; elegir?: string }> }) {
+export default async function Upcoming({ searchParams }: { searchParams: Promise<{ ver?: string; guardado?: string; listo?: string; corregido?: string; borrado?: string; elegir?: string; meses?: string }> }) {
   const { workspace, modules, plan } = await requireWorkspace();
   const grainOn = !!modules.cereal && (await canUse(plan, "cereal"));
-  const { ver, guardado, listo, corregido, borrado, elegir } = await searchParams;
+  const { ver, guardado, listo, corregido, borrado, elegir, meses } = await searchParams;
   const cur = workspace.baseCurrency;
   const today = todayIn(workspace.timezone);
   const in7 = new Date(today.getTime() + 7 * 864e5);
   const thisMonth = period(today);
-  // Se muestran los próximos 12 meses completos (hasta fin del mes, dentro de un año). Pendientes y proyectados, en paralelo.
-  const horizon = periodEnd(addMonths(thisMonth, 12));
-  const [all, projRaw, accounts] = await Promise.all([openObligations(getDb(), workspace.id, today), projectedItems(getDb(), workspace.id, today, horizon), getDb().account.findMany({ where: { workspaceId: workspace.id, active: true, type: { notIn: ["CREDIT_CARD", "INVESTMENT"] } }, orderBy: [{ position: "asc" }, { createdAt: "asc" }], select: { id: true, name: true, currency: true } })]);
+  // Por defecto, este mes y los 2 que siguen (carga rápido); con "Ver 12 meses", el año entero.
+  const all12 = meses === "12";
+  const horizon = periodEnd(addMonths(thisMonth, all12 ? 12 : 2));
+  const [all, projRaw, accounts] = await Promise.all([openObligations(getDb(), workspace.id, today, { until: horizon }), projectedItems(getDb(), workspace.id, today, horizon), getDb().account.findMany({ where: { workspaceId: workspace.id, active: true, type: { notIn: ["CREDIT_CARD", "INVESTMENT"] } }, orderBy: [{ position: "asc" }, { createdAt: "asc" }], select: { id: true, name: true, currency: true } })]);
   const proj: Row[] = projRaw.map((p) => ({
     id: `p-${p.ruleId}-${p.occurrence.toISOString().slice(0, 10)}`, direction: p.direction, description: p.description, currency: p.currency, dueDate: p.dueDate,
     economicPeriod: period(p.occurrence), amount: p.amount, remaining: p.amount, certainty: "PROBABLE", overdue: false, status: "PENDING", category: null,
@@ -59,7 +60,7 @@ export default async function Upcoming({ searchParams }: { searchParams: Promise
 
   return (
     <>
-      <PageHead crumb="Pagos y deudas" title="Próximos pagos" desc="Lo que falta pagar y cobrar en los próximos 12 meses. Lo marcado como Proyectado sale de tus pagos que se repiten." actions={<Link className="btn pri" href="/app/movimientos/nuevo?estado=pendiente">+ Agregar un pago o cobro</Link>} />
+      <PageHead crumb="Pagos y deudas" title="Próximos pagos" desc="Lo que falta pagar y cobrar en los próximos meses. Lo marcado como Proyectado sale de tus pagos que se repiten." actions={<Link className="btn pri" href="/app/movimientos/nuevo?estado=pendiente">+ Agregar un pago o cobro</Link>} />
       {(corregido || borrado) && <p className="notice g" role="status">{corregido ? "Listo, guardamos los cambios." : "Listo, lo eliminamos."}</p>}
       {listo && <p className="notice g" role="status">{listo === "cobro" ? "Listo, registramos el cobro." : "Listo, registramos el pago."}</p>}
       {guardado && <div className="notice g" role="status"><span>Listo, quedó guardado.</span><Link className="btn sm" href="/app/movimientos/nuevo?estado=pendiente" style={{ marginLeft: "auto" }}>+ Cargar otro</Link></div>}
@@ -150,6 +151,11 @@ export default async function Upcoming({ searchParams }: { searchParams: Promise
           </details>
         );
       })}
+      {!elegir && shown.length > 0 && (
+        <div className="acts" style={{ justifyContent: "center" }}>
+          {all12 ? <Link className="btn sm" href={ver ? `/app/proximos?ver=${ver}` : "/app/proximos"}>Ver solo los próximos 3 meses</Link> : <Link className="btn sm" href={`/app/proximos?meses=12${ver ? `&ver=${ver}` : ""}`}>Ver los próximos 12 meses</Link>}
+        </div>
+      )}
     </>
   );
 }

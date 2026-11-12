@@ -5,7 +5,7 @@
 // Una tarjeta con consumos en dos monedas (ej.: pesos y dólares) son dos "tarjetas" unidas por parentId:
 // comparten cierre y vencimiento, y cada moneda tiene su resumen.
 import type { Db } from "./ledger";
-import { accountBalances, paidSoFar, remaining, UserError } from "./ledger";
+import { accountBalances, readBalances, paidSoFar, remaining, UserError } from "./ledger";
 import { allocate, dec, round2, ZERO, type MoneyValue } from "@/lib/money";
 import { period } from "@/lib/dates";
 import type Decimal from "decimal.js";
@@ -99,14 +99,16 @@ function subDates(s: { dayOfMonth: number; startDate: Date; endDate: Date | null
 // Cuánto entra en el resumen que cierra en "closing": compras del ciclo (menos devoluciones) + cuotas que caen.
 // Si el resumen todavía no cerró ("today" antes del cierre), suma lo que se va a cargar solo: suscripciones y cargos fijos.
 type CardLike = Omit<FullCard, "cycles" | "subscriptions"> & { cycles?: Cycle[]; subscriptions?: FullCard["subscriptions"] };
-export async function statementAmount(db: Db, card: CardLike, closing: Date, today?: Date): Promise<{ total: Decimal; purchases: Decimal; installments: Decimal; extras: Decimal }> {
+type CardTx = { id: string; amount: MoneyValue; direction: string; idempotencyKey: string | null; effectiveDate: Date; categoryId?: string | null; cardHolder?: string | null };
+// Todas las compras de la tarjeta en un rango, de una sola vez (para no consultar la base mes por mes).
+async function cardTxs(db: Db, accountId: string, from: Date, to: Date): Promise<CardTx[]> {
+  return db.transaction.findMany({ where: { accountId, type: "EXPENSE", effectiveDate: { gt: from, lte: to } }, select: { id: true, amount: true, direction: true, idempotencyKey: true, effectiveDate: true, categoryId: true, cardHolder: true } });
+}
+export async function statementAmount(db: Db, card: CardLike, closing: Date, today?: Date, pre?: CardTx[]): Promise<{ total: Decimal; purchases: Decimal; installments: Decimal; extras: Decimal }> {
   const cal = calendar(card);
   const from = cal.prev(closing);
   const planTx = new Set(card.plans.map((p) => p.transactionId).filter(Boolean) as string[]);
-  const tx = await db.transaction.findMany({
-    where: { accountId: card.accountId!, type: "EXPENSE", effectiveDate: { gt: from, lte: closing } },
-    select: { id: true, amount: true, direction: true, idempotencyKey: true },
-  });
+  const tx = pre ? pre.filter((t) => t.effectiveDate > from && t.effectiveDate <= closing) : await cardTxs(db, card.accountId!, from, closing);
   const purchases = tx.filter((t) => !planTx.has(t.id)).reduce((s, t) => (t.direction === "OUT" ? s.plus(dec(t.amount)) : s.minus(dec(t.amount))), ZERO);
   const installments = card.plans.reduce((s, p) => s.plus(planPart(cal, p, closing)), ZERO);
   let extras = ZERO;
@@ -390,17 +392,21 @@ export async function closeStatements(db: Db, ws: string, today: Date) {
 
 // Resúmenes futuros estimados (cuotas, compras del ciclo abierto, suscripciones y cargos), para el flujo de caja.
 export async function projectedCardPayments(db: Db, ws: string, today: Date, until: Date) {
-  const ids = (await db.creditCard.findMany({ where: { workspaceId: ws, active: true }, select: { id: true } })).map((c) => c.id);
+  const cards = await db.creditCard.findMany({ where: { workspaceId: ws, active: true, accountId: { not: null } }, include: { plans: true, cycles: true, subscriptions: true, statements: { orderBy: { closingDate: "desc" } } } });
   const out: { date: Date; amount: Decimal; currency: string; description: string }[] = [];
-  for (const id of ids) {
-    const card = await loadCard(db, ws, id);
+  const all = await Promise.all(cards.map(async (card) => {
     const cal = calendar(card);
+    const first = cal.closingFor(today);
+    const txs = await cardTxs(db, card.accountId!, cal.prev(first), until);
+    return { card, cal, txs };
+  }));
+  for (const { card, cal, txs } of all) {
     let c = cal.closingFor(today);
     if (card.statements.some((s) => s.closingDate.getTime() === c.getTime())) c = cal.next(c);
     for (let i = 0; i < 60; i++, c = cal.next(c)) {
       const due = cal.due(c);
       if (due > until) break;
-      let { total } = await statementAmount(db, card, c, today);
+      let { total } = await statementAmount(db, card, c, today, txs);
       if (card.mode === "SIMPLE" && !total.gt(0) && card.statements.length) total = dec([...card.statements].sort((a, b) => b.closingDate.getTime() - a.closingDate.getTime())[0].totalAmount);
       if (total.gt(0)) out.push({ date: due, amount: total, currency: card.currency, description: `${card.name} — resumen ${period(c)} (estimado)` });
     }
@@ -408,16 +414,12 @@ export async function projectedCardPayments(db: Db, ws: string, today: Date, unt
   return out;
 }
 
-// En qué se fue un resumen: por categoría y por persona (titular y adicionales).
-async function breakdown(db: Db, card: FullCard, closing: Date) {
+// En qué se fue un resumen: por categoría y por persona (titular y adicionales). Usa datos ya traídos.
+function breakdown(card: FullCard, closing: Date, pre: CardTx[], catName: Map<string, string>, holderOf: Map<string, string | null>) {
   const cal = calendar(card);
   const from = cal.prev(closing);
   const planTx = new Set(card.plans.map((p) => p.transactionId).filter(Boolean) as string[]);
-  const tx = await db.transaction.findMany({ where: { accountId: card.accountId!, type: "EXPENSE", effectiveDate: { gt: from, lte: closing } }, include: { category: { select: { name: true } } } });
-  const planTxs = await db.transaction.findMany({ where: { id: { in: [...planTx] } }, select: { id: true, cardHolder: true } });
-  const holderOf = new Map(planTxs.map((t) => [t.id, t.cardHolder]));
-  const cats = await db.category.findMany({ where: { id: { in: card.plans.map((p) => p.categoryId).filter(Boolean) as string[] } }, select: { id: true, name: true } });
-  const catName = new Map(cats.map((c) => [c.id, c.name]));
+  const tx = pre.filter((t) => t.effectiveDate > from && t.effectiveDate <= closing).map((t) => ({ ...t, category: t.categoryId ? { name: catName.get(t.categoryId) ?? "Sin categoría" } : null }));
   const byCat = new Map<string, Decimal>(), byHolder = new Map<string, Decimal>();
   const add = (m: Map<string, Decimal>, k: string, v: Decimal) => m.set(k, (m.get(k) ?? ZERO).plus(v));
   for (const t of tx) {
@@ -437,24 +439,43 @@ async function breakdown(db: Db, card: FullCard, closing: Date) {
 }
 
 export async function cardOverview(db: Db, ws: string, today: Date) {
-  const [cards, balances] = await Promise.all([
+  const [cards, balances, cats] = await Promise.all([
     db.creditCard.findMany({ where: { workspaceId: ws }, include: { plans: true, cycles: true, subscriptions: true, statements: { orderBy: { closingDate: "desc" }, take: 12 } }, orderBy: { createdAt: "asc" } }),
-    accountBalances(db, ws),
+    readBalances(db, ws, null),
+    db.category.findMany({ where: { workspaceId: ws }, select: { id: true, name: true } }),
   ]);
+  const catName = new Map(cats.map((c) => [c.id, c.name]));
+  // Lo que se necesita de todas las tarjetas, en pocas consultas y en paralelo.
+  const lastObIds = cards.map((c) => c.statements[0]?.obligationId).filter(Boolean) as string[];
+  const planTxIds = cards.flatMap((c) => c.plans.map((p) => p.transactionId).filter(Boolean) as string[]);
+  const [lastObs, planHolders, txsBy] = await Promise.all([
+    lastObIds.length ? db.obligation.findMany({ where: { id: { in: lastObIds } }, include: { payments: true } }) : Promise.resolve([]),
+    planTxIds.length ? db.transaction.findMany({ where: { id: { in: planTxIds } }, select: { id: true, cardHolder: true } }) : Promise.resolve([]),
+    Promise.all(cards.map((card) => {
+      const cal = calendar(card);
+      const open = cal.closingFor(today);
+      const current = card.statements.find((s) => s.closingDate.getTime() === open.getTime()) ? cal.next(open) : open;
+      const lastClosed = card.statements[0]?.closingDate ?? cal.prev(current);
+      const from = cal.prev(lastClosed < current ? lastClosed : current);
+      return card.accountId ? cardTxs(db, card.accountId, from, current) : Promise.resolve([] as CardTx[]);
+    })),
+  ]);
+  const holderOf = new Map(planHolders.map((t) => [t.id, t.cardHolder]));
   const result = [];
-  for (const card of cards) {
+  for (const [ci, card] of cards.entries()) {
     const cal = calendar(card);
+    const txs = txsBy[ci];
     const debt = (balances.get(card.accountId!) ?? ZERO).neg(); // saldo negativo de la cuenta = lo que debés
     const open = cal.closingFor(today);
     const current = card.statements.find((s) => s.closingDate.getTime() === open.getTime()) ? cal.next(open) : open;
-    const next = await statementAmount(db, card, current, today);
+    const next = await statementAmount(db, card, current, today, txs);
     // Modo simple: sin compras cargadas, el próximo resumen se estima como el último.
     const simpleGuess = card.mode === "SIMPLE" && !next.total.gt(0) && card.statements[0] ? dec(card.statements[0].totalAmount) : null;
     const lastStatement = card.statements[0] ?? null;
-    const lastOb = lastStatement?.obligationId ? await db.obligation.findUnique({ where: { id: lastStatement.obligationId }, include: { payments: true } }) : null;
+    const lastOb = lastStatement?.obligationId ? lastObs.find((o) => o.id === lastStatement.obligationId) ?? null : null;
     const futureInstallments = card.plans.reduce((s, p) => s.plus(planLeft(cal, p, current).left), ZERO);
     const lastClosed = lastStatement?.closingDate ?? cal.prev(current);
-    const [spentNow, spentLast] = await Promise.all([breakdown(db, card, current), breakdown(db, card, lastClosed)]);
+    const spentNow = breakdown(card, current, txs, catName, holderOf), spentLast = breakdown(card, lastClosed, txs, catName, holderOf);
     const usual = cal.usual(current);
     result.push({
       card,

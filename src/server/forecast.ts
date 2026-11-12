@@ -1,7 +1,7 @@
 // Flujo de caja proyectado: saldo real de hoy + cobros y pagos futuros, en orden de fecha.
 // Lo usan el Flujo de caja, el Simulador, "¿Puedo comprarlo en cuotas?" y las Alertas.
 import type { Db } from "./ledger";
-import { accountBalances, remaining } from "./ledger";
+import { accountBalances, readBalances, remaining } from "./ledger";
 import { amountFor, applyWeekend, occurrences } from "./recurring";
 import { projectedCardPayments } from "./cards";
 import { allocate, dec, round2, ZERO, type MoneyValue } from "@/lib/money";
@@ -25,7 +25,7 @@ export async function forecast(db: Db, ws: string, opts: { currency: string; tod
   // 1) Dinero de hoy: cuentas en la moneda, sin inversiones ni tarjetas.
   const accounts = await db.account.findMany({ where: { workspaceId: ws, currency, active: true, type: { notIn: ["INVESTMENT", "CREDIT_CARD"] } }, select: { id: true } });
   const ids = new Set(accounts.map((a) => a.id));
-  const balances = await accountBalances(db, ws);
+  const balances = await readBalances(db, ws, null);
   const cashNow = accounts.reduce((s, a) => s.plus(balances.get(a.id) ?? ZERO), ZERO);
 
   // 2) Lo que ya pasó este mes (para mostrar cuánto entró y salió). Las transferencias entre estas mismas cuentas no cuentan.

@@ -1,7 +1,7 @@
 // Inversiones, bienes, cotizaciones y patrimonio neto.
 // Una valuación cambia el patrimonio, nunca la caja. Aportar o retirar sí mueve dinero.
 import type { Db } from "./ledger";
-import { accountBalances, UserError } from "./ledger";
+import { accountBalances, readBalances, UserError } from "./ledger";
 import { debtDetail } from "./debts";
 import { dec, round2, ZERO, type MoneyValue } from "@/lib/money";
 import { period } from "@/lib/dates";
@@ -156,7 +156,8 @@ export async function investmentsOverview(db: Db, ws: string) {
   const keys = invs.map((i) => quoteKey(i)).filter((k): k is { source: string; symbol: string } => !!k);
   const quotes = keys.length ? await db.quote.findMany({ where: { OR: keys } }) : [];
   const ratesBy = new Map<string, Awaited<ReturnType<typeof latestRates>>>();
-  for (const c of new Set(invs.filter((i) => i.assetClass).map((i) => i.currency))) ratesBy.set(c, await latestRates(db, ws, c));
+  const curs = [...new Set(invs.filter((i) => i.assetClass).map((i) => i.currency))];
+  (await Promise.all(curs.map((c) => latestRates(db, ws, c)))).forEach((r, i) => ratesBy.set(curs[i], r));
   return invs.map((i) => {
     if (i.assetClass) {
       const { qty, cost, realized } = costBasis(i.movements);
@@ -206,7 +207,7 @@ export async function assetsOverview(db: Db, ws: string) {
 export async function netWorth(db: Db, ws: string, base: string) {
   const [accounts, balances, invs, assets, debts, rates, stock] = await Promise.all([
     db.account.findMany({ where: { workspaceId: ws, active: true } }),
-    accountBalances(db, ws),
+    readBalances(db, ws, null),
     investmentsOverview(db, ws),
     assetsOverview(db, ws),
     db.debt.findMany({ where: { workspaceId: ws, status: "ACTIVE" } }),
@@ -227,10 +228,8 @@ export async function netWorth(db: Db, ws: string, base: string) {
     const v = round2(dec(g.tonnes).times(dec(g.pricePerTonne)));
     if (v.gt(0)) lines.push({ group: "Bienes", name: `${g.grain} en stock (${dec(g.tonnes).times(10).toDecimalPlaces(0).toNumber().toLocaleString("es-AR")} qq)`, currency: g.currency, amount: v });
   }
-  for (const d of debts) {
-    const det = await debtDetail(db, ws, d.id);
-    if (det && det.remainingCapital.gt(0)) lines.push({ group: "Deudas", name: d.creditor, currency: d.currency, amount: det.remainingCapital.neg() });
-  }
+  const dets = await Promise.all(debts.map((d) => debtDetail(db, ws, d.id)));
+  debts.forEach((d, i) => { const det = dets[i]; if (det && det.remainingCapital.gt(0)) lines.push({ group: "Deudas", name: d.creditor, currency: d.currency, amount: det.remainingCapital.neg() }); });
   // Solo se suma lo que está en la moneda principal o tiene cotización cargada.
   const toBase = (l: Line) => (l.currency === base ? l.amount : rates.get(l.currency) ? round2(l.amount.times(rates.get(l.currency)!.rate)) : null);
   const withBase = lines.map((l) => ({ ...l, inBase: toBase(l) }));

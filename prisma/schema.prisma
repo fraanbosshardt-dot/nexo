@@ -261,6 +261,9 @@ model Transaction {
   @@index([accountId])
   @@index([obligationId])
   @@index([transferGroupId])
+  @@index([accountId, type, effectiveDate])
+  @@index([workspaceId, type, economicPeriod])
+  @@index([reversalOfId])
 }
 
 enum ObligationDirection {
@@ -312,6 +315,7 @@ model Obligation {
   @@unique([recurringRuleId, occurrenceDate]) // regenerar el calendario no duplica
   @@index([workspaceId, dueDate])
   @@index([workspaceId, status])
+  @@index([workspaceId, sourceType, sourceId])
 }
 
 enum Frequency {
@@ -413,6 +417,7 @@ model DebtInstallment {
   obligationId String?  @unique
 
   @@unique([debtId, number])
+  @@index([obligationId])
 }
 
 model CreditCard {
@@ -476,6 +481,7 @@ model InstallmentPlan {
   firstStatementDate DateTime?  @db.Date
   advancedTo         DateTime?  @db.Date // cuotas que faltaban, adelantadas a ese resumen
   createdAt          DateTime   @default(now())
+  @@index([cardId])
 }
 
 // Un mes en que la tarjeta cierra o vence en otra fecha (los bancos las mueven).
@@ -557,6 +563,7 @@ model GoalContribution {
   amount        Decimal  @db.Decimal(18, 2)
   date          DateTime @db.Date
   transactionId String?
+  @@index([goalId])
 }
 
 // ---------- Inversiones, activos y agro ----------
@@ -591,6 +598,7 @@ model InvestmentMovement {
   quantity      Decimal?   @db.Decimal(24, 8)
   date          DateTime   @db.Date
   transactionId String?
+  @@index([investmentId])
 }
 
 // Valuación: cambia el patrimonio, nunca la caja.
@@ -604,6 +612,8 @@ model Valuation {
   currency     String
   date         DateTime    @db.Date
   source       String      @default("manual")
+  @@index([investmentId])
+  @@index([assetId])
 }
 
 model Asset {
@@ -728,6 +738,8 @@ model AuditLog {
 
   @@index([workspaceId, createdAt])
   @@index([action, createdAt])
+  @@index([action, entityId, createdAt])
+  @@index([action, ip, createdAt])
 }
 
 // ---------- Plataforma: ajustes globales y soporte ----------

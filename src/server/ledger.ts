@@ -11,6 +11,7 @@ import { dec, round2, ZERO, type MoneyValue } from "@/lib/money";
 import { period, periodEnd, periodStart } from "@/lib/dates";
 import type Decimal from "decimal.js";
 import { randomUUID } from "node:crypto";
+import { cache } from "react";
 
 export type Db = PrismaClient;
 type Tx = Prisma.TransactionClient;
@@ -85,6 +86,10 @@ export async function accountBalances(db: Db, ws: string, asOf?: Date): Promise<
   }
   return out;
 }
+
+// Para pantallas: dentro de una misma carga, los saldos se calculan una sola vez aunque varias partes los pidan.
+// (Las acciones que cambian datos usan accountBalances directo, siempre fresco.)
+export const readBalances = cache((db: Db, ws: string, asOfMs: number | null) => accountBalances(db, ws, asOfMs != null ? new Date(asOfMs) : undefined));
 
 // ---------- Obligaciones y pagos ----------
 
@@ -608,7 +613,7 @@ export async function monthSummary(db: Db, ws: string, p: string, currency: stri
 export async function dashboard(db: Db, ws: string, currency: string, today: Date) {
   const [accounts, balances, summary] = await Promise.all([
     db.account.findMany({ where: { workspaceId: ws, active: true }, orderBy: [{ position: "asc" }, { createdAt: "asc" }] }),
-    accountBalances(db, ws, today),
+    readBalances(db, ws, today.getTime()),
     monthSummary(db, ws, period(today), currency, today),
   ]);
   const inBase = accounts.filter((a) => a.currency === currency);
