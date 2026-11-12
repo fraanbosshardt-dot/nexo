@@ -243,6 +243,44 @@ export async function payObligation(
   });
 }
 
+// ---------- Evitar duplicados: un cobro o pago cargado a mano que ya estaba como pendiente ----------
+const NEAR = 20 * 864e5; // ±20 días
+
+// ¿Hay un pendiente que es lo mismo? Mismo concepto, sentido y moneda, sin pagos y con fecha cercana.
+export async function matchingPending(db: Db | Tx, ws: string, q: { kind: "INCOME" | "EXPENSE"; description: string; currency: string; date: Date }) {
+  const rows = await db.obligation.findMany({
+    where: { workspaceId: ws, status: "PENDING", sourceType: null, direction: q.kind === "INCOME" ? "RECEIVABLE" : "PAYABLE", currency: q.currency, description: { equals: q.description.trim(), mode: "insensitive" }, dueDate: { gte: new Date(q.date.getTime() - NEAR), lte: new Date(q.date.getTime() + NEAR) } },
+    include: { payments: true },
+  });
+  return rows.filter((o) => o.payments.length === 0).sort((a, b) => Math.abs(a.dueDate.getTime() - q.date.getTime()) - Math.abs(b.dueDate.getTime() - q.date.getTime()))[0] ?? null;
+}
+
+// Al revés: ¿ya se cargó a mano un cobro o pago que es este pendiente?
+export async function matchingPaid(db: Db, ws: string, ob: { direction: ObligationDirection; description: string; currency: string; dueDate: Date }) {
+  return db.transaction.findFirst({
+    where: { workspaceId: ws, obligationId: null, reversalOfId: null, reversedBy: null, type: ob.direction === "RECEIVABLE" ? "INCOME" : "EXPENSE", currency: ob.currency, description: { equals: ob.description.trim(), mode: "insensitive" }, effectiveDate: { gte: new Date(ob.dueDate.getTime() - NEAR), lte: new Date(ob.dueDate.getTime() + NEAR) } },
+    orderBy: { effectiveDate: "desc" },
+  });
+}
+
+// Unir un movimiento ya cargado con su pendiente: el pendiente queda cobrado o pagado con ese importe (no se duplica).
+export async function linkToPending(db: Db, ws: string, transactionId: string, obligationId: string) {
+  return db.$transaction(async (tx) => {
+    const t = await tx.transaction.findFirst({ where: { id: transactionId, workspaceId: ws } });
+    const ob = await tx.obligation.findFirst({ where: { id: obligationId, workspaceId: ws }, include: { payments: true } });
+    if (!t || !ob) throw new UserError("No encontramos el movimiento o el pendiente.");
+    if (t.obligationId) throw new UserError("Ese movimiento ya está unido a un pendiente.");
+    if (ob.status !== "PENDING" && ob.status !== "PARTIAL") throw new UserError("Ese pendiente ya está cerrado.");
+    if (ob.sourceType) throw new UserError("Ese pendiente se maneja desde su pantalla.");
+    const okType = ob.direction === "RECEIVABLE" ? t.type === "INCOME" : t.type === "EXPENSE";
+    if (!okType || t.currency !== ob.currency) throw new UserError("El movimiento no coincide con el pendiente.");
+    await tx.transaction.update({ where: { id: t.id }, data: { obligationId: ob.id, economicPeriod: ob.economicPeriod, categoryId: t.categoryId ?? ob.categoryId } });
+    // "Fue el total": el pendiente toma el importe real.
+    await tx.obligation.update({ where: { id: ob.id }, data: { amount: money(paidSoFar(ob).plus(dec(t.amount))) } });
+    return refreshStatus(tx, ob.id);
+  });
+}
+
 // Corregir algo a futuro (un pendiente): concepto, importe, fecha, categoría y notas.
 export async function updateObligation(db: Db, ws: string, id: string, input: { description: string; amount: MoneyValue; dueDate: Date; categoryId: string | null; notes: string | null }) {
   const ob = await db.obligation.findFirst({ where: { id, workspaceId: ws }, include: { payments: true } });

@@ -3,13 +3,13 @@ import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { canUse, requireWorkspace } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
-import { paidSoFar, remaining } from "@/server/ledger";
+import { matchingPaid, paidSoFar, remaining } from "@/server/ledger";
 import { isEstimatedGrain, loadSaleHref } from "@/server/grain";
 import { formatMoney } from "@/lib/money";
 import { fmtDate, isoDate, todayIn } from "@/lib/dates";
 import { PageHead } from "@/components/page";
 import { ActionForm, Submit } from "@/components/forms";
-import { deleteObligationAction, payObligationAction, updateObligationAction } from "@/app/actions/app";
+import { deleteObligationAction, linkToPendingAction, payObligationAction, updateObligationAction } from "@/app/actions/app";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { Help } from "@/components/help";
 
@@ -41,6 +41,8 @@ export default async function PayPage({ params, searchParams }: { params: Promis
   // Ingresos y gastos que se repiten cambian de monto: por defecto, lo que se carga es el total de esta vez.
   const recurring = !!ob.recurringRuleId;
   const settleDefault = inc || recurring;
+  // ¿Ya lo cargaste a mano en Movimientos? Así no se registra dos veces.
+  const already = !ob.sourceType && ob.payments.length === 0 ? await matchingPaid(db, workspace.id, ob) : null;
   // Corregir o eliminar: la tarjeta y el cereal se manejan desde su pantalla.
   const editable = ob.sourceType !== "card" && ob.sourceType !== "grain";
   const deletable = editable && ob.sourceType !== "debt" && ob.payments.length === 0;
@@ -76,6 +78,13 @@ export default async function PayPage({ params, searchParams }: { params: Promis
     <div className="narrow">
       <Link className="lk" href="/app/proximos">← Próximos pagos</Link>
       <PageHead crumb="Pagos y deudas" title={corregir ? "Corregir" : inc ? "Registrar cobro" : "Registrar pago"} desc={`${ob.description} · ${ob.dueDate < today ? "venció" : "vence"} el ${fmtDate(ob.dueDate)}`} />
+      {!corregir && already && (
+        <form action={linkToPendingAction} className="notice" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10, marginBottom: 12 }}>
+          <input type="hidden" name="obligationId" value={ob.id} /><input type="hidden" name="transactionId" value={already.id} />
+          <span>Ya cargaste <b style={{ fontWeight: 500 }}>{already.description}</b> el {fmtDate(already.effectiveDate)} por {formatMoney(already.amount, already.currency)} en Movimientos. Si es el mismo, no lo registres de nuevo.</span>
+          <button className="btn sm pri" type="submit" style={{ marginLeft: "auto" }}>Es el mismo</button>
+        </form>
+      )}
       {corregir && fix}
       <div className="card">
         <dl className="kv" style={{ marginBottom: 14 }}>

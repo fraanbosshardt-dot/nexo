@@ -132,3 +132,33 @@ describe("corregir o eliminar algo a futuro (pendiente)", () => {
     expect(await db.obligation.count({ where: { id: p.obligationId! } })).toBe(0);
   });
 });
+
+describe("no duplicar lo que ya estaba como pendiente", () => {
+  it("un cobro cargado a mano se une con el pendiente igual y queda con el importe real", async () => {
+    const { matchingPending, linkToPending } = await import("@/server/ledger");
+    const p = await recordMovement(db, ws, { kind: "INCOME", description: "Sueldo", amount: "1000", accountId: banco, status: "PENDING", dueDate: d("2026-12-05") });
+    const before = await bal(banco);
+    const r = await recordMovement(db, ws, { kind: "INCOME", description: "sueldo", amount: "1100", accountId: banco, status: "PAID", effectiveDate: d("2026-12-03") });
+    const m = await matchingPending(db, ws, { kind: "INCOME", description: "sueldo", currency: "ARS", date: d("2026-12-03") });
+    expect(m?.id).toBe(p.obligationId);
+    await linkToPending(db, ws, r.transactionId!, m!.id);
+    const ob = await db.obligation.findUniqueOrThrow({ where: { id: p.obligationId! } });
+    expect([ob.status, ob.amount.toString()]).toEqual(["SETTLED", "1100"]);
+    expect(await bal(banco)).toBe(before + 1100); // un solo cobro
+    expect(await matchingPending(db, ws, { kind: "INCOME", description: "Sueldo", currency: "ARS", date: d("2026-12-03") })).toBeNull();
+  });
+
+  it("desde el pendiente se ve que ya estaba cargado", async () => {
+    const { matchingPaid } = await import("@/server/ledger");
+    const r = await recordMovement(db, ws, { kind: "EXPENSE", description: "Expensas", amount: "200", accountId: banco, status: "PAID", effectiveDate: d("2026-12-08") });
+    const p = await recordMovement(db, ws, { kind: "EXPENSE", description: "Expensas", amount: "180", accountId: banco, status: "PENDING", dueDate: d("2026-12-10") });
+    const ob = await db.obligation.findUniqueOrThrow({ where: { id: p.obligationId! } });
+    expect((await matchingPaid(db, ws, ob))?.id).toBe(r.transactionId);
+  });
+
+  it("no une cosas lejanas en el tiempo", async () => {
+    const { matchingPending } = await import("@/server/ledger");
+    await recordMovement(db, ws, { kind: "INCOME", description: "Aguinaldo", amount: "500", accountId: banco, status: "PENDING", dueDate: d("2027-06-30") });
+    expect(await matchingPending(db, ws, { kind: "INCOME", description: "Aguinaldo", currency: "ARS", date: d("2026-12-01") })).toBeNull();
+  });
+});

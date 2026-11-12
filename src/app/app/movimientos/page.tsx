@@ -14,7 +14,7 @@ const DIAS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "
 const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 const TYPE_LABEL: Record<string, string> = { TRANSFER: "Transferencia", ADJUSTMENT: "Corrección de saldo", DEBT_PAYMENT: "Cuota de deuda", CARD_PAYMENT: "Pago de tarjeta", INVESTMENT: "Inversión", DEBT_DISBURSEMENT: "Préstamo recibido" };
 
-export default async function Movements({ searchParams }: { searchParams: Promise<{ mes?: string; tipo?: string; q?: string; desde?: string; hasta?: string; n?: string; guardado?: string; borrado?: string }> }) {
+export default async function Movements({ searchParams }: { searchParams: Promise<{ mes?: string; tipo?: string; q?: string; desde?: string; hasta?: string; n?: string; guardado?: string; borrado?: string; unido?: string }> }) {
   const { workspace } = await requireWorkspace();
   const sp = await searchParams;
   const p = /^\d{4}-\d{2}$/.test(sp.mes ?? "") ? sp.mes! : period(todayIn(workspace.timezone));
@@ -57,7 +57,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
     <>
       <PageHead crumb="Mi dinero" title="Movimientos" desc="Lo que ya entró y salió de tus cuentas. Lo que falta está en Próximos pagos." />
       {sp.borrado && <p className="notice g" role="status">Listo, eliminamos el movimiento. El saldo de la cuenta volvió a como estaba.</p>}
-      {sp.guardado && <div className="notice g" role="status"><span>Listo, quedó guardado.</span><span className="acts" style={{ marginLeft: "auto" }}><Link className="btn sm" href="/app/movimientos/nuevo">+ Cargar otro</Link>{/^[a-z0-9]{20,}$/.test(sp.guardado) && <Link className="btn sm" href={`/app/movimientos/${sp.guardado}`}>Ver o corregir</Link>}</span></div>}
+      {sp.guardado && <div className="notice g" role="status"><span>{sp.unido ? "Listo. Ya figuraba como pendiente en Próximos pagos, así que lo marcamos como cobrado o pagado con este importe (no queda duplicado)." : "Listo, quedó guardado."}</span><span className="acts" style={{ marginLeft: "auto" }}><Link className="btn sm" href="/app/movimientos/nuevo">+ Cargar otro</Link>{/^[a-z0-9]{20,}$/.test(sp.guardado) && <Link className="btn sm" href={`/app/movimientos/${sp.guardado}`}>Ver o corregir</Link>}</span></div>}
       <div className="acts" style={{ justifyContent: "space-between", alignItems: "center" }}>
         {ranged ? (
           <div className="acts" style={{ alignItems: "center" }}><b style={{ fontSize: 18, fontWeight: 400 }}>{rangeLabel}</b><Link className="btn sm" href={`/app/movimientos?mes=${p}`}>Volver al mes</Link></div>

@@ -10,7 +10,7 @@ import { parseDate, todayIn } from "@/lib/dates";
 import { MODULES, modulesForUses, readModules, FREE_LIMITS } from "@/lib/modules";
 import { generateTotpSecret, otpauthUrl, verifyTotp } from "@/lib/auth/totp";
 import { decryptSecret, encryptSecret } from "@/lib/crypto";
-import { adjustBalance, cancelObligation, createAccount, deleteMovement, deleteObligation, updateObligation, payObligation, recordMovement, recordTransfer, updateMovement, UserError } from "@/server/ledger";
+import { adjustBalance, cancelObligation, createAccount, deleteMovement, deleteObligation, linkToPending, matchingPending, updateObligation, payObligation, recordMovement, recordTransfer, updateMovement, UserError } from "@/server/ledger";
 import type { FormState } from "./auth";
 import { createRule, materialize } from "@/server/recurring";
 import { MATERIALIZE_DAYS } from "@/server/forecast";
@@ -160,6 +160,7 @@ export async function reconcileAction(_: FormState, fd: FormData): Promise<FormS
 export async function createMovementAction(_: FormState, fd: FormData): Promise<FormState> {
   const { user, workspace } = await requireWorkspace();
   let savedId: string | null = null;
+  let joined = false;
   try {
     const db = getDb();
     const kind = z.enum(["INCOME", "EXPENSE", "TRANSFER"]).parse(fd.get("kind"));
@@ -205,6 +206,12 @@ export async function createMovementAction(_: FormState, fd: FormData): Promise<
         idempotencyKey,
         userId: user.id,
       });
+      // Si ya estaba como pendiente (por ej. el sueldo de este mes), se une con ese: no queda duplicado.
+      if (status === "PAID" && res.transactionId && !res.duplicate) {
+        const acc = await db.account.findFirst({ where: { id: String(fd.get("accountId")), workspaceId: workspace.id }, select: { currency: true } });
+        const match = acc && (await matchingPending(db, workspace.id, { kind, description: String(fd.get("description") ?? ""), currency: acc.currency, date: date(fd.get("effectiveDate"), "la fecha de pago") }));
+        if (match) { await linkToPending(db, workspace.id, res.transactionId, match.id); joined = true; }
+      }
       // ¿Se repite? Desde la próxima vez, lo genera la regla recurrente (esta vez ya quedó cargada).
       savedId = res.transactionId;
       if (fd.get("repeat") === "on" && !res.duplicate) {
@@ -228,7 +235,17 @@ export async function createMovementAction(_: FormState, fd: FormData): Promise<
   }
   revalidatePath("/app", "layout");
   const back = String(fd.get("back") ?? "");
-  redirect(/^\/app(\/|\?|$)/.test(back) ? back : savedId ? `/app/movimientos?guardado=${savedId}` : "/app/movimientos");
+  redirect(/^\/app(\/|\?|$)/.test(back) ? back : savedId ? `/app/movimientos?guardado=${savedId}${joined ? "&unido=1" : ""}` : "/app/movimientos");
+}
+
+// Desde Próximos pagos: "es el mismo que ya cargué" (no se registra otra vez).
+export async function linkToPendingAction(fd: FormData) {
+  const { user, workspace } = await requireWorkspace();
+  const obligationId = String(fd.get("obligationId") ?? "");
+  const ob = await linkToPending(getDb(), workspace.id, String(fd.get("transactionId") ?? ""), obligationId);
+  await audit("obligation.linked", { userId: user.id, workspaceId: workspace.id, entity: "obligation", entityId: obligationId });
+  revalidatePath("/app", "layout");
+  redirect(`/app/proximos?listo=${ob.direction === "RECEIVABLE" ? "cobro" : "pago"}`);
 }
 
 export async function payObligationAction(_: FormState, fd: FormData): Promise<FormState> {
@@ -254,9 +271,12 @@ export async function quickConfirmAction(fd: FormData) {
   const acc = (ob.recurringRule?.accountId && (await db.account.findFirst({ where: { id: ob.recurringRule.accountId, workspaceId: workspace.id, active: true, currency: ob.currency, type: { notIn: ["CREDIT_CARD", "INVESTMENT"] } } })))
     || (await db.account.findFirst({ where: { workspaceId: workspace.id, active: true, currency: ob.currency, type: { notIn: ["CREDIT_CARD", "INVESTMENT"] } }, orderBy: { createdAt: "asc" } }));
   if (!acc) redirect(`/app/proximos/${ob.id}`);
-  const { remaining } = await import("@/server/ledger");
+  const { remaining, matchingPaid } = await import("@/server/ledger");
   try {
-    await payObligation(db, workspace.id, { obligationId: ob.id, accountId: acc.id, amount: remaining(ob), date: todayIn(workspace.timezone), userId: user.id, settle: true });
+    // Si ya lo cargaste a mano en Movimientos, se une con ese en vez de registrarlo otra vez.
+    const already = !ob.sourceType && ob.payments.length === 0 ? await matchingPaid(db, workspace.id, ob) : null;
+    if (already) await linkToPending(db, workspace.id, already.id, ob.id);
+    else await payObligation(db, workspace.id, { obligationId: ob.id, accountId: acc.id, amount: remaining(ob), date: todayIn(workspace.timezone), userId: user.id, settle: true });
   } catch (e) {
     // Segundo toque: el primero ya lo cerró. No se registra otra vez.
     if (!(e instanceof UserError)) throw e;
