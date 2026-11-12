@@ -142,3 +142,43 @@ describe("revisar el resumen y adicionales", () => {
     expect(o.spentNow.byHolder.map((x) => `${x.name}:${x.amount.toNumber()}`)).toEqual(["Ana:700", "Titular:300"]);
   });
 });
+
+describe("modo simple y avisos", () => {
+  it("modo simple: el resumen es un gasto del mes, pagarlo no lo duplica y el próximo se estima igual", async () => {
+    const { monthSummary } = await import("@/server/ledger");
+    const { loadStatement } = await import("@/server/cards");
+    const { ws, bank, card } = await setup({ mode: "SIMPLE" });
+    await loadStatement(db, ws, { cardId: card.id, closingDate: d("2026-11-25"), dueDate: d("2026-12-05"), total: "300000" });
+    const sum = await monthSummary(db, ws, "2026-11", "ARS", d("2026-11-30"));
+    expect(sum.expense.toNumber()).toBe(300000);
+    const cat = await db.category.findFirst({ where: { workspaceId: ws, name: "Tarjeta de crédito" } });
+    expect(cat).not.toBeNull();
+    const st = await cardStatus(db, ws, card.id, d("2026-11-30"));
+    await payObligation(db, ws, { obligationId: st.open[0].id, accountId: bank.id, amount: "300000", date: d("2026-12-04") });
+    const sum2 = await monthSummary(db, ws, "2026-12", "ARS", d("2026-12-31"));
+    expect(sum2.expense.toNumber()).toBe(0);
+    const proj = await projectedCardPayments(db, ws, d("2026-12-01"), d("2027-01-10"));
+    expect(proj[0].amount.toNumber()).toBe(300000);
+  });
+
+  it("no deja sumar una compra a un resumen que ya cargaste del banco", async () => {
+    const { loadStatement } = await import("@/server/cards");
+    const { ws, card } = await setup();
+    await loadStatement(db, ws, { cardId: card.id, closingDate: d("2026-11-25"), dueDate: d("2026-12-05"), total: "5000" });
+    await expect(cardPurchase(db, ws, { cardId: card.id, description: "Olvidada", amount: "100", date: d("2026-11-20") })).rejects.toThrow(/dos veces/);
+  });
+
+  it("una compra olvidada de un resumen que Finan cerró solo lo actualiza", async () => {
+    const { ws, card } = await setup();
+    await cardPurchase(db, ws, { cardId: card.id, description: "Super", amount: "1000", date: d("2026-11-10") });
+    await closeStatements(db, ws, d("2026-11-30"));
+    await cardPurchase(db, ws, { cardId: card.id, description: "Kiosco", amount: "200", date: d("2026-11-15") });
+    const s = await db.cardStatement.findFirstOrThrow({ where: { cardId: card.id } });
+    expect(Number(s.totalAmount)).toBe(1200);
+    expect(Number((await db.obligation.findUniqueOrThrow({ where: { id: s.obligationId! } })).amount)).toBe(1200);
+  });
+
+  it("el cierre y el vencimiento no pueden ser el mismo día", async () => {
+    await expect(setup({ closingDay: 10, dueDay: 10 })).rejects.toThrow(/mismo día/);
+  });
+});

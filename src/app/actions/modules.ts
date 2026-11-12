@@ -167,6 +167,7 @@ function cardFields(fd: FormData, base: string) {
     currency2: fd.get("hasCurrency2") === "on" && isCurrency(c2) && c2 !== base ? c2 : null,
     financeRate: optMoney(fd, "financeRate", "la tasa de financiación"), monthlyFee: optMoney(fd, "monthlyFee", "los cargos fijos"),
     alertPct: pct ?? null, holders: str(fd, "holders").split(",").map((h) => h.trim()).filter(Boolean),
+    mode: fd.get("mode") === "SIMPLE" ? ("SIMPLE" as const) : fd.get("mode") === "DETAILED" ? ("DETAILED" as const) : undefined,
   };
 }
 
@@ -175,6 +176,7 @@ export async function createCardAction(_: FormState, fd: FormData): Promise<Form
   let id = "";
   try {
     const currency = isCurrency(str(fd, "currency")) ? str(fd, "currency") : workspace.baseCurrency;
+    if (!fd.get("mode")) throw new UserError("Elegí cómo querés usar la tarjeta: solo el resumen o cada compra.");
     const c = await createCard(getDb(), workspace.id, { ...cardFields(fd, currency), currency, startDate: todayIn(workspace.timezone) });
     id = c.id;
   } catch (e) { return fail(e); }
@@ -663,7 +665,9 @@ export async function loadStatementAction(_: FormState, fd: FormData): Promise<F
     }).filter((c): c is NonNullable<typeof c> => !!c);
     const { loadStatement } = await import("@/server/cards");
     const add = str(fd, "addPurchases");
-    if (add) {
+    // Si ese resumen ya lo habías cargado, no se suman compras (se contarían dos veces).
+    const already = await getDb().cardStatement.findFirst({ where: { cardId, closingDate: date(fd, "closingDate", "la fecha de cierre"), loaded: true } });
+    if (add && !already) {
       const list = z.array(z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), description: z.string().min(1).max(120), amount: z.string() })).max(200).parse(JSON.parse(add));
       for (const x of list) await cardPurchase(getDb(), workspace.id, { cardId, description: x.description, amount: x.amount, date: new Date(`${x.date}T00:00:00Z`), userId: user.id, idempotencyKey: `stmt:${cardId}:${x.date}:${x.amount}:${x.description.slice(0, 30)}` });
     }

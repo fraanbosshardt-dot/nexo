@@ -13,6 +13,7 @@ export default async function NewMovement({ searchParams }: { searchParams: Prom
   const { workspace } = await requireWorkspace();
   const sp = await searchParams;
   const db = getDb();
+  const cards = await db.creditCard.findMany({ where: { workspaceId: workspace.id, active: true, parentId: null }, select: { id: true, name: true, issuer: true } });
   const [accounts, categories, recent] = await Promise.all([
     db.account.findMany({ where: { workspaceId: workspace.id, active: true, type: { not: "CREDIT_CARD" } }, orderBy: [{ position: "asc" }, { createdAt: "asc" }], select: { id: true, name: true, currency: true, type: true } }),
     db.category.findMany({ where: { workspaceId: workspace.id, archived: false }, orderBy: [{ parentId: "asc" }, { name: "asc" }], select: { id: true, name: true, kind: true, parentId: true } }),
@@ -35,7 +36,7 @@ export default async function NewMovement({ searchParams }: { searchParams: Prom
       <Link className="lk" href="/app/movimientos">← Movimientos</Link>
       <PageHead crumb="Mi dinero" title="Nuevo movimiento" />
       <div className="card">
-        <MovementForm accounts={accounts} categories={categories} today={isoDate(todayIn(workspace.timezone))} initialKind={kind} initialAccount={lastAccount} initialStatus={sp.estado === "pendiente" ? "PENDING" : undefined} history={history} baseCurrency={workspace.baseCurrency} idem={randomUUID()} back={sp.estado === "pendiente" ? "/app/proximos?guardado=1" : undefined} />
+        <MovementForm cards={cards} accounts={accounts} categories={categories} today={isoDate(todayIn(workspace.timezone))} initialKind={kind} initialAccount={lastAccount} initialStatus={sp.estado === "pendiente" ? "PENDING" : undefined} history={history} baseCurrency={workspace.baseCurrency} idem={randomUUID()} back={sp.estado === "pendiente" ? "/app/proximos?guardado=1" : undefined} />
       </div>
     </div>
   );

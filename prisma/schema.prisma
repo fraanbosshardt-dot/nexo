@@ -435,6 +435,7 @@ model CreditCard {
   monthlyFee   Decimal?  @db.Decimal(18, 2) // cargos fijos por resumen (mantenimiento, seguro)
   alertPct     Int? // avisar cuando el uso del límite pasa este %
   holders      String[]  @default([]) // tarjetas adicionales (nombres)
+  mode         String    @default("DETAILED") // SIMPLE: solo el resumen · DETAILED: cada compra
 
   statements    CardStatement[]
   plans         InstallmentPlan[]
@@ -453,6 +454,7 @@ model CardStatement {
   totalAmount   Decimal    @db.Decimal(18, 2)
   minimumAmount Decimal    @db.Decimal(18, 2)
   carriedAmount Decimal    @default(0) @db.Decimal(18, 2) // saldo que quedó sin pagar del resumen anterior
+  loaded        Boolean    @default(false) // lo cargó la persona desde el banco (a mano o PDF)
   obligationId  String?    @unique
   createdAt     DateTime   @default(now())
 

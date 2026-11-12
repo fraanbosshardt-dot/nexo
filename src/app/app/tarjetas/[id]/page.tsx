@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { requireWorkspace, canUse } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
-import { calendar, cardGroups } from "@/server/cards";
+import { calendar, cardGroups, statementAmount } from "@/server/cards";
 import { StatementForm } from "./statement-form";
 import { formatMoney, ZERO } from "@/lib/money";
 import { fmtDate, isoDate, period, todayIn } from "@/lib/dates";
@@ -21,6 +21,8 @@ const PANELS: Record<string, [string]> = {
   cuotas: ["Compras en cuotas"], gastos: ["En qué se fue el resumen"], compras: ["Últimas compras"], resumenes: ["Resúmenes anteriores"],
   fechas: ["Fechas de este mes"], editar: ["Editar tarjeta"],
 };
+// En modo simple solo se ve lo que sirve sin cargar compras.
+const SIMPLE_OPTS = ["resumenes", "fechas", "editar"];
 const OPTIONS: [string, IconName, string][] = [
   ["suscripciones", "repeat", "Netflix, gimnasio: se cargan solas"],
   ["cuotas", "cal", "Ver, corregir o adelantar"],
@@ -75,6 +77,10 @@ export default async function CardDetail({ params, searchParams }: { params: Pro
   const subs = parts.flatMap((p) => p.subscriptions.map((x) => ({ ...x, currency: p.card.currency })));
   const catName = new Map(cats.map((c) => [c.id, c.name]));
   // Recién creada: el primer paso es cargar el resumen.
+  const simple = card.mode === "SIMPLE";
+  // Lo que Finan calcula para el último resumen (para avisar si el del banco es muy distinto).
+  const lastLoaded = card.statements.find((x) => x.closingDate.getTime() === lastClose.getTime());
+  const estimate = simple ? null : lastLoaded ? Number(lastLoaded.totalAmount) : (await statementAmount(db, card, lastClose)).total.toNumber();
   const sel = sp.ver ?? (!card.statements.length && !g.status.open.length ? "resumen" : "");
   const pickCurrency = currencies.length > 1 && <label className="field">Moneda<select name="currency" defaultValue={card.currency}>{currencies.map((c) => <option key={c}>{c}</option>)}</select></label>;
   const pickHolder = holders.length > 0 && <label className="field">¿Quién la hizo?<select name="holder" defaultValue=""><option value="">Titular</option>{holders.map((h) => <option key={h}>{h}</option>)}</select></label>;
@@ -110,9 +116,9 @@ export default async function CardDetail({ params, searchParams }: { params: Pro
           <table className="tsum-t">
             {ch && <thead><tr><th /><th className="n">{card.currency}</th><th className="n">{ch.card.currency}</th></tr></thead>}
             <tbody>
-              <tr><th>Próximo resumen<span className="mut tsum-when">Cierra {fmtDate(g.nextClosing)} · vence {fmtDate(g.nextDue)}</span></th>{parts.map((p) => <td key={p.card.id} className="n">{fm(p.nextAmount, p.card.currency)}</td>)}</tr>
-              <tr><th>Debés en total</th>{parts.map((p) => <td key={p.card.id} className="n">{fm(p.debt, p.card.currency)}</td>)}</tr>
-              <tr><th>Cuotas que faltan</th>{parts.map((p) => <td key={p.card.id} className="n">{fm(p.futureInstallments, p.card.currency)}</td>)}</tr>
+              <tr><th>Próximo resumen{g.nextIsGuess ? " (estimado como el último)" : ""}<span className="mut tsum-when">Cierra {fmtDate(g.nextClosing)} · vence {fmtDate(g.nextDue)}</span></th>{parts.map((p) => <td key={p.card.id} className="n">{fm(p.nextAmount, p.card.currency)}</td>)}</tr>
+              {simple ? (g.lastStatement && <tr><th>Último resumen<span className="mut tsum-when">Cerró {fmtDate(g.lastStatement.closingDate)}</span></th>{parts.map((p) => <td key={p.card.id} className="n">{p.lastStatement ? fm(p.lastStatement.totalAmount, p.card.currency) : "—"}</td>)}</tr>) : <><tr><th>Debés en total</th>{parts.map((p) => <td key={p.card.id} className="n">{fm(p.debt, p.card.currency)}</td>)}</tr>
+              <tr><th>Cuotas que faltan</th>{parts.map((p) => <td key={p.card.id} className="n">{fm(p.futureInstallments, p.card.currency)}</td>)}</tr></>}
             </tbody>
           </table>
           {g.usagePct != null && (
@@ -123,8 +129,8 @@ export default async function CardDetail({ params, searchParams }: { params: Pro
           )}
           {g.nextMoved && <p className="sub" style={{ margin: 0 }}>Este mes las fechas son distintas a las de siempre.</p>}
           <div className="acts">
-            <Link className={`btn ${sel === "resumen" ? "pri" : ""}`} href={`?ver=resumen#panel`}>Cargar resumen</Link>
-            <Link className={`btn ${sel === "compra" ? "pri" : ""}`} href={`?ver=compra#panel`}>+ Registrar compra</Link>
+            <Link className={`btn ${sel === "resumen" || simple ? "pri" : ""}`} href={`?ver=resumen#panel`}>Cargar resumen</Link>
+            {!simple && <Link className={`btn ${sel === "compra" ? "pri" : ""}`} href={`?ver=compra#panel`}>+ Registrar compra</Link>}
           </div>
         </div>
       </div>
@@ -142,7 +148,7 @@ export default async function CardDetail({ params, searchParams }: { params: Pro
           <div className="chead"><h3>{PANELS[sel][0]}</h3><Link className="btn ghost sm" href="?#opciones">Cerrar</Link></div>
           {sel === "resumen" && (
             <>
-              <div style={{ maxWidth: 760 }}><StatementForm cardId={card.id} currency={card.currency} second={ch ? { cardId: ch.card.id, currency: ch.card.currency } : null} closing={isoDate(lastClose)} due={isoDate(cal.due(lastClose))} pdf={pdf} pdfLeft={pdfLeft} /></div>
+              <div style={{ maxWidth: 760 }}><StatementForm cardId={card.id} currency={card.currency} simple={simple} closingDay={card.closingDay} estimate={estimate} loadedClosings={card.statements.filter((x) => x.loaded).map((x) => isoDate(x.closingDate))} second={ch ? { cardId: ch.card.id, currency: ch.card.currency } : null} closing={isoDate(lastClose)} due={isoDate(cal.due(lastClose))} pdf={pdf} pdfLeft={pdfLeft} /></div>
             </>
           )}
           {sel === "compra" && <ActionForm action={cardPurchaseAction} style={{ display: "flex", flexDirection: "column", gap: 12, paddingTop: 10, maxWidth: 640 }}>
@@ -218,9 +224,10 @@ export default async function CardDetail({ params, searchParams }: { params: Pro
 
       <div className="card" id="opciones">
         <div className="chead"><h3>Más opciones</h3></div>
-        <div className="tiles">{OPTIONS.map(([k, icon, sub]) => (
+        <div className="tiles">{OPTIONS.filter(([k]) => !simple || SIMPLE_OPTS.includes(k)).map(([k, icon, sub]) => (
           <Link key={k} href={`?ver=${k}#panel`} className={`tile ${sel === k ? "on" : ""}`}><span className="tile-ic"><Icon name={icon} /></span><span><b>{PANELS[k][0]}{k === "suscripciones" && subs.length ? ` (${subs.length})` : k === "cuotas" && plans.length ? ` (${plans.length})` : ""}</b><span className="sub">{sub}</span></span></Link>
         ))}</div>
+        {simple && <p className="sub" style={{ margin: "12px 0 0" }}>¿Querés ver en qué se fue la plata, por categoría? <Link className="lk" href="?ver=editar#panel">Pasala a “cada compra”</Link>.</p>}
       </div>
     </>
   );

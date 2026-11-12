@@ -123,12 +123,14 @@ export async function statementAmount(db: Db, card: CardLike, closing: Date, tod
 export type CardInput = {
   issuer: string; name: string; last4?: string | null; limit: MoneyValue; currency: string; closingDay: number; dueDay: number; payAccountId?: string | null;
   currency2?: string | null; financeRate?: MoneyValue | null; monthlyFee?: MoneyValue | null; alertPct?: number | null; holders?: string[];
+  mode?: "SIMPLE" | "DETAILED";
 };
 
 function checkCard(input: CardInput) {
   if (!input.name.trim()) throw new UserError("Poné un nombre para la tarjeta.");
   if (input.closingDay < 1 || input.closingDay > 31 || input.dueDay < 1 || input.dueDay > 31) throw new UserError("Los días de cierre y vencimiento van del 1 al 31.");
   if (input.last4 && !/^\d{4}$/.test(input.last4)) throw new UserError("Los últimos 4 números tienen que ser 4 dígitos.");
+  if (input.closingDay === input.dueDay) throw new UserError("El cierre y el vencimiento no pueden ser el mismo día. Fijate en tu resumen: el vencimiento suele ser unos 10 días después del cierre.");
   if (input.currency2 && input.currency2 === input.currency) throw new UserError("La segunda moneda tiene que ser distinta de la principal.");
   if (input.alertPct != null && (input.alertPct < 1 || input.alertPct > 100)) throw new UserError("El aviso de uso del límite va de 1% a 100%.");
   if (input.financeRate != null && (dec(input.financeRate).lt(0) || dec(input.financeRate).gt(1000))) throw new UserError("Revisá la tasa de financiación.");
@@ -138,6 +140,7 @@ const extra = (input: CardInput) => ({
   monthlyFee: input.monthlyFee != null && dec(input.monthlyFee).gt(0) ? round2(input.monthlyFee).toFixed(2) : null,
   alertPct: input.alertPct ?? null,
   holders: [...new Set((input.holders ?? []).map((h) => h.trim()).filter(Boolean))].slice(0, 6),
+  ...(input.mode ? { mode: input.mode } : {}),
 });
 
 export async function createCard(db: Db, ws: string, input: CardInput & { startDate: Date }) {
@@ -155,7 +158,8 @@ export async function createCard(db: Db, ws: string, input: CardInput & { startD
 
 async function addSecondCurrency(db: Db, ws: string, card: { id: string; name: string; issuer: string; last4: string | null; closingDay: number; dueDay: number; payAccountId: string | null }, currency: string, startDate: Date) {
   const acc = await db.account.create({ data: { workspaceId: ws, name: `${card.name} (${currency})`, institution: card.issuer || null, type: "CREDIT_CARD", currency, initialBalance: "0", initialDate: startDate } });
-  return db.creditCard.create({ data: { workspaceId: ws, issuer: card.issuer, name: `${card.name} (${currency})`, last4: card.last4, limitAmount: "0", currency, closingDay: card.closingDay, dueDay: card.dueDay, payAccountId: card.payAccountId, accountId: acc.id, parentId: card.id } });
+  const mode = (card as { mode?: string }).mode ?? "DETAILED";
+  return db.creditCard.create({ data: { mode, workspaceId: ws, issuer: card.issuer, name: `${card.name} (${currency})`, last4: card.last4, limitAmount: "0", currency, closingDay: card.closingDay, dueDay: card.dueDay, payAccountId: card.payAccountId, accountId: acc.id, parentId: card.id } });
 }
 
 export async function updateCard(db: Db, ws: string, id: string, input: Omit<CardInput, "currency"> & { active?: boolean }) {
@@ -170,7 +174,7 @@ export async function updateCard(db: Db, ws: string, id: string, input: Omit<Car
     await tx.account.update({ where: { id: card.accountId! }, data: { name: input.name.trim(), institution: input.issuer.trim() || null, ...(input.active != null ? { active: input.active } : {}) } });
     if (child) {
       const n = `${input.name.trim()} (${child.currency})`;
-      await tx.creditCard.update({ where: { id: child.id }, data: { ...base, name: n } });
+      await tx.creditCard.update({ where: { id: child.id }, data: { ...base, name: n, ...(input.mode ? { mode: input.mode } : {}) } });
       await tx.account.update({ where: { id: child.accountId! }, data: { name: n, institution: input.issuer.trim() || null, ...(input.active != null ? { active: input.active } : {}) } });
     } else if (input.currency2) {
       await addSecondCurrency(tx as unknown as Db, ws, updated, input.currency2, new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate())));
@@ -253,6 +257,9 @@ export async function cardPurchase(
   const dup = input.idempotencyKey ? await db.transaction.findFirst({ where: { workspaceId: ws, idempotencyKey: input.idempotencyKey } }) : null;
   if (dup) return dup;
   const cal = calendar(card);
+  const cycle = cal.closingFor(input.date);
+  const closed = card.statements.find((s) => s.closingDate.getTime() === cycle.getTime());
+  if (closed?.loaded && !input.idempotencyKey) throw new UserError(`Esa compra es del resumen que cerró el ${cycle.toISOString().slice(8, 10)}/${cycle.toISOString().slice(5, 7)}, y ese resumen ya lo cargaste completo desde el banco: si la sumás se cuenta dos veces. Si es de este mes, revisá la fecha.`);
   return db.$transaction(async (tx) => {
     const t = await tx.transaction.create({
       data: {
@@ -265,6 +272,15 @@ export async function cardPurchase(
       await tx.installmentPlan.create({
         data: { cardId: card.id, description, purchaseDate: input.date, totalAmount: total.toFixed(2), installments: n, installmentAmount: allocate(total, n)[n - 1].toFixed(2), interestFree: input.financedTotal == null, categoryId: input.categoryId ?? null, transactionId: t.id, firstStatementDate: cal.closingFor(input.date) },
       });
+    }
+    // Compra olvidada de un resumen que Finan ya había cerrado solo: ese resumen se actualiza.
+    if (closed && !closed.loaded) {
+      const add = n > 1 ? allocate(total, n)[0] : total;
+      await tx.cardStatement.update({ where: { id: closed.id }, data: { totalAmount: dec(closed.totalAmount).plus(add).toFixed(2) } });
+      if (closed.obligationId) {
+        const ob = await tx.obligation.findUnique({ where: { id: closed.obligationId }, include: { payments: true } });
+        if (ob) await tx.obligation.update({ where: { id: ob.id }, data: { amount: dec(ob.amount).plus(add).toFixed(2), status: paidSoFar(ob).gte(dec(ob.amount).plus(add)) ? "SETTLED" : paidSoFar(ob).gt(0) ? "PARTIAL" : "PENDING" } });
+      }
     }
     return t;
   });
@@ -384,7 +400,8 @@ export async function projectedCardPayments(db: Db, ws: string, today: Date, unt
     for (let i = 0; i < 60; i++, c = cal.next(c)) {
       const due = cal.due(c);
       if (due > until) break;
-      const { total } = await statementAmount(db, card, c, today);
+      let { total } = await statementAmount(db, card, c, today);
+      if (card.mode === "SIMPLE" && !total.gt(0) && card.statements.length) total = dec([...card.statements].sort((a, b) => b.closingDate.getTime() - a.closingDate.getTime())[0].totalAmount);
       if (total.gt(0)) out.push({ date: due, amount: total, currency: card.currency, description: `${card.name} — resumen ${period(c)} (estimado)` });
     }
   }
@@ -431,6 +448,8 @@ export async function cardOverview(db: Db, ws: string, today: Date) {
     const open = cal.closingFor(today);
     const current = card.statements.find((s) => s.closingDate.getTime() === open.getTime()) ? cal.next(open) : open;
     const next = await statementAmount(db, card, current, today);
+    // Modo simple: sin compras cargadas, el próximo resumen se estima como el último.
+    const simpleGuess = card.mode === "SIMPLE" && !next.total.gt(0) && card.statements[0] ? dec(card.statements[0].totalAmount) : null;
     const lastStatement = card.statements[0] ?? null;
     const lastOb = lastStatement?.obligationId ? await db.obligation.findUnique({ where: { id: lastStatement.obligationId }, include: { payments: true } }) : null;
     const futureInstallments = card.plans.reduce((s, p) => s.plus(planLeft(cal, p, current).left), ZERO);
@@ -445,7 +464,8 @@ export async function cardOverview(db: Db, ws: string, today: Date) {
       nextDue: cal.due(current),
       nextUsual: usual,
       nextMoved: usual.closing.getTime() !== current.getTime() || usual.due.getTime() !== cal.due(current).getTime(),
-      nextAmount: next.total,
+      nextAmount: simpleGuess ?? next.total,
+      nextIsGuess: !!simpleGuess,
       nextExtras: next.extras,
       futureInstallments,
       lastStatement,
@@ -495,19 +515,24 @@ export async function loadStatement(db: Db, ws: string, input: { cardId: string;
   const base = existing ? dec(existing.totalAmount) : (await statementAmount(db, card, input.closingDate)).total;
   const delta = total.minus(base);
   const p = period(input.closingDate);
+  const simple = card.mode === "SIMPLE";
+  const cat = simple ? await cardCategory(db, ws) : null;
   return db.$transaction(async (tx) => {
     let obligationId = existing?.obligationId ?? null;
     if (existing) {
       const ob = obligationId ? await tx.obligation.findUnique({ where: { id: obligationId }, include: { payments: true } }) : null;
       if (ob && paidSoFar(ob).gt(total)) throw new UserError("Ya pagaste más que ese total. Revisá el importe.");
       if (ob) await tx.obligation.update({ where: { id: ob.id }, data: { amount: total.toFixed(2), dueDate: input.dueDate, status: paidSoFar(ob).gte(total) ? "SETTLED" : paidSoFar(ob).gt(0) ? "PARTIAL" : "PENDING" } });
-      await tx.cardStatement.update({ where: { id: existing.id }, data: { totalAmount: total.toFixed(2), minimumAmount: minimum.toFixed(2), dueDate: input.dueDate } });
+      await tx.cardStatement.update({ where: { id: existing.id }, data: { totalAmount: total.toFixed(2), minimumAmount: minimum.toFixed(2), dueDate: input.dueDate, loaded: true } });
     } else {
       const ob = total.gt(0) ? await tx.obligation.create({ data: { workspaceId: ws, direction: "PAYABLE", description: `${card.name} — resumen ${p}`, amount: total.toFixed(2), currency: card.currency, dueDate: input.dueDate, economicPeriod: p, sourceType: "card", sourceId: card.id } }) : null;
       obligationId = ob?.id ?? null;
-      await tx.cardStatement.create({ data: { cardId: card.id, closingDate: input.closingDate, dueDate: input.dueDate, totalAmount: total.toFixed(2), minimumAmount: minimum.toFixed(2), obligationId } });
+      await tx.cardStatement.create({ data: { cardId: card.id, closingDate: input.closingDate, dueDate: input.dueDate, totalAmount: total.toFixed(2), minimumAmount: minimum.toFixed(2), obligationId, loaded: true } });
     }
-    if (!delta.isZero()) {
+    if (!delta.isZero() && simple) {
+      // Modo simple: lo que trae el resumen es lo que gastaste ese mes con la tarjeta (una sola vez).
+      await tx.transaction.create({ data: { workspaceId: ws, accountId: card.accountId!, type: "EXPENSE", direction: delta.gt(0) ? "OUT" : "IN", amount: delta.abs().toFixed(2), currency: card.currency, description: `Resumen ${card.name} ${p}`, categoryId: cat, effectiveDate: input.closingDate, economicPeriod: p, notes: "Total del resumen (modo simple)", createdById: input.userId ?? null } });
+    } else if (!delta.isZero()) {
       await tx.transaction.create({ data: { workspaceId: ws, accountId: card.accountId!, type: "ADJUSTMENT", direction: delta.gt(0) ? "OUT" : "IN", amount: delta.abs().toFixed(2), currency: card.currency, description: `Resumen ${p} cargado (deuda anterior a Finan)`, effectiveDate: input.closingDate, economicPeriod: p, createdById: input.userId ?? null } });
     }
     const next = cal.next(input.closingDate);
@@ -518,6 +543,12 @@ export async function loadStatement(db: Db, ws: string, input: { cardId: string;
     }
     return { obligationId };
   });
+}
+
+// Categoría de gasto "Tarjeta de crédito" (para el modo simple). Se crea si no existe.
+async function cardCategory(db: Db, ws: string) {
+  const c = await db.category.findFirst({ where: { workspaceId: ws, kind: "EXPENSE", parentId: null, name: { equals: "Tarjeta de crédito", mode: "insensitive" } } });
+  return (c ?? (await db.category.create({ data: { workspaceId: ws, kind: "EXPENSE", name: "Tarjeta de crédito" } }))).id;
 }
 
 // Compras del resumen (leídas del PDF) que no están cargadas en Finan: mismo importe y fecha cercana (±3 días).

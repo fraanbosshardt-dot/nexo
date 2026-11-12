@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ActionForm, Submit } from "@/components/forms";
 import { createMovementAction } from "@/app/actions/app";
@@ -10,7 +11,7 @@ type Kind = "EXPENSE" | "INCOME" | "TRANSFER";
 type Status = "PAID" | "PARTIAL" | "PENDING";
 export type History = { d: string; c: string }[]; // concepto ya usado → categoría elegida
 
-const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
+const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 // Palabras frecuentes → nombre de categoría (se usa si nunca cargaste ese concepto).
 const HINTS: [RegExp, string][] = [
   [/super|almacen|verduleria|carniceria|mercado|chino|kiosco/, "supermercado"],
@@ -26,7 +27,7 @@ const HINTS: [RegExp, string][] = [
   [/afip|arba|impuesto|monotributo|abl|patente/, "impuesto"],
 ];
 
-export function MovementForm({ accounts, categories, today, initialKind, initialAccount, initialStatus, baseCurrency, idem, history, back }: { accounts: Account[]; categories: Category[]; today: string; initialKind: Kind; initialAccount?: string; initialStatus?: Status; baseCurrency: string; idem: string; history: History; back?: string }) {
+export function MovementForm({ accounts, categories, today, initialKind, initialAccount, initialStatus, baseCurrency, idem, history, back, cards = [] }: { cards?: { id: string; name: string; issuer: string }[]; accounts: Account[]; categories: Category[]; today: string; initialKind: Kind; initialAccount?: string; initialStatus?: Status; baseCurrency: string; idem: string; history: History; back?: string }) {
   const [kind, setKind] = useState<Kind>(initialKind);
   const [status, setStatus] = useState<Status>(initialStatus ?? "PAID");
   const [desc, setDesc] = useState("");
@@ -110,6 +111,21 @@ export function MovementForm({ accounts, categories, today, initialKind, initial
             <label className="field">Importe<input name="amount" className="amount-in" inputMode="decimal" placeholder="0,00" value={amount} onChange={(e) => setAmount(e.target.value)} autoFocus /></label>
             <label className="field">Concepto<input name="description" placeholder={g ? "Ej.: Supermercado" : "Ej.: Sueldo"} value={desc} onChange={(e) => onDesc(e.target.value)} list="mv-history" autoComplete="off" /></label>
           </div>
+          {(() => {
+            // ¿Parece el resumen de una tarjeta? Se pregunta antes de guardar, para no contarlo dos veces.
+            if (kind !== "EXPENSE" || desc.trim().length < 3) return null;
+            const plain = (x: string) => x.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            const t = plain(desc);
+            const words = (x: string) => plain(x).split(/\s+/).filter((w) => w.length >= 4 && !/^(banco|tarjeta|credito)$/.test(w));
+            const card = cards.find((c) => [...words(c.name), ...words(c.issuer)].some((w) => t.includes(w)));
+            const looks = card || /\b(visa|master|mastercard|amex|american express|cabal|naranja|tarjeta|resumen)\b/.test(t);
+            if (!looks) return null;
+            return card ? (
+              <div className="notice" role="status">¿Es el resumen de tu tarjeta <b style={{ fontWeight: 500 }}>{card.name}</b>? Si lo cargás acá y también en la tarjeta, se cuenta dos veces. <Link className="lk" href={`/app/tarjetas/${card.id}?ver=resumen#panel`}>Cargarlo en la tarjeta</Link>. Si es otra cosa, seguí nomás.</div>
+            ) : (
+              <div className="notice" role="status">¿Es el resumen de una tarjeta de crédito? Te conviene crear la tarjeta en modo “solo el resumen”: lo anotás una vez por mes, Finan te avisa el vencimiento y no se duplica. <Link className="lk" href="/app/tarjetas">Crear la tarjeta</Link>. Si es otra cosa, seguí nomás.</div>
+            );
+          })()}
           <datalist id="mv-history">{[...new Set(history.map((h) => h.d))].slice(0, 40).map((d) => <option key={d} value={d} />)}</datalist>
           <label className="field">Categoría
             <select name="categoryId" value={cat} onChange={(e) => { setCat(e.target.value); setCatTouched(true); }}>

@@ -8,7 +8,7 @@ const es = (n: string | null) => (n ? n.replace(".", ",") : "");
 
 // Cargar un resumen: a mano, o leyendo el PDF (Pro). Nada se guarda hasta que la persona lo confirma.
 // Si la tarjeta tiene otra moneda (ej.: dólares), ese resumen se carga en el mismo paso.
-export function StatementForm({ cardId, closing, due, pdf, pdfLeft, currency, second }: { cardId: string; closing: string; due: string; pdf: boolean; pdfLeft: number; currency: string; second?: { cardId: string; currency: string } | null }) {
+export function StatementForm({ cardId, closing, due, pdf, pdfLeft, currency, second, simple = false, closingDay, estimate = null, loadedClosings = [] }: { cardId: string; closing: string; due: string; pdf: boolean; pdfLeft: number; currency: string; second?: { cardId: string; currency: string } | null; simple?: boolean; closingDay?: number; estimate?: number | null; loadedClosings?: string[] }) {
   const [v, setV] = useState({ closingDate: closing, dueDate: due, total: "", minimum: "", totalUsd: "", minimumUsd: "" });
   const [usdOnly, setUsdOnly] = useState<string | null>(null); // dólares encontrados en una tarjeta sin esa moneda
   const [rows, setRows] = useState<Row[]>([]);
@@ -40,6 +40,19 @@ export function StatementForm({ cardId, closing, due, pdf, pdfLeft, currency, se
     });
   };
 
+  // Avisos para no cargar algo mal (no frenan: avisan y explican).
+  const n = (x: string) => { const t = x.replace(/\$|\s/g, ""); return Number(/,/.test(t) ? t.replace(/\./g, "").replace(",", ".") : t) || 0; };
+  const fmt = (x: number) => x.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const warn: string[] = [];
+  const cd = v.closingDate ? Number(v.closingDate.slice(8, 10)) : 0;
+  const gap = v.closingDate && v.dueDate ? (Date.parse(v.dueDate) - Date.parse(v.closingDate)) / 864e5 : null;
+  if (gap != null && gap <= 0) warn.push("El vencimiento es antes del cierre: revisá las fechas (el vencimiento siempre es después).");
+  else if (gap != null && (gap < 3 || gap > 25)) warn.push(`Entre el cierre y el vencimiento hay ${Math.round(gap)} días. Lo normal es entre 7 y 15: ¿están bien las fechas?`);
+  if (closingDay && cd && Math.min(Math.abs(cd - closingDay), 31 - Math.abs(cd - closingDay)) > 5) warn.push(`Tu tarjeta suele cerrar el ${closingDay} y pusiste el ${cd}. Si el banco lo movió este mes, está bien.`);
+  if (loadedClosings.includes(v.closingDate)) warn.push("Ese resumen ya lo cargaste: si lo guardás de nuevo, se corrige (no se duplica).");
+  if (v.total && n(v.minimum) > n(v.total)) warn.push("El pago mínimo es mayor que el total: revisalo.");
+  if (!simple && estimate != null && estimate > 0 && v.total && Math.abs(n(v.total) - estimate) / estimate > 0.3) warn.push(`Con las compras que cargaste, Finan calculaba ${fmt(estimate)}. Si la diferencia son compras que no cargaste, sumalas antes (o elegí las del PDF); si no, la diferencia queda como ajuste del resumen.`);
+
   return (
     <ActionForm action={loadStatementAction} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <input type="hidden" name="cardId" value={cardId} />
@@ -70,6 +83,7 @@ export function StatementForm({ cardId, closing, due, pdf, pdfLeft, currency, se
         </div>
       )}
       {usdOnly && <p className="notice" role="status" style={{ margin: 0 }}>Este resumen también tiene US$ {usdOnly} en dólares. Para cargarlo, activá “También tiene consumos en otra moneda” en Editar tarjeta y volvé a subir el PDF.</p>}
+      {!simple && <>
       <div className="field">
         <span>Compras en cuotas que siguen después de este resumen</span>
         {rows.map((r, i) => (
@@ -83,7 +97,9 @@ export function StatementForm({ cardId, closing, due, pdf, pdfLeft, currency, se
         <div><button type="button" className="btn sm" onClick={() => setRows((x) => [...x, { description: "", amount: "", remaining: "" }])}>+ Agregar una compra en cuotas</button></div>
         <span className="sub" style={{ fontWeight: 400 }}>Por ejemplo, si este resumen trae la cuota 3 de 6 de una heladera, ponés la cuota y “3” en Faltan. Así aparecen solas en los próximos resúmenes.</span>
       </div>
-      {missing.length > 0 && (
+      {simple && <p className="sub" style={{ margin: 0 }}>El total se anota como un gasto de ese mes (categoría “Tarjeta de crédito”) y aparece en Próximos pagos para pagarlo. No lo cargues además como gasto en Movimientos: se contaría dos veces.</p>}
+      {warn.length > 0 && <div className="notice" role="status" style={{ display: "flex", flexDirection: "column", gap: 4 }}>{warn.map((w) => <span key={w}>⚠️ {w}</span>)}</div>}
+      {!simple && missing.length > 0 && (
         <div className="field">
           <span>Compras del resumen que no están cargadas en Finan ({missing.filter((m) => m.on).length} de {missing.length} elegidas)</span>
           <div className="list">{missing.map((m, i) => (
@@ -95,6 +111,7 @@ export function StatementForm({ cardId, closing, due, pdf, pdfLeft, currency, se
         </div>
       )}
       <p className="sub" style={{ margin: 0 }}>La deuda que traés se carga como saldo de la tarjeta, no como un gasto nuevo: esas compras ya las hiciste antes de usar Finan.</p>
+      </>}
       <div className="acts" style={{ justifyContent: "flex-end" }}><Submit>Guardar resumen</Submit></div>
     </ActionForm>
   );

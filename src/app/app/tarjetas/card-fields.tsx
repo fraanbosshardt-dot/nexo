@@ -2,12 +2,25 @@
 import { CURRENCIES, currencyName } from "@/lib/countries";
 import { SecondCurrency } from "./currency2";
 
-export type CardDefaults = { name?: string; issuer?: string; last4?: string; limit?: string; closingDay?: string; dueDay?: string; currency?: string; payAccountId?: string; currency2?: string | null; financeRate?: string; monthlyFee?: string; alertPct?: string; holders?: string };
+export type CardDefaults = { name?: string; issuer?: string; last4?: string; limit?: string; closingDay?: string; dueDay?: string; currency?: string; payAccountId?: string; currency2?: string | null; mode?: string; financeRate?: string; monthlyFee?: string; alertPct?: string; holders?: string };
 
 export function CardFields({ accounts, base, d = {}, edit = false }: { accounts: { id: string; name: string }[]; base: string; d?: CardDefaults; edit?: boolean }) {
   const second = d.currency2 ?? (base === "USD" ? "EUR" : "USD");
   return (
     <>
+      {edit ? (
+        <label className="field">Cómo la usás<select name="mode" defaultValue={d.mode ?? "DETAILED"}><option value="SIMPLE">Solo el resumen (simple)</option><option value="DETAILED">Cada compra (detallado)</option></select>
+          <span className="sub" style={{ fontWeight: 400 }}>Si cambiás de simple a detallado, desde ahora cargás cada compra; los resúmenes que ya cargaste quedan como están.</span></label>
+      ) : (
+        <div className="field" role="radiogroup" aria-label="¿Cómo querés usar la tarjeta?">
+          <span>¿Cómo querés usar la tarjeta?</span>
+          <div className="paychs">
+            <label className="paych"><input type="radio" name="mode" value="SIMPLE" required /><span className="grow"><b>Solo el resumen (lo más fácil)</b><span className="sub">Una vez por mes cargás el total del resumen (o subís el PDF). Cuenta como un gasto del mes y Finan te avisa cuándo vence.</span></span></label>
+            <label className="paych"><input type="radio" name="mode" value="DETAILED" required /><span className="grow"><b>Cada compra (más detalle)</b><span className="sub">Anotás cada compra con su categoría y cuotas. El resumen se arma solo y ves en qué se fue la plata. Ideal si querés presupuestos por categoría.</span></span></label>
+          </div>
+          <span className="sub" style={{ fontWeight: 400 }}>Podés cambiarlo cuando quieras desde “Editar tarjeta”.</span>
+        </div>
+      )}
       <div className="frow"><label className="field">Nombre<input name="name" placeholder="Ej.: Visa Galicia" defaultValue={d.name} /></label><label className="field">Banco o emisor<input name="issuer" placeholder="Ej.: Banco Galicia" defaultValue={d.issuer} /></label></div>
       <div className="frow"><label className="field">Día de cierre<input name="closingDay" inputMode="numeric" placeholder="Ej.: 26" defaultValue={d.closingDay} /></label><label className="field">Día de vencimiento<input name="dueDay" inputMode="numeric" placeholder="Ej.: 7" defaultValue={d.dueDay} /></label></div>
       <div className="frow"><label className="field">Límite<input name="limit" inputMode="decimal" placeholder="0,00" defaultValue={d.limit} /></label><label className="field">Se paga desde<select name="payAccountId" defaultValue={d.payAccountId}>{accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label></div>
