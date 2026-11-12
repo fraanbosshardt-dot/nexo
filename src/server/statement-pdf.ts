@@ -9,6 +9,8 @@ export type ParsedStatement = {
   total: string | null; // "123456.78"
   minimum: string | null;
   carry: { description: string; amount: string; remaining: number }[];
+  purchases: { date: string; description: string; amount: string }[]; // compras del resumen
+  missing?: { date: string; description: string; amount: string }[]; // las que no están cargadas en Finan
   found: string[]; // qué datos encontró, para mostrarlo
 };
 
@@ -64,8 +66,23 @@ export function parseStatementText(text: string): ParsedStatement {
     if (description.length < 2) continue;
     carry.push({ description, amount, remaining: left });
   }
+  // Compras: "DD/MM/AA  DESCRIPCIÓN  12.345,67" (sin cuotas: esas van aparte).
+  const purchases: ParsedStatement["purchases"] = [];
+  const pre = new RegExp(String.raw`^\s*${DATE}\s+(.+?)\s+${AMOUNT}\s*$`, "gim");
+  const year = Number((closingDate ?? "").slice(0, 4)) || new Date().getUTCFullYear();
+  for (const m of t.matchAll(pre)) {
+    const desc = m[4].replace(/\s{2,}/g, " ").replace(/[*#]+/g, "").trim();
+    if (/\bc(?:uota)?\.?\s*\d{1,2}\s*(?:\/|de)\s*\d{1,2}\b/i.test(desc)) continue;
+    if (/saldo|total|pago|m[ií]nimo|vencimiento|cierre|su pago|intereses|impuesto|iva\b|percepci|sellos/i.test(desc)) continue;
+    const iso = toIso(m[1], m[2], m[3].length <= 2 && Number(m[3]) > 31 ? m[3] : m[3]) ?? null;
+    const amount = toNumber(m[5]);
+    if (!iso || !amount || desc.length < 2) continue;
+    if (Math.abs(Number(iso.slice(0, 4)) - year) > 1) continue;
+    purchases.push({ date: iso, description: desc.slice(0, 80), amount });
+  }
   const found = [closingDate && "cierre", dueDate && "vencimiento", total && "total", minimum && "pago mínimo", carry.length && `${carry.length} compras en cuotas`].filter(Boolean) as string[];
-  return { closingDate, dueDate, total, minimum, carry: carry.slice(0, 40), found };
+  if (purchases.length) found.push(`${purchases.length} compras`);
+  return { closingDate, dueDate, total, minimum, carry: carry.slice(0, 40), purchases: purchases.slice(0, 200), found };
 }
 
 export async function readStatementPdf(bytes: Uint8Array): Promise<ParsedStatement> {

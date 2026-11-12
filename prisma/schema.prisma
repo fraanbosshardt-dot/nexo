@@ -248,6 +248,7 @@ model Transaction {
   reversalOf      Transaction? @relation("Reversal", fields: [reversalOfId], references: [id])
   reversedBy      Transaction? @relation("Reversal")
   tags            String[]     @default([])
+  cardHolder      String? // en tarjetas con adicionales: quién hizo la compra
   notes           String?
   idempotencyKey  String?
   createdById     String?
@@ -429,9 +430,16 @@ model CreditCard {
   accountId    String?   @unique // cuenta de la tarjeta (pasivo): compras = gastos, pago = transferencia
   active       Boolean   @default(true)
   createdAt    DateTime  @default(now())
+  parentId     String? // la misma tarjeta en otra moneda (ej.: consumos en dólares); comparte cierre y vencimiento
+  financeRate  Decimal?  @db.Decimal(9, 4) // TNA de financiación (si pagás menos que el total)
+  monthlyFee   Decimal?  @db.Decimal(18, 2) // cargos fijos por resumen (mantenimiento, seguro)
+  alertPct     Int? // avisar cuando el uso del límite pasa este %
+  holders      String[]  @default([]) // tarjetas adicionales (nombres)
 
-  statements CardStatement[]
-  plans      InstallmentPlan[]
+  statements    CardStatement[]
+  plans         InstallmentPlan[]
+  cycles        CardCycle[]
+  subscriptions CardSubscription[]
 
   @@index([workspaceId])
 }
@@ -444,6 +452,7 @@ model CardStatement {
   dueDate       DateTime   @db.Date
   totalAmount   Decimal    @db.Decimal(18, 2)
   minimumAmount Decimal    @db.Decimal(18, 2)
+  carriedAmount Decimal    @default(0) @db.Decimal(18, 2) // saldo que quedó sin pagar del resumen anterior
   obligationId  String?    @unique
   createdAt     DateTime   @default(now())
 
@@ -463,7 +472,37 @@ model InstallmentPlan {
   categoryId         String?
   transactionId      String?    @unique
   firstStatementDate DateTime?  @db.Date
+  advancedTo         DateTime?  @db.Date // cuotas que faltaban, adelantadas a ese resumen
   createdAt          DateTime   @default(now())
+}
+
+// Un mes en que la tarjeta cierra o vence en otra fecha (los bancos las mueven).
+model CardCycle {
+  id          String     @id @default(cuid())
+  cardId      String
+  card        CreditCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  month       String // "AAAA-MM": el mes del cierre habitual
+  closingDate DateTime   @db.Date
+  dueDate     DateTime   @db.Date
+
+  @@unique([cardId, month])
+}
+
+// Suscripciones y débitos automáticos en la tarjeta (se cargan solos cada mes).
+model CardSubscription {
+  id          String     @id @default(cuid())
+  cardId      String
+  card        CreditCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  description String
+  amount      Decimal    @db.Decimal(18, 2)
+  categoryId  String?
+  dayOfMonth  Int
+  startDate   DateTime   @db.Date
+  endDate     DateTime?  @db.Date
+  holder      String?
+  createdAt   DateTime   @default(now())
+
+  @@index([cardId])
 }
 
 // ---------- Planificación ----------

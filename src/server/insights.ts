@@ -34,6 +34,12 @@ export async function insights(db: Db, ws: string, currency: string, today: Date
   const debts = await db.debt.findMany({ where: { workspaceId: ws, status: "ACTIVE", cft: { not: null } }, orderBy: { cft: "desc" } });
   if (debts[0] && Number(debts[0].cft) > 100) out.push({ level: "warn", title: "Tenés una deuda cara", detail: `${debts[0].creditor} tiene un CFT de ${Number(debts[0].cft).toFixed(1).replace(".", ",")}%. Si podés, conviene pagarla primero.`, href: "/app/deudas" });
 
+  // Tarjetas con aviso de uso del límite.
+  if (await db.creditCard.count({ where: { workspaceId: ws, active: true, parentId: null, alertPct: { not: null } } })) {
+    const { cardGroups } = await import("./cards");
+    for (const g of (await cardGroups(db, ws, today)).filter((x) => x.card.active && x.overAlert)) out.push({ level: "warn", title: `${g.card.name}: usás el ${g.usagePct}% del límite`, detail: `Tu aviso es ${g.card.alertPct}%. Disponible: ${formatMoney(g.available, g.card.currency)}.`, href: `/app/tarjetas/${g.card.id}` });
+  }
+
   const b = await budgetFor(db, ws, period(today), currency);
   const over = b.rows.filter((r) => r.pct != null && r.pct > 100);
   if (over.length) out.push({ level: "warn", title: "Te pasaste del presupuesto", detail: over.map((r) => `${r.name} ${Math.round(r.pct!)}%`).join(" · "), href: "/app/presupuestos" });

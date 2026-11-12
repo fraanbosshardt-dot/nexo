@@ -157,18 +157,59 @@ export async function endRuleAction(fd: FormData) {
 
 // ---------- Tarjetas ----------
 
+// Datos de la tarjeta (alta y edición). Lo profesional es opcional.
+function cardFields(fd: FormData, base: string) {
+  const c2 = str(fd, "currency2");
+  const pct = int(fd, "alertPct");
+  return {
+    issuer: str(fd, "issuer"), name: str(fd, "name"), last4: str(fd, "last4") || null, limit: money(fd, "limit", "el límite"),
+    closingDay: int(fd, "closingDay") ?? 0, dueDay: int(fd, "dueDay") ?? 0, payAccountId: str(fd, "payAccountId") || null,
+    currency2: fd.get("hasCurrency2") === "on" && isCurrency(c2) && c2 !== base ? c2 : null,
+    financeRate: optMoney(fd, "financeRate", "la tasa de financiación"), monthlyFee: optMoney(fd, "monthlyFee", "los cargos fijos"),
+    alertPct: pct ?? null, holders: str(fd, "holders").split(",").map((h) => h.trim()).filter(Boolean),
+  };
+}
+
 export async function createCardAction(_: FormState, fd: FormData): Promise<FormState> {
   const { workspace } = await requireWorkspace();
   let id = "";
   try {
-    const c = await createCard(getDb(), workspace.id, {
-      issuer: str(fd, "issuer"), name: str(fd, "name"), last4: str(fd, "last4") || null, limit: money(fd, "limit", "el límite"),
-      currency: isCurrency(str(fd, "currency")) ? str(fd, "currency") : workspace.baseCurrency,
-      closingDay: int(fd, "closingDay") ?? 0, dueDay: int(fd, "dueDay") ?? 0, payAccountId: str(fd, "payAccountId") || null, startDate: todayIn(workspace.timezone),
-    });
+    const currency = isCurrency(str(fd, "currency")) ? str(fd, "currency") : workspace.baseCurrency;
+    const c = await createCard(getDb(), workspace.id, { ...cardFields(fd, currency), currency, startDate: todayIn(workspace.timezone) });
     id = c.id;
   } catch (e) { return fail(e); }
   redirect(done(`/app/tarjetas/${id}`));
+}
+
+export async function updateCardAction(_: FormState, fd: FormData): Promise<FormState> {
+  const { user, workspace } = await requireWorkspace();
+  const id = str(fd, "cardId");
+  try {
+    const { updateCard } = await import("@/server/cards");
+    const card = await getDb().creditCard.findFirst({ where: { id, workspaceId: workspace.id } });
+    await updateCard(getDb(), workspace.id, id, { ...cardFields(fd, card?.currency ?? workspace.baseCurrency), active: fd.get("active") !== "off" });
+    await audit("card.updated", { userId: user.id, workspaceId: workspace.id, entity: "card", entityId: id });
+  } catch (e) { return fail(e); }
+  redirect(done(`/app/tarjetas/${id}?editada=1`));
+}
+
+export async function deleteCardAction(fd: FormData) {
+  const { user, workspace } = await requireWorkspace();
+  const id = str(fd, "cardId");
+  const { deleteCard } = await import("@/server/cards");
+  await deleteCard(getDb(), workspace.id, id);
+  await audit("card.deleted", { userId: user.id, workspaceId: workspace.id, entity: "card", entityId: id });
+  redirect(done("/app/tarjetas?borrada=1"));
+}
+
+export async function setCycleAction(_: FormState, fd: FormData): Promise<FormState> {
+  const { workspace } = await requireWorkspace();
+  const id = str(fd, "cardId");
+  try {
+    const { setCycle } = await import("@/server/cards");
+    await setCycle(getDb(), workspace.id, id, { usualClosing: date(fd, "usualClosing", "el cierre"), closingDate: date(fd, "closingDate", "el cierre"), dueDate: date(fd, "dueDate", "el vencimiento") });
+  } catch (e) { return fail(e); }
+  redirect(done(`/app/tarjetas/${id}?fechas=1`));
 }
 
 export async function cardPurchaseAction(_: FormState, fd: FormData): Promise<FormState> {
@@ -179,10 +220,46 @@ export async function cardPurchaseAction(_: FormState, fd: FormData): Promise<Fo
     await cardPurchase(getDb(), workspace.id, {
       cardId, description: str(fd, "description"), amount: money(fd, "amount", "el precio"),
       financedTotal: fd.get("interest") === "con" ? optMoney(fd, "financedTotal", "el total financiado") : null,
-      categoryId: str(fd, "categoryId") || null, date: date(fd, "date", "la fecha"), installments: n, userId: user.id,
+      categoryId: str(fd, "categoryId") || null, date: date(fd, "date", "la fecha"), installments: n, currency: str(fd, "currency") || null, holder: str(fd, "holder") || null, userId: user.id,
     });
   } catch (e) { return fail(e); }
   redirect(done(`/app/tarjetas/${cardId}`));
+}
+
+export async function cardRefundAction(_: FormState, fd: FormData): Promise<FormState> {
+  const { user, workspace } = await requireWorkspace();
+  const cardId = str(fd, "cardId");
+  try {
+    const { cardRefund } = await import("@/server/cards");
+    await cardRefund(getDb(), workspace.id, { cardId, description: str(fd, "description"), amount: money(fd, "amount", "el importe"), date: date(fd, "date", "la fecha"), categoryId: str(fd, "categoryId") || null, currency: str(fd, "currency") || null, holder: str(fd, "holder") || null, userId: user.id });
+  } catch (e) { return fail(e); }
+  redirect(done(`/app/tarjetas/${cardId}?devolucion=1`));
+}
+
+export async function advancePlanAction(fd: FormData) {
+  const { workspace } = await requireWorkspace();
+  const { advancePlan } = await import("@/server/cards");
+  await advancePlan(getDb(), workspace.id, str(fd, "planId"), todayIn(workspace.timezone));
+  redirect(done(`/app/tarjetas/${str(fd, "cardId")}?adelantada=1`));
+}
+
+export async function addSubscriptionAction(_: FormState, fd: FormData): Promise<FormState> {
+  const { workspace } = await requireWorkspace();
+  const cardId = str(fd, "cardId");
+  try {
+    const { addSubscription, chargeSubscriptions } = await import("@/server/cards");
+    const today = todayIn(workspace.timezone);
+    await addSubscription(getDb(), workspace.id, { cardId, description: str(fd, "description"), amount: money(fd, "amount", "el importe"), dayOfMonth: int(fd, "dayOfMonth") ?? 0, categoryId: str(fd, "categoryId") || null, holder: str(fd, "holder") || null, currency: str(fd, "currency") || null, startDate: str(fd, "startDate") ? date(fd, "startDate", "la fecha") : today });
+    await chargeSubscriptions(getDb(), workspace.id, today);
+  } catch (e) { return fail(e); }
+  redirect(done(`/app/tarjetas/${cardId}?suscripcion=1`));
+}
+
+export async function endSubscriptionAction(fd: FormData) {
+  const { workspace } = await requireWorkspace();
+  const { endSubscription } = await import("@/server/cards");
+  await endSubscription(getDb(), workspace.id, str(fd, "id"), todayIn(workspace.timezone));
+  redirect(done(`/app/tarjetas/${str(fd, "cardId")}`));
 }
 
 // ---------- Deudas ----------
@@ -585,6 +662,11 @@ export async function loadStatementAction(_: FormState, fd: FormData): Promise<F
       return { description: d, amount, remaining: Number(lefts[i]) };
     }).filter((c): c is NonNullable<typeof c> => !!c);
     const { loadStatement } = await import("@/server/cards");
+    const add = str(fd, "addPurchases");
+    if (add) {
+      const list = z.array(z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), description: z.string().min(1).max(120), amount: z.string() })).max(200).parse(JSON.parse(add));
+      for (const x of list) await cardPurchase(getDb(), workspace.id, { cardId, description: x.description, amount: x.amount, date: new Date(`${x.date}T00:00:00Z`), userId: user.id, idempotencyKey: `stmt:${cardId}:${x.date}:${x.amount}:${x.description.slice(0, 30)}` });
+    }
     await loadStatement(getDb(), workspace.id, {
       cardId, closingDate: date(fd, "closingDate", "la fecha de cierre"), dueDate: date(fd, "dueDate", "el vencimiento"),
       total: money(fd, "total", "el total a pagar"), minimum: optMoney(fd, "minimum", "el pago mínimo"), carry, userId: user.id,
@@ -609,6 +691,11 @@ export async function readStatementPdfAction(fd: FormData): Promise<{ error?: st
   try {
     const { readStatementPdf } = await import("@/server/statement-pdf");
     const data = await readStatementPdf(new Uint8Array(await file.arrayBuffer()));
+    const cardId = str(fd, "cardId");
+    if (cardId && data.purchases.length) {
+      const { missingPurchases } = await import("@/server/cards");
+      data.missing = await missingPurchases(getDb(), workspace.id, cardId, data.purchases);
+    }
     await audit("card.pdf_read", { userId: user.id, workspaceId: workspace.id, meta: { found: data.found } });
     return { data, left: limit - used - 1 };
   } catch (e) {

@@ -40,7 +40,9 @@ export default async function PayPage({ params, searchParams }: { params: Promis
   const today = todayIn(workspace.timezone);
   // Ingresos y gastos que se repiten cambian de monto: por defecto, lo que se carga es el total de esta vez.
   const recurring = !!ob.recurringRuleId;
-  const settleDefault = inc || recurring;
+  // Resumen de tarjeta: pagar menos que el total es posible; lo que falta pasa al próximo resumen.
+  const stmt = ob.sourceType === "card" ? await db.cardStatement.findUnique({ where: { obligationId: ob.id }, include: { card: { select: { financeRate: true } } } }) : null;
+  const settleDefault = (inc || recurring) && !stmt;
   // ¿Ya lo cargaste a mano en Movimientos? Así no se registra dos veces.
   const already = !ob.sourceType && ob.payments.length === 0 ? await matchingPaid(db, workspace.id, ob) : null;
   // Corregir o eliminar: la tarjeta y el cereal se manejan desde su pantalla.
@@ -90,7 +92,9 @@ export default async function PayPage({ params, searchParams }: { params: Promis
         <dl className="kv" style={{ marginBottom: 14 }}>
           <dt>Total</dt><dd>{formatMoney(ob.amount, ob.currency)}</dd>
           <dt>{inc ? "Falta cobrar" : "Falta pagar"}</dt><dd><b>{formatMoney(left, ob.currency)}</b></dd>
+          {stmt && <><dt>Pago mínimo</dt><dd>{formatMoney(stmt.minimumAmount, ob.currency)}</dd></>}
         </dl>
+        {stmt && <p className="sub" style={{ marginTop: 0 }}>Podés pagar el total o una parte (como mínimo, el pago mínimo). Lo que no pagues pasa al próximo resumen{stmt.card.financeRate ? `, con un interés de alrededor de ${formatMoney(left.times(Number(stmt.card.financeRate)).dividedBy(1200), ob.currency)} por mes si no pagás nada (TNA ${Number(stmt.card.financeRate).toString().replace(".", ",")}%)` : ". Si cargás la tasa de financiación en la tarjeta, calculamos los intereses"}.</p>}
         {accounts.length ? (
           <ActionForm action={payObligationAction} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <input type="hidden" name="obligationId" value={ob.id} /><input type="hidden" name="kind" value={inc ? "cobro" : "pago"} />
@@ -99,8 +103,8 @@ export default async function PayPage({ params, searchParams }: { params: Promis
               <label className="field">Fecha<input name="date" type="date" defaultValue={isoDate(today)} /></label>
             </div>
             <label className="field">{inc ? "Entra en" : "Sale de"}<select name="accountId" defaultValue={preferred}>{accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>
-            <label className="simtg"><input type="checkbox" name="settle" defaultChecked={settleDefault} /><span><b style={{ fontWeight: 500 }}>Fue el total</b><br /><span className="sub">{inc ? "Si cobraste otro monto (más o menos), queda registrado así y no queda nada pendiente." : "Si la factura vino por otro monto, queda así y no queda nada pendiente."} Destildalo si fue una parte y falta el resto.</span></span></label>
-            <div className="sub help-line">¿Qué es “Fue el total”? <Help term="total" /></div>
+            {!stmt && <><label className="simtg"><input type="checkbox" name="settle" defaultChecked={settleDefault} /><span><b style={{ fontWeight: 500 }}>Fue el total</b><br /><span className="sub">{inc ? "Si cobraste otro monto (más o menos), queda registrado así y no queda nada pendiente." : "Si la factura vino por otro monto, queda así y no queda nada pendiente."} Destildalo si fue una parte y falta el resto.</span></span></label>
+            <div className="sub help-line">¿Qué es “Fue el total”? <Help term="total" /></div></>}
             {recurring && <label className="simtg"><input type="checkbox" name="updateFuture" /><span>Usar este monto para los próximos meses</span></label>}
             <div className="acts" style={{ justifyContent: "flex-end" }}><Link className="btn" href="/app/proximos">Cancelar</Link><Submit>{inc ? "Registrar cobro" : "Registrar pago"}</Submit></div>
           </ActionForm>

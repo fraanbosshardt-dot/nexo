@@ -12,6 +12,8 @@ export function StatementForm({ cardId, closing, due, pdf, pdfLeft }: { cardId: 
   const [rows, setRows] = useState<Row[]>([]);
   const [source, setSource] = useState<"manual" | "pdf">("manual");
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+  // Compras del PDF que no están en Finan: se eligen y se suman al guardar el resumen.
+  const [missing, setMissing] = useState<{ date: string; description: string; amount: string; on: boolean }[]>([]);
   const [reading, start] = useTransition();
   const set = (k: keyof typeof v) => (e: React.ChangeEvent<HTMLInputElement>) => setV({ ...v, [k]: e.target.value });
   const setRow = (i: number, k: keyof Row, val: string) => setRows((r) => r.map((x, j) => (j === i ? { ...x, [k]: val } : x)));
@@ -20,6 +22,7 @@ export function StatementForm({ cardId, closing, due, pdf, pdfLeft }: { cardId: 
     if (!file) return;
     const fd = new FormData();
     fd.set("file", file);
+    fd.set("cardId", cardId);
     setMsg(null);
     start(async () => {
       const r = await readStatementPdfAction(fd);
@@ -28,6 +31,7 @@ export function StatementForm({ cardId, closing, due, pdf, pdfLeft }: { cardId: 
       setV({ closingDate: d.closingDate ?? v.closingDate, dueDate: d.dueDate ?? v.dueDate, total: es(d.total), minimum: es(d.minimum) });
       setRows(d.carry.map((c) => ({ description: c.description, amount: es(c.amount), remaining: String(c.remaining) })));
       setSource("pdf");
+      setMissing((d.missing ?? []).map((m) => ({ ...m, on: true })));
       const missing = [!d.closingDate && "el cierre", !d.dueDate && "el vencimiento", !d.total && "el total"].filter(Boolean);
       setMsg({ kind: missing.length ? "err" : "ok", text: `${d.found.length ? `Encontramos: ${d.found.join(", ")}.` : "No encontramos datos en el PDF."}${missing.length ? ` Falta ${missing.join(", ")}: completalo a mano.` : ""} Revisá cada dato contra tu resumen antes de guardar.${typeof r.left === "number" ? ` Te quedan ${r.left} lecturas este mes.` : ""}` });
     });
@@ -68,6 +72,17 @@ export function StatementForm({ cardId, closing, due, pdf, pdfLeft }: { cardId: 
         <div><button type="button" className="btn sm" onClick={() => setRows((x) => [...x, { description: "", amount: "", remaining: "" }])}>+ Agregar una compra en cuotas</button></div>
         <span className="sub" style={{ fontWeight: 400 }}>Por ejemplo, si este resumen trae la cuota 3 de 6 de una heladera, ponés la cuota y “3” en Faltan. Así aparecen solas en los próximos resúmenes.</span>
       </div>
+      {missing.length > 0 && (
+        <div className="field">
+          <span>Compras del resumen que no están cargadas en Finan ({missing.filter((m) => m.on).length} de {missing.length} elegidas)</span>
+          <div className="list">{missing.map((m, i) => (
+            <label className="li simtg" key={i} style={{ alignItems: "center" }}><input type="checkbox" checked={m.on} onChange={(e) => setMissing((x) => x.map((y, j) => (j === i ? { ...y, on: e.target.checked } : y)))} />
+              <span className="grow"><span className="t">{m.description}</span><br /><span className="s">{m.date.split("-").reverse().join("/")}</span></span><b className="num">{Number(m.amount).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</b></label>
+          ))}</div>
+          <span className="sub" style={{ fontWeight: 400 }}>Las elegidas se suman como compras (después les ponés categoría desde Movimientos). Las demás ya están en Finan o no las querés.</span>
+          <input type="hidden" name="addPurchases" value={JSON.stringify(missing.filter((m) => m.on).map(({ date, description, amount }) => ({ date, description, amount })))} />
+        </div>
+      )}
       <p className="sub" style={{ margin: 0 }}>La deuda que traés se carga como saldo de la tarjeta, no como un gasto nuevo: esas compras ya las hiciste antes de usar Finan.</p>
       <div className="acts" style={{ justifyContent: "flex-end" }}><Submit>Guardar resumen</Submit></div>
     </ActionForm>
