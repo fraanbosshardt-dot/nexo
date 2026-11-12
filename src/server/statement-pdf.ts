@@ -6,8 +6,10 @@ import { UserError } from "./ledger";
 export type ParsedStatement = {
   closingDate: string | null; // AAAA-MM-DD
   dueDate: string | null;
-  total: string | null; // "123456.78"
+  total: string | null; // "123456.78" (moneda principal)
   minimum: string | null;
+  totalUsd: string | null; // la parte en dólares del mismo resumen, si tiene
+  minimumUsd: string | null;
   carry: { description: string; amount: string; remaining: number }[];
   purchases: { date: string; description: string; amount: string }[]; // compras del resumen
   missing?: { date: string; description: string; amount: string }[]; // las que no están cargadas en Finan
@@ -32,28 +34,65 @@ function toNumber(s: string): string | null {
   const n = /,\d{2}$/.test(t) ? t.replace(/\./g, "").replace(",", ".") : t.replace(/,/g, "");
   return /^-?\d+(\.\d{1,2})?$/.test(n) ? Number(n).toFixed(2) : null;
 }
-function firstDate(text: string, labels: string[]): string | null {
-  for (const l of labels) {
-    const m = new RegExp(`${l}[^\\d\\n]{0,40}${DATE}`, "i").exec(text);
-    if (m) { const iso = toIso(m[1], m[2], m[3]); if (iso) return iso; }
+// Cada renglón del PDF con la posición horizontal de cada letra: así un dato que está DEBAJO de su título
+// (resúmenes armados como tabla: "CIERRE ACTUAL  VENCIMIENTO" y abajo las fechas) se encuentra por columna.
+export type PdfLine = { text: string; xs: number[] };
+export const linesFromText = (text: string): PdfLine[] => text.replace(/\u00a0/g, " ").split(/\r?\n/).map((t) => ({ text: t, xs: [...t].map((_, k) => k * 6) }));
+
+type Hit = { value: string; x: number; usd: boolean };
+
+function amountsIn(line: PdfLine, from = 0, to = line.text.length): Hit[] {
+  const out: Hit[] = [];
+  const usdLine = /^\s*(d[oó]lares|u\$s|usd)\b/i.test(line.text);
+  for (const m of line.text.slice(from, to).matchAll(new RegExp(AMOUNT, "g"))) {
+    const at = from + (m.index ?? 0);
+    const before = line.text.slice(Math.max(0, at - 8), at + m[0].indexOf(m[1]));
+    const n = toNumber(m[1]);
+    if (n) out.push({ value: n, x: line.xs[at] ?? at * 6, usd: /(u\$s|us\$|u\$d|usd|d[oó]lares)\s*\$?\s*$/i.test(before) || usdLine });
   }
-  return null;
+  return out;
 }
-function firstAmount(text: string, labels: string[]): string | null {
-  for (const l of labels) {
-    const m = new RegExp(`${l}[^\\d\\n$-]{0,40}${AMOUNT}`, "i").exec(text);
-    if (m) { const n = toNumber(m[1]); if (n) return n; }
+function datesIn(line: PdfLine, from = 0, to = line.text.length): { value: string; x: number }[] {
+  const out: { value: string; x: number }[] = [];
+  for (const m of line.text.slice(from, to).matchAll(new RegExp(DATE, "g"))) {
+    const iso = toIso(m[1], m[2], m[3]);
+    const at = from + (m.index ?? 0);
+    if (iso) out.push({ value: iso, x: line.xs[at] ?? at * 6 });
   }
-  return null;
+  return out;
+}
+// Busca el valor de un título: primero a la derecha (mismo renglón); si no, en los renglones de abajo, en su columna.
+function near<T extends { x: number }>(lines: PdfLine[], labels: string[], pick: (l: PdfLine, from?: number, to?: number) => T[]): T[] {
+  for (const label of labels) {
+    const re = new RegExp(label, "i");
+    for (let i = 0; i < lines.length; i++) {
+      const m = re.exec(lines[i].text);
+      if (!m) continue;
+      const end = m.index + m[0].length;
+      const right = pick(lines[i], end, Math.min(lines[i].text.length, end + 90)).filter((h) => h.x >= (lines[i].xs[end - 1] ?? 0));
+      if (right.length) return right;
+      const x0 = lines[i].xs[m.index] ?? m.index * 6, x1 = lines[i].xs[end - 1] ?? end * 6;
+      // Debajo, en la misma columna: puede haber un renglón en pesos y otro en dólares.
+      const below: T[] = [];
+      for (let j = i + 1; j <= Math.min(lines.length - 1, i + 3); j++) {
+        below.push(...pick(lines[j]).filter((h) => h.x >= x0 - 30 && h.x <= x1 + 60).sort((a, b) => Math.abs(a.x - x0) - Math.abs(b.x - x0)));
+      }
+      if (below.length) return below;
+    }
+  }
+  return [];
 }
 
 // Separado de la lectura del PDF para poder probarlo con texto.
-export function parseStatementText(text: string): ParsedStatement {
-  const t = text.replace(/ /g, " ").replace(/[ \t]+/g, " ");
-  const closingDate = firstDate(t, ["cierre actual", "fecha de cierre", "cierre"]);
-  const dueDate = firstDate(t, ["vencimiento actual", "fecha de vencimiento", "vencimiento", "vto\\.?"]);
-  const total = firstAmount(t, ["saldo actual", "total a pagar", "saldo a pagar", "pago total", "saldo total"]);
-  const minimum = firstAmount(t, ["pago m[ií]nimo", "m[ií]nimo a pagar"]);
+export function parseStatementText(text: string, positioned?: PdfLine[]): ParsedStatement {
+  const lines = positioned ?? linesFromText(text);
+  const t = lines.map((l) => l.text).join("\n").replace(/\u00a0/g, " ").replace(/[ \t]+/g, " ");
+  const closingDate = near(lines, ["cierre actual", "fecha de cierre", "cierre"], datesIn)[0]?.value ?? null;
+  const dueDate = near(lines, ["vencimiento actual", "fecha de vencimiento", "vencimiento", "vto\\.?"], datesIn)[0]?.value ?? null;
+  const totals = near(lines, ["saldo actual", "total a pagar", "saldo a pagar", "pago total", "saldo total", "total del resumen"], amountsIn);
+  const mins = near(lines, ["pago m[ií]nimo", "m[ií]nimo a pagar"], amountsIn);
+  const total = totals.find((h) => !h.usd)?.value ?? null, totalUsd = totals.find((h) => h.usd)?.value ?? null;
+  const minimum = mins.find((h) => !h.usd)?.value ?? null, minimumUsd = mins.find((h) => h.usd)?.value ?? null;
   // Compras en cuotas: "DESCRIPCIÓN ... C.03/06 ... 12.345,67" o "Cuota 3 de 6".
   const carry: ParsedStatement["carry"] = [];
   const re = new RegExp(String.raw`^(?:\d{1,2}[\/\-.]\d{1,2}(?:[\/\-.]\d{2,4})?\s+)?(.+?)\s+(?:c(?:uota)?\.?\s*)(\d{1,2})\s*(?:\/|de)\s*(\d{1,2})\b.*?${AMOUNT}\s*$`, "gim");
@@ -80,31 +119,61 @@ export function parseStatementText(text: string): ParsedStatement {
     if (Math.abs(Number(iso.slice(0, 4)) - year) > 1) continue;
     purchases.push({ date: iso, description: desc.slice(0, 80), amount });
   }
-  const found = [closingDate && "cierre", dueDate && "vencimiento", total && "total", minimum && "pago mínimo", carry.length && `${carry.length} compras en cuotas`].filter(Boolean) as string[];
+  const found = [closingDate && "cierre", dueDate && "vencimiento", total && "total", minimum && "pago mínimo", totalUsd && "total en dólares", carry.length && `${carry.length} compras en cuotas`].filter(Boolean) as string[];
   if (purchases.length) found.push(`${purchases.length} compras`);
-  return { closingDate, dueDate, total, minimum, carry: carry.slice(0, 40), purchases: purchases.slice(0, 200), found };
+  return { closingDate, dueDate, total, minimum, totalUsd, minimumUsd, carry: carry.slice(0, 40), purchases: purchases.slice(0, 200), found };
 }
 
 export async function readStatementPdf(bytes: Uint8Array): Promise<ParsedStatement> {
-  return parseStatementText(await pdfText(bytes, { maxPages: 30, what: "el resumen" }));
+  const lines = await pdfLines(bytes, { maxPages: 30, what: "el resumen" });
+  return parseStatementText(lines.map((l) => l.text).join("\n"), lines);
 }
 
-// Texto de un PDF (sin IA). Avisa con palabras simples si tiene contraseña o es una foto.
 export async function pdfText(bytes: Uint8Array, opt: { maxPages: number; what: string }): Promise<string> {
+  return (await pdfLines(bytes, opt)).map((l) => l.text).join("\n");
+}
+
+// Renglones de un PDF (sin IA), armados por posición. Avisa con palabras simples si tiene contraseña o es una foto.
+export async function pdfLines(bytes: Uint8Array, opt: { maxPages: number; what: string }): Promise<PdfLine[]> {
   if (bytes.length > 5_000_000) throw new UserError("El PDF supera 5 MB.");
   if (String.fromCharCode(...bytes.slice(0, 5)) !== "%PDF-") throw new UserError("El archivo no es un PDF.");
-  let text = "";
+  const out: PdfLine[] = [];
   try {
     const pdf = await getDocumentProxy(bytes);
     if (pdf.numPages > opt.maxPages) throw new UserError("El PDF tiene demasiadas páginas.");
-    const r = await extractText(pdf, { mergePages: false });
-    text = (Array.isArray(r.text) ? r.text : [r.text]).join("\n");
+    for (let p = 1; p <= pdf.numPages; p++) {
+      const page = await pdf.getPage(p);
+      const content = await page.getTextContent();
+      type It = { str: string; x: number; y: number; w: number };
+      const items: It[] = (content.items as { str?: string; transform?: number[]; width?: number }[])
+        .filter((i) => typeof i.str === "string" && i.str.length && i.transform)
+        .map((i) => ({ str: i.str!, x: i.transform![4], y: i.transform![5], w: i.width ?? i.str!.length * 5 }));
+      // Mismo renglón: misma altura (con 3 puntos de tolerancia).
+      const rows: It[][] = [];
+      for (const it of [...items].sort((a, b) => b.y - a.y || a.x - b.x)) {
+        const row = rows.find((r) => Math.abs(r[0].y - it.y) <= 3);
+        if (row) row.push(it); else rows.push([it]);
+      }
+      for (const r of rows) {
+        r.sort((a, b) => a.x - b.x);
+        let text = "", xs: number[] = [], end = -Infinity;
+        for (const it of r) {
+          if (text && it.x - end > 1.5) { const gap = Math.max(1, Math.min(6, Math.round((it.x - end) / 4))); text += " ".repeat(gap); for (let k = 0; k < gap; k++) xs.push(end + k); }
+          const cw = it.w / Math.max(1, it.str.length);
+          for (let k = 0; k < it.str.length; k++) xs.push(it.x + k * cw);
+          text += it.str;
+          end = it.x + it.w;
+        }
+        out.push({ text, xs });
+      }
+    }
+    void extractText;
   } catch (e) {
     if (e instanceof UserError) throw e;
     const msg = String((e as Error)?.message ?? "");
     if (/password/i.test(msg)) throw new UserError(`El PDF tiene contraseña. Abrilo, guardalo sin contraseña o cargá ${opt.what} a mano.`);
     throw new UserError(`No pudimos leer ese PDF. Cargá ${opt.what} a mano.`);
   }
-  if (text.replace(/\s/g, "").length < 40) throw new UserError(`El PDF no tiene texto (parece una foto o un escaneo). Cargá ${opt.what} a mano.`);
-  return text;
+  if (out.map((l) => l.text).join("").replace(/\s/g, "").length < 40) throw new UserError(`El PDF no tiene texto (parece una foto o un escaneo). Cargá ${opt.what} a mano.`);
+  return out;
 }

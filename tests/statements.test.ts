@@ -84,3 +84,20 @@ PAGO MINIMO $ 98.765,43
     expect(p.carry).toEqual([]);
   });
 });
+
+describe("Lectura del PDF armado como tabla", () => {
+  it("encuentra los datos que están debajo de su título, en pesos y en dólares", () => {
+    const text = [
+      "CIERRE ACTUAL      VENCIMIENTO ACTUAL      SALDO ACTUAL          PAGO MINIMO",
+      "26-Oct-26          07-Nov-26               $ 845.320,15          $ 84.532,00",
+      "                                           U$S 23,99             U$S 2,40",
+      "26/09/26 SUPERMERCADO COTO      45.200,00",
+    ].join("\n");
+    const p = parseStatementText(text);
+    expect([p.closingDate, p.dueDate, p.total, p.minimum, p.totalUsd, p.minimumUsd]).toEqual(["2026-10-26", "2026-11-07", "845320.15", "84532.00", "23.99", "2.40"]);
+  });
+  it("pesos y dólares en el mismo renglón", () => {
+    const p = parseStatementText("Fecha de cierre: 24/10/2026\nFecha de vencimiento: 05/11/2026\nSALDO ACTUAL $ 120.000,50 U$S 15,00");
+    expect([p.total, p.totalUsd]).toEqual(["120000.50", "15.00"]);
+  });
+});

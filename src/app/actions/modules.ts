@@ -671,6 +671,12 @@ export async function loadStatementAction(_: FormState, fd: FormData): Promise<F
       cardId, closingDate: date(fd, "closingDate", "la fecha de cierre"), dueDate: date(fd, "dueDate", "el vencimiento"),
       total: money(fd, "total", "el total a pagar"), minimum: optMoney(fd, "minimum", "el pago mínimo"), carry, userId: user.id,
     });
+    // La parte en la otra moneda del mismo resumen (mismas fechas).
+    const second = str(fd, "secondCardId");
+    if (second && str(fd, "totalUsd")) {
+      const own = await getDb().creditCard.findFirst({ where: { id: second, workspaceId: workspace.id, parentId: cardId } });
+      if (own) await loadStatement(getDb(), workspace.id, { cardId: own.id, closingDate: date(fd, "closingDate", "la fecha de cierre"), dueDate: date(fd, "dueDate", "el vencimiento"), total: money(fd, "totalUsd", "el total en la otra moneda"), minimum: optMoney(fd, "minimumUsd", "el pago mínimo en la otra moneda"), userId: user.id });
+    }
     await audit("card.statement_loaded", { userId: user.id, workspaceId: workspace.id, entity: "card", entityId: cardId, meta: { source: str(fd, "source") || "manual" } });
   } catch (e) { return fail(e); }
   redirect(done(`/app/tarjetas/${cardId}?guardado=1`));

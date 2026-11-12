@@ -7,8 +7,10 @@ type Row = { description: string; amount: string; remaining: string };
 const es = (n: string | null) => (n ? n.replace(".", ",") : "");
 
 // Cargar un resumen: a mano, o leyendo el PDF (Pro). Nada se guarda hasta que la persona lo confirma.
-export function StatementForm({ cardId, closing, due, pdf, pdfLeft }: { cardId: string; closing: string; due: string; pdf: boolean; pdfLeft: number }) {
-  const [v, setV] = useState({ closingDate: closing, dueDate: due, total: "", minimum: "" });
+// Si la tarjeta tiene otra moneda (ej.: dólares), ese resumen se carga en el mismo paso.
+export function StatementForm({ cardId, closing, due, pdf, pdfLeft, currency, second }: { cardId: string; closing: string; due: string; pdf: boolean; pdfLeft: number; currency: string; second?: { cardId: string; currency: string } | null }) {
+  const [v, setV] = useState({ closingDate: closing, dueDate: due, total: "", minimum: "", totalUsd: "", minimumUsd: "" });
+  const [usdOnly, setUsdOnly] = useState<string | null>(null); // dólares encontrados en una tarjeta sin esa moneda
   const [rows, setRows] = useState<Row[]>([]);
   const [source, setSource] = useState<"manual" | "pdf">("manual");
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
@@ -28,7 +30,8 @@ export function StatementForm({ cardId, closing, due, pdf, pdfLeft }: { cardId: 
       const r = await readStatementPdfAction(fd);
       if (r.error || !r.data) { setMsg({ kind: "err", text: r.error ?? "No pudimos leer ese PDF." }); return; }
       const d = r.data;
-      setV({ closingDate: d.closingDate ?? v.closingDate, dueDate: d.dueDate ?? v.dueDate, total: es(d.total), minimum: es(d.minimum) });
+      setV({ closingDate: d.closingDate ?? v.closingDate, dueDate: d.dueDate ?? v.dueDate, total: es(d.total), minimum: es(d.minimum), totalUsd: es(d.totalUsd), minimumUsd: es(d.minimumUsd) });
+      setUsdOnly(!second && d.totalUsd && Number(d.totalUsd) > 0 ? es(d.totalUsd) : null);
       setRows(d.carry.map((c) => ({ description: c.description, amount: es(c.amount), remaining: String(c.remaining) })));
       setSource("pdf");
       setMissing((d.missing ?? []).map((m) => ({ ...m, on: true })));
@@ -56,9 +59,17 @@ export function StatementForm({ cardId, closing, due, pdf, pdfLeft }: { cardId: 
         <label className="field">Vencimiento<input name="dueDate" type="date" value={v.dueDate} onChange={set("dueDate")} required /></label>
       </div>
       <div className="frow">
-        <label className="field">Total a pagar del resumen<input name="total" inputMode="decimal" placeholder="0,00" value={v.total} onChange={set("total")} required /></label>
-        <label className="field">Pago mínimo (opcional)<input name="minimum" inputMode="decimal" placeholder="0,00" value={v.minimum} onChange={set("minimum")} /></label>
+        <label className="field">Total a pagar{second ? ` en ${currency}` : ""}<input name="total" inputMode="decimal" placeholder="0,00" value={v.total} onChange={set("total")} required /></label>
+        <label className="field">Pago mínimo{second ? ` en ${currency}` : ""} (opcional)<input name="minimum" inputMode="decimal" placeholder="0,00" value={v.minimum} onChange={set("minimum")} /></label>
       </div>
+      {second && (
+        <div className="frow">
+          <input type="hidden" name="secondCardId" value={second.cardId} />
+          <label className="field">Total a pagar en {second.currency}<input name="totalUsd" inputMode="decimal" placeholder="0,00" value={v.totalUsd} onChange={set("totalUsd")} /></label>
+          <label className="field">Pago mínimo en {second.currency} (opcional)<input name="minimumUsd" inputMode="decimal" placeholder="0,00" value={v.minimumUsd} onChange={set("minimumUsd")} /></label>
+        </div>
+      )}
+      {usdOnly && <p className="notice" role="status" style={{ margin: 0 }}>Este resumen también tiene US$ {usdOnly} en dólares. Para cargarlo, activá “También tiene consumos en otra moneda” en Editar tarjeta y volvé a subir el PDF.</p>}
       <div className="field">
         <span>Compras en cuotas que siguen después de este resumen</span>
         {rows.map((r, i) => (

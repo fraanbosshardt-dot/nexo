@@ -76,8 +76,6 @@ export default async function CardDetail({ params, searchParams }: { params: Pro
   const catName = new Map(cats.map((c) => [c.id, c.name]));
   // Recién creada: el primer paso es cargar el resumen.
   const sel = sp.ver ?? (!card.statements.length && !g.status.open.length ? "resumen" : "");
-  const resumenCard = parts.find((p) => p.card.currency === sp.moneda) ?? g;
-  const resumenClose = (() => { const pc = calendar(resumenCard.card); const x = pc.closingFor(today); return x > today ? pc.prev(x) : x; })();
   const pickCurrency = currencies.length > 1 && <label className="field">Moneda<select name="currency" defaultValue={card.currency}>{currencies.map((c) => <option key={c}>{c}</option>)}</select></label>;
   const pickHolder = holders.length > 0 && <label className="field">¿Quién la hizo?<select name="holder" defaultValue=""><option value="">Titular</option>{holders.map((h) => <option key={h}>{h}</option>)}</select></label>;
   const spent = (rows: { name: string; amount: typeof ZERO }[], cur: string) => {
@@ -144,8 +142,7 @@ export default async function CardDetail({ params, searchParams }: { params: Pro
           <div className="chead"><h3>{PANELS[sel][0]}</h3><Link className="btn ghost sm" href="?#opciones">Cerrar</Link></div>
           {sel === "resumen" && (
             <>
-              {ch && <div className="seg" style={{ marginBottom: 12 }}>{parts.map((p) => <Link key={p.card.id} className={`segl ${resumenCard.card.id === p.card.id ? "on" : ""}`} href={`?ver=resumen&moneda=${p.card.currency}#panel`}>Resumen en {p.card.currency}</Link>)}</div>}
-              <div style={{ maxWidth: 760 }}><StatementForm key={resumenCard.card.id} cardId={resumenCard.card.id} closing={isoDate(resumenClose)} due={isoDate(calendar(resumenCard.card).due(resumenClose))} pdf={pdf} pdfLeft={pdfLeft} /></div>
+              <div style={{ maxWidth: 760 }}><StatementForm cardId={card.id} currency={card.currency} second={ch ? { cardId: ch.card.id, currency: ch.card.currency } : null} closing={isoDate(lastClose)} due={isoDate(cal.due(lastClose))} pdf={pdf} pdfLeft={pdfLeft} /></div>
             </>
           )}
           {sel === "compra" && <ActionForm action={cardPurchaseAction} style={{ display: "flex", flexDirection: "column", gap: 12, paddingTop: 10, maxWidth: 640 }}>
