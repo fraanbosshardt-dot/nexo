@@ -45,7 +45,7 @@ export default async function Comms() {
               <label className="field" style={{ flex: "1 1 140px" }}>Tipo<select name="tone" defaultValue={ann?.tone ?? "info"}><option value="info">Novedad</option><option value="warn">Importante</option></select></label>
               <label className="field" style={{ flex: "1 1 140px" }}>Para<select name="audience" defaultValue={ann?.audience ?? "all"}><option value="all">Todos</option><option value="free">Plan Gratis</option><option value="pro">Plan Pro</option></select></label>
               <label className="field" style={{ flex: "1 1 150px" }}>Hasta (opcional)<input name="until" type="date" defaultValue={ann?.until ?? ""} /></label>
-              <label className="field" style={{ flex: "2 1 200px" }}>Enlace (opcional)<input name="link" defaultValue={ann?.link ?? ""} placeholder="/novedades" /></label>
+              <label className="field" style={{ flex: "2 1 200px" }}>Enlace (opcional)<input name="link" defaultValue={ann?.link ?? ""} placeholder="Ej.: /novedades (escribilo para que aparezca «Ver más»)" /></label>
             </div>
             <div className="acts"><Submit>Publicar aviso</Submit></div>
           </ActionForm>
