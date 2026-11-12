@@ -5,6 +5,13 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 
 ## Pendientes
 
+### Funciones para pulir (de a una)
+- [ ] F1. Préstamos con cuotas distintas: pegar el cronograma del banco (copiado del homebanking o del PDF), ver cómo queda y corregir antes de guardar. Si el banco da Excel, subirlo.
+- [ ] F2. Préstamos: impuesto sobre los intereses (ej. IVA) y seguro sobre el saldo, para que el francés dé igual que el banco.
+- [ ] F3. Flujo de caja cuando los ingresos no se repiten (ver Z8: "Estimar con mi promedio", "Simular un ingreso" o las dos).
+- [ ] F4. Leer resúmenes en PDF de varios bancos y ajustar los formatos que no reconozca (ver P6; necesita resúmenes reales).
+- [ ] F5. Probar en la pantalla la protección contra cobros y pagos duplicados (ya programada y con pruebas).
+
 ### Necesitan algo tuyo
 - [ ] Z2. Cargar las claves reales en Vercel para activar lo que ya está programado: RESEND_API_KEY y EMAIL_FROM (emails), CRON_SECRET (tarea diaria), MP_ACCESS_TOKEN y MP_WEBHOOK_SECRET (Mercado Pago: el Access Token de producción y la clave secreta de Webhooks de la aplicación Finan). Están explicadas en .env.example.
 - [ ] Z3. Decidir el precio de Pro en pesos (u otra moneda) para Mercado Pago.
