@@ -41,9 +41,12 @@ async function save(db: Db, source: string, symbol: string, price: number, curre
 async function fetchD912(db: Db, list: string) {
   const rows = (await get(`https://data912.com/live/${list}`)) as { symbol: string; c: number; px_bid?: number; px_ask?: number; pct_change?: number }[];
   const now = new Date();
+  // Termina en D (MEP) o C (cable) y existe la misma especie sin esa letra → cotiza en dólares (GGALD, AL30D, AAPLD).
+  // Así YPFD (la acción de YPF en pesos) sigue en pesos. En las ON, la D/C final siempre es dólar.
+  const all = new Set(rows.map((r) => r.symbol));
   const data = rows.map((r) => {
     const price = r.c > 0 ? r.c : r.px_bid && r.px_ask ? (r.px_bid + r.px_ask) / 2 : 0;
-    const usd = list !== "arg_stocks" && /[DC]$/.test(r.symbol);
+    const usd = /[DC]$/.test(r.symbol) && (list === "arg_corp" || all.has(r.symbol.slice(0, -1)));
     return { source: "data912", symbol: `${list}:${r.symbol}`, price: price.toFixed(8), currency: usd ? "USD" : "ARS", changePct: r.pct_change != null ? Number(r.pct_change).toFixed(4) : null, fetchedAt: now };
   }).filter((r) => Number(r.price) > 0);
   if (!data.length) return 0;
@@ -120,4 +123,49 @@ export async function lookupTicker(db: Db, assetClass: AssetClass, raw: string):
     return { ticker, quoteId: id, currency: "USD", price: q ? Number(q.price) : null };
   }
   return { ticker: raw.trim(), quoteId: null, currency: "", price: null };
+}
+
+// Nombres de las especies más conocidas (data912 trae solo el código).
+const NAMES: Record<string, string> = {
+  GGAL: "Grupo Financiero Galicia", YPFD: "YPF", PAMP: "Pampa Energía", BMA: "Banco Macro", BBAR: "BBVA Argentina", SUPV: "Grupo Supervielle", TXAR: "Ternium Argentina",
+  ALUA: "Aluar", CEPU: "Central Puerto", TGSU2: "Transportadora Gas del Sur", TGNO4: "Transportadora Gas del Norte", EDN: "Edenor", LOMA: "Loma Negra", CRES: "Cresud",
+  COME: "Sociedad Comercial del Plata", TECO2: "Telecom Argentina", VALO: "Grupo Valores", BYMA: "BYMA", MIRG: "Mirgor", TRAN: "Transener", METR: "Metrogas", IRSA: "IRSA",
+  AAPL: "Apple", MSFT: "Microsoft", GOOGL: "Alphabet (Google)", AMZN: "Amazon", META: "Meta (Facebook)", TSLA: "Tesla", NVDA: "NVIDIA", MELI: "Mercado Libre", KO: "Coca-Cola",
+  SPY: "S&P 500 (ETF)", QQQ: "Nasdaq 100 (ETF)", DIA: "Dow Jones (ETF)", EEM: "Emergentes (ETF)", BRKB: "Berkshire Hathaway", VIST: "Vista Energy", GLOB: "Globant", DISN: "Disney",
+  AL29: "Bonar 2029", AL30: "Bonar 2030", AL35: "Bonar 2035", AE38: "Bonar 2038", AL41: "Bonar 2041", GD29: "Global 2029", GD30: "Global 2030", GD35: "Global 2035", GD38: "Global 2038", GD41: "Global 2041", GD46: "Global 2046",
+};
+const nameOf = (sym: string) => NAMES[sym] ?? NAMES[sym.replace(/[DC]$/, "")] ?? null;
+
+export type TickerHit = { symbol: string; name: string | null; price: number | null; currency: string | null };
+
+// Sugerencias mientras se escribe la especie (código o nombre).
+export async function searchTickers(db: Db, assetClass: AssetClass, raw: string): Promise<TickerHit[]> {
+  const q = raw.trim().toUpperCase();
+  if (q.length < 1) return [];
+  const src = sourceOf(assetClass);
+  if (src === "data912") {
+    const list = D912[assetClass]!;
+    const last = await db.quote.findFirst({ where: { source: "data912", symbol: { startsWith: `${list}:` } }, orderBy: { fetchedAt: "desc" }, select: { fetchedAt: true } });
+    if (!last || Date.now() - last.fetchedAt.getTime() > STALE) await fetchD912(db, list).catch(() => 0);
+    const rows = await db.quote.findMany({ where: { source: "data912", symbol: { startsWith: `${list}:` } }, select: { symbol: true, price: true, currency: true } });
+    const plain = (s: string) => s.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const hits = rows.map((r) => ({ symbol: r.symbol.slice(list.length + 1), price: Number(r.price), currency: r.currency }))
+      .map((r) => ({ ...r, name: nameOf(r.symbol), rank: r.symbol === q ? 0 : r.symbol.startsWith(q) ? 1 : plain(nameOf(r.symbol) ?? "").includes(plain(q)) ? 2 : r.symbol.includes(q) ? 3 : 9 }))
+      .filter((r) => r.rank < 9)
+      .sort((a, b) => a.rank - b.rank || a.symbol.length - b.symbol.length || a.symbol.localeCompare(b.symbol));
+    return hits.slice(0, 8).map(({ symbol, name, price, currency }) => ({ symbol, name, price, currency }));
+  }
+  if (src === "yahoo") {
+    try {
+      const j = (await get(`https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(raw.trim())}&quotesCount=8&newsCount=0`)) as { quotes?: { symbol: string; shortname?: string; longname?: string; quoteType?: string; exchDisp?: string }[] };
+      return (j.quotes ?? []).filter((x) => x.quoteType === "EQUITY" || x.quoteType === "ETF").slice(0, 8).map((x) => ({ symbol: x.symbol, name: `${x.longname ?? x.shortname ?? ""}${x.exchDisp ? ` · ${x.exchDisp}` : ""}`.trim() || null, price: null, currency: null }));
+    } catch { return []; }
+  }
+  if (src === "coingecko") {
+    try {
+      const j = (await get(`https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(raw.trim())}`)) as { coins?: { id: string; symbol: string; name: string }[] };
+      return (j.coins ?? []).slice(0, 8).map((c) => ({ symbol: c.symbol.toUpperCase(), name: c.name, price: null, currency: "USD" }));
+    } catch { return []; }
+  }
+  return [];
 }

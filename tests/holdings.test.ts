@@ -54,3 +54,39 @@ describe("especies", () => {
     expect(quoteKey({ assetClass: "FCI", ticker: "X", quoteId: null })).toBeNull();
   });
 });
+
+describe("sugerencias de especies", () => {
+  it("busca por código o por nombre, primero lo que coincide exacto", async () => {
+    const { searchTickers } = await import("@/server/quotes");
+    const now = new Date();
+    await db.quote.deleteMany({ where: { source: "data912", symbol: { startsWith: "arg_stocks:" } } });
+    await db.quote.createMany({ data: ["GGAL", "GGALD", "PAMP", "YPFD"].map((s) => ({ source: "data912", symbol: `arg_stocks:${s}`, price: "100", currency: s === "GGALD" ? "USD" : "ARS", fetchedAt: now })) });
+    expect((await searchTickers(db, "AR_STOCK", "ggal")).map((h) => h.symbol)).toEqual(["GGAL", "GGALD"]);
+    expect((await searchTickers(db, "AR_STOCK", "pampa")).map((h) => h.symbol)).toEqual(["PAMP"]);
+    expect((await searchTickers(db, "AR_STOCK", "ypf"))[0]).toMatchObject({ symbol: "YPFD", name: "YPF" });
+  });
+});
+
+describe("moneda propia y eliminar", () => {
+  it("una acción en pesos que seguís en dólares se pasa a dólares con la cotización", async () => {
+    const inv = await db.investment.create({ data: { workspaceId: ws, name: "PAMP", kind: "Acción argentina", currency: "USD", ticker: "PAMP", assetClass: "AR_STOCK" } });
+    await holdingTrade(db, ws, { investmentId: inv.id, side: "BUY", quantity: "10", total: "40", date: d("2026-11-01") });
+    await db.quote.upsert({ where: { source_symbol: { source: "data912", symbol: "arg_stocks:PAMP" } }, create: { source: "data912", symbol: "arg_stocks:PAMP", price: "5000", currency: "ARS", fetchedAt: new Date() }, update: { price: "5000", currency: "ARS", fetchedAt: new Date() } });
+    await db.exchangeRate.create({ data: { workspaceId: ws, base: "ARS", quote: "USD", kind: "manual", sell: "0.001", source: "manual", fetchedAt: new Date() } });
+    const o = (await investmentsOverview(db, ws)).find((x) => x.inv.id === inv.id)!;
+    expect([o.value.toNumber(), o.gain.toNumber(), o.holding!.converted]).toEqual([50, 10, true]);
+  });
+
+  it("eliminar una inversión devuelve la plata a la cuenta", async () => {
+    const { deleteInvestment, deleteAsset, createAsset } = await import("@/server/wealth");
+    const before = (await accountBalances(db, ws)).get(banco)!.toNumber();
+    const inv = await db.investment.create({ data: { workspaceId: ws, name: "MSFT", kind: "Acción del exterior", currency: "USD", ticker: "MSFT", assetClass: "US_STOCK" } });
+    await holdingTrade(db, ws, { investmentId: inv.id, side: "BUY", quantity: "2", total: "800", accountId: banco, date: d("2026-11-02") });
+    await deleteInvestment(db, ws, inv.id);
+    expect(await db.investment.count({ where: { id: inv.id } })).toBe(0);
+    expect((await accountBalances(db, ws)).get(banco)!.toNumber()).toBe(before);
+    const a = await createAsset(db, ws, { name: "Auto", kind: "Vehículo", currency: "USD", value: "10000", date: d("2026-11-01") });
+    await deleteAsset(db, ws, a.id);
+    expect(await db.asset.count({ where: { id: a.id } })).toBe(0);
+  });
+});

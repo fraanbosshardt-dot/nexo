@@ -80,7 +80,8 @@ export async function addValuation(db: Db, ws: string, input: { investmentId?: s
 // Comprar una especie: suma nominales. Si sale de una cuenta, la plata baja (no es un gasto: es inversión).
 export async function createHolding(db: Db, ws: string, input: { assetClass: AssetClass; ticker: string; name?: string | null; quantity: MoneyValue; total: MoneyValue; currency?: string | null; accountId?: string | null; date: Date; userId?: string | null }) {
   const info = await lookupTicker(db, input.assetClass, input.ticker);
-  const currency = info.currency || input.currency || "";
+  // La moneda en la que la seguís (la que pagaste). Si no elegís, la de la cotización.
+  const currency = input.currency || info.currency || "";
   if (!currency) throw new UserError("Elegí la moneda del fondo.");
   const label = ASSET_CLASSES.find((a) => a.key === input.assetClass)!.label;
   const inv = await db.investment.create({ data: { workspaceId: ws, name: input.name?.trim() || info.ticker, kind: label, currency, ticker: info.ticker, assetClass: input.assetClass, quoteId: info.quoteId } });
@@ -107,6 +108,23 @@ export async function holdingTrade(db: Db, ws: string, input: { investmentId: st
     }) : null;
     return tx.investmentMovement.create({ data: { investmentId: inv.id, kind: input.side, amount: total.toFixed(2), quantity: q.toFixed(8), date: input.date, transactionId: t?.id ?? null } });
   });
+}
+
+export async function deleteInvestment(db: Db, ws: string, id: string) {
+  const inv = await db.investment.findFirst({ where: { id, workspaceId: ws }, include: { movements: true } });
+  if (!inv) throw new UserError("No encontramos esa inversión.");
+  const txIds = inv.movements.map((m) => m.transactionId).filter(Boolean) as string[];
+  await db.$transaction(async (tx) => {
+    await tx.transaction.deleteMany({ where: { workspaceId: ws, reversalOfId: { in: txIds } } });
+    await tx.transaction.deleteMany({ where: { workspaceId: ws, id: { in: txIds } } });
+    await tx.investment.delete({ where: { id: inv.id } });
+  });
+}
+
+export async function deleteAsset(db: Db, ws: string, id: string) {
+  const a = await db.asset.findFirst({ where: { id, workspaceId: ws } });
+  if (!a) throw new UserError("No encontramos ese bien.");
+  await db.asset.delete({ where: { id: a.id } });
 }
 
 // Precio cargado a mano (para FCI, o si una especie no tiene cotización automática).
@@ -137,19 +155,24 @@ export async function investmentsOverview(db: Db, ws: string) {
   await refreshQuotes(db, invs).catch(() => undefined);
   const keys = invs.map((i) => quoteKey(i)).filter((k): k is { source: string; symbol: string } => !!k);
   const quotes = keys.length ? await db.quote.findMany({ where: { OR: keys } }) : [];
+  const ratesBy = new Map<string, Awaited<ReturnType<typeof latestRates>>>();
+  for (const c of new Set(invs.filter((i) => i.assetClass).map((i) => i.currency))) ratesBy.set(c, await latestRates(db, ws, c));
   return invs.map((i) => {
     if (i.assetClass) {
       const { qty, cost, realized } = costBasis(i.movements);
       const k = quoteKey(i);
       const q = k ? quotes.find((x) => x.source === k.source && x.symbol === k.symbol) : null;
-      const price = q ? dec(q.price) : i.manualPrice ? dec(i.manualPrice) : null;
+      // Precio en la moneda de la inversión: si cotiza en otra (ej.: GGAL en pesos y la seguís en dólares), se convierte con la cotización oficial.
+      const fx = q && q.currency !== i.currency ? ratesBy.get(i.currency)?.get(q.currency)?.rate ?? null : null;
+      const noRate = !!q && q.currency !== i.currency && !fx;
+      const price = q && !noRate ? (fx ? dec(q.price).times(fx) : dec(q.price)) : i.manualPrice ? dec(i.manualPrice) : null;
       const unit = price ? (per100(i.assetClass) ? price.dividedBy(100) : price) : null;
       const value = unit ? round2(qty.times(unit)) : cost;
       const gain = value.minus(cost);
       return {
         inv: i, invested: cost, value, gain, pct: cost.gt(0) ? gain.dividedBy(cost).times(100).toNumber() : null,
         valuedAt: q?.fetchedAt ?? i.manualPriceAt ?? null,
-        holding: { qty, price, per100: per100(i.assetClass), auto: !!q, changePct: q?.changePct != null ? Number(q.changePct) : null, realized, unitLabel: ASSET_CLASSES.find((a) => a.key === i.assetClass)?.unit ?? "unidades" },
+        holding: { qty, price, per100: per100(i.assetClass), auto: !!q && !noRate, quoteCurrency: q?.currency ?? null, converted: !!fx, noRate, changePct: q?.changePct != null ? Number(q.changePct) : null, realized, unitLabel: ASSET_CLASSES.find((a) => a.key === i.assetClass)?.unit ?? "unidades" },
       };
     }
     const moved = i.movements.reduce((s, m) => (m.kind === "CONTRIBUTION" ? s.plus(dec(m.amount)) : m.kind === "WITHDRAWAL" ? s.minus(dec(m.amount)) : s), ZERO);

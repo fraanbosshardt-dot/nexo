@@ -8,15 +8,27 @@ import { dec, formatMoney, round2, ZERO } from "@/lib/money";
 import { fmtDate, isoDate, todayIn } from "@/lib/dates";
 import { PageHead, Stat, Tabs } from "@/components/page";
 import { ActionForm, Submit } from "@/components/forms";
-import { holdingTradeAction, investmentMoveAction, manualPriceAction, valuationAction } from "@/app/actions/modules";
+import { deleteInvestmentAction, holdingTradeAction, investmentMoveAction, manualPriceAction, valuationAction } from "@/app/actions/modules";
+import { ConfirmSubmit } from "@/components/confirm-submit";
 import { CURRENCIES } from "@/lib/countries";
 import { AddInvestment } from "./add-investment";
 
 export const metadata: Metadata = { title: "Inversiones" };
 
-const NOTICE: Record<string, string> = { guardada: "Listo, agregamos la inversión.", operacion: "Listo, registramos la operación.", precio: "Listo, actualizamos el precio." };
+const NOTICE: Record<string, string> = { borrada: "Listo, eliminamos la inversión y sus movimientos.", guardada: "Listo, agregamos la inversión.", operacion: "Listo, registramos la operación.", precio: "Listo, actualizamos el precio." };
 const qtyFmt = (n: number) => n.toLocaleString("es-AR", { maximumFractionDigits: 8 });
 const pct = (n: number) => `${n > 0 ? "+" : ""}${n.toFixed(2).replace(".", ",")}%`;
+
+// Eliminar una inversión cargada por error (la plata que salió de una cuenta vuelve a la cuenta).
+function DeleteInv({ id, name }: { id: string; name: string }) {
+  return (
+    <form action={deleteInvestmentAction} className="dz" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+      <input type="hidden" name="investmentId" value={id} />
+      <span className="sub" style={{ margin: 0 }}>¿La cargaste por error? Se borran sus movimientos y la plata que salió de una cuenta vuelve.</span>
+      <ConfirmSubmit className="btn sm danger" question={`¿Eliminar ${name} con todos sus movimientos? No se puede deshacer.`} yes="Sí, eliminar">Eliminar inversión</ConfirmSubmit>
+    </form>
+  );
+}
 
 export default async function Investments({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const { workspace } = await requireWorkspace();
@@ -77,7 +89,7 @@ export default async function Investments({ searchParams }: { searchParams: Prom
                     <div><dt>Pagaste (costo)</dt><dd>{fm(i.invested)}</dd></div>
                     {h.qty.gt(0) && <div><dt>Precio promedio</dt><dd>{fm(round2(i.invested.dividedBy(h.qty).times(h.per100 ? 100 : 1)))}{h.per100 ? " c/100" : ""}</dd></div>}
                     {!h.realized.isZero() && <div><dt>Ganancia ya cobrada</dt><dd className={h.realized.isNegative() ? "neg" : "pos"}>{fm(h.realized, { sign: true })}</dd></div>}
-                    <div><dt>Precio</dt><dd>{h.auto ? "Automático" : "Cargado a mano"}{i.valuedAt ? ` · ${fmtDate(i.valuedAt)}` : ""}</dd></div>
+                    <div><dt>Precio</dt><dd>{h.auto ? "Automático" : "Cargado a mano"}{i.valuedAt ? ` · ${fmtDate(i.valuedAt)}` : ""}{h.converted ? ` · cotiza en ${h.quoteCurrency}, pasado a ${i.inv.currency}` : ""}</dd></div>
                   </dl>
                   <div className="grid g2" style={{ gap: 16 }}>
                     <ActionForm action={holdingTradeAction} className="inv-form">
@@ -94,7 +106,9 @@ export default async function Investments({ searchParams }: { searchParams: Prom
                       <div><Submit className="btn">Guardar precio</Submit></div>
                     </ActionForm>
                   </div>
+                  {h.noRate && <p className="notice" style={{ margin: 0 }}>Cotiza en {h.quoteCurrency} y la tenés en {i.inv.currency}: falta la cotización entre las dos monedas. Cargala en Patrimonio o poné el precio a mano.</p>}
                   {i.inv.movements.length > 0 && <div className="list">{i.inv.movements.slice(0, 10).map((m) => <div className="li" key={m.id}><div className="grow"><div className="t">{m.kind === "BUY" ? "Compra" : m.kind === "SELL" ? "Venta" : m.kind === "YIELD" ? "Renta o dividendo" : m.kind}{m.quantity ? ` · ${qtyFmt(Number(m.quantity))}` : ""}</div><div className="s">{fmtDate(m.date)}</div></div><span className="num">{fm(m.amount)}</span></div>)}</div>}
+                  <DeleteInv id={i.inv.id} name={i.inv.ticker ?? i.inv.name} />
                 </div>
               </details>
             );
@@ -124,6 +138,7 @@ export default async function Investments({ searchParams }: { searchParams: Prom
                 </ActionForm>
               </div>
               {i.inv.movements.length > 0 && <div className="list" style={{ paddingTop: 8 }}>{i.inv.movements.slice(0, 8).map((m) => <div className="li" key={m.id}><div className="grow"><div className="t">{m.kind === "CONTRIBUTION" ? "Aporte" : m.kind === "WITHDRAWAL" ? "Retiro" : m.kind}</div><div className="s">{fmtDate(m.date)}</div></div><span className="num">{fm(m.amount)}</span></div>)}</div>}
+              <DeleteInv id={i.inv.id} name={i.inv.name} />
             </details>
           </div>
         );

@@ -8,13 +8,14 @@ import Link from "next/link";
 import { fmtDate } from "@/lib/dates";
 import { PageHead, Tabs } from "@/components/page";
 import { ActionForm, Submit } from "@/components/forms";
-import { createAssetAction, rateAction, valuationAction } from "@/app/actions/modules";
+import { createAssetAction, deleteAssetAction, rateAction, valuationAction } from "@/app/actions/modules";
+import { ConfirmSubmit } from "@/components/confirm-submit";
 import { CURRENCIES } from "@/lib/countries";
 
 export const metadata: Metadata = { title: "Patrimonio neto" };
 const GROUPS = ["Dinero", "Inversiones", "Bienes", "Tarjetas", "Deudas"] as const;
 
-export default async function NetWorth({ searchParams }: { searchParams: Promise<{ en?: string }> }) {
+export default async function NetWorth({ searchParams }: { searchParams: Promise<{ en?: string; borrado?: string }> }) {
   const { workspace, modules } = await requireWorkspace();
   const db = getDb();
   const cur = workspace.baseCurrency;
@@ -32,6 +33,7 @@ export default async function NetWorth({ searchParams }: { searchParams: Promise
     <>
       <PageHead crumb="Patrimonio" title="Patrimonio neto" desc="Todo lo que tenés menos todo lo que debés. Las fechas de cobro y pago no lo cambian; las valuaciones sí." />
       <Tabs current="pat" items={[{ key: "pat", label: "Patrimonio neto", href: "/app/patrimonio" }, { key: "inv", label: "Inversiones", href: "/app/inversiones" }]} />
+      {sp.borrado && <p className="notice g" role="status">Listo, eliminamos el bien.</p>}
       {usdRate && <div className="seg" style={{ alignSelf: "flex-start" }} aria-label="Ver en"><Link className={`segl ${!showUsd ? "on" : ""}`} href="/app/patrimonio">Ver en {cur}</Link><Link className={`segl ${showUsd ? "on" : ""}`} href="/app/patrimonio?en=USD">Ver en dólares</Link></div>}
       <div className="card hero">
         <div><div className="lbl">Patrimonio neto</div><div className={`big ${nw.net.isNegative() ? "neg" : ""}`}>{fm(nw.net)}</div><p className="sub">En {showUsd ? "dólares, con la cotización oficial" : cur}. Las cotizaciones se actualizan solas; si cargás una a mano, se usa esa.</p></div>
@@ -60,13 +62,14 @@ export default async function NetWorth({ searchParams }: { searchParams: Promise
             <div className="li" key={a.asset.id} style={{ flexWrap: "wrap" }}>
               <div className="grow" style={{ minWidth: 180 }}><div className="t">{a.asset.name}</div><div className="s">{a.asset.kind}{a.valuedAt ? ` · valuado el ${fmtDate(a.valuedAt)}` : ""}</div></div>
               <b className="num">{formatMoney(a.value, a.asset.currency)}</b>
-              <details className="more" style={{ width: "100%" }}><summary>Actualizar valor</summary>
+              <details className="more" style={{ width: "100%" }}><summary>Actualizar valor o eliminar</summary>
                 <ActionForm action={valuationAction} style={{ display: "flex", gap: 10, alignItems: "flex-end", paddingTop: 8, flexWrap: "wrap" }}>
                   <input type="hidden" name="assetId" value={a.asset.id} />
                   <label className="field" style={{ flex: "1 1 180px" }}>Valor de hoy<input name="value" inputMode="decimal" defaultValue={a.value.toFixed(0)} /></label>
                   <Submit className="btn">Guardar</Submit>
                 </ActionForm>
                 {a.asset.valuations.length > 1 && <div className="list">{a.asset.valuations.map((v) => <div className="li" key={v.id}><span className="grow s">{fmtDate(v.date)}</span><span className="num">{formatMoney(v.value, v.currency)}</span></div>)}</div>}
+                <form action={deleteAssetAction} className="dz" style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}><input type="hidden" name="assetId" value={a.asset.id} /><ConfirmSubmit className="btn sm danger" question={`¿Eliminar ${a.asset.name}? Se borra con sus valuaciones.`} yes="Sí, eliminar">Eliminar bien</ConfirmSubmit></form>
               </details>
             </div>
           ))}</div>}

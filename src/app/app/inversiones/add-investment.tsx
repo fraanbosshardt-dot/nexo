@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ActionForm, Submit } from "@/components/forms";
 import { createHoldingAction, createInvestmentAction } from "@/app/actions/modules";
+import { TickerInput } from "./ticker-input";
 
 type Cls = { key: string; label: string; hint: string; unit: string };
 type Acc = { id: string; name: string; currency: string };
@@ -22,15 +23,16 @@ export function AddInvestment({ classes, accounts, currencies, base, today }: { 
         <ActionForm action={createHoldingAction} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div className="frow">
             <label className="field">¿Qué es?<select name="assetClass" value={cls} onChange={(e) => setCls(e.target.value)}>{classes.map((x) => <option key={x.key} value={x.key}>{x.label}</option>)}</select></label>
-            <label className="field">{cls === "FCI" ? "Nombre del fondo" : "Especie"}<input name="ticker" placeholder={c.hint} autoCapitalize="characters" /></label>
+            {cls === "FCI" ? <label className="field">Nombre del fondo<input name="ticker" placeholder={c.hint} /></label> : <div className="field"><span>Especie (escribí el código o el nombre)</span><TickerInput assetClass={cls} placeholder={c.hint} per100={bond} /></div>}
           </div>
+          <p className="sub" style={{ margin: 0 }}>“¿Cuánto pagaste?” va en la moneda que elijas abajo. Si la especie cotiza en otra moneda, la convertimos con la cotización oficial.</p>
           <div className="frow">
             <label className="field">¿Cuántos {c.unit} tenés?<input name="quantity" inputMode="decimal" placeholder="0" /></label>
             <label className="field">¿Cuánto pagaste en total?<input name="total" inputMode="decimal" placeholder="0,00" /></label>
           </div>
           {bond && <p className="sub" style={{ margin: 0 }}>Los bonos cotizan cada 100 nominales: vos poné los nominales que tenés y nosotros hacemos la cuenta.</p>}
           <div className="frow">
-            {cls === "FCI" && <label className="field">Moneda del fondo<select name="currency" defaultValue={base}>{currencies.map((x) => <option key={x}>{x}</option>)}</select></label>}
+            <label className="field">¿En qué moneda la tenés?<select name="currency" defaultValue={cls === "FCI" ? base : ""}>{cls !== "FCI" && <option value="">La de la cotización</option>}{currencies.map((x) => <option key={x}>{x}</option>)}</select></label>
             <label className="field">Fecha de compra<input name="date" type="date" defaultValue={today} /></label>
             <label className="field">¿Salió plata de una cuenta?<select name="accountId" defaultValue=""><option value="">No, ya lo tenía</option>{accounts.map((a) => <option key={a.id} value={a.id}>{a.name} ({a.currency})</option>)}</select></label>
           </div>

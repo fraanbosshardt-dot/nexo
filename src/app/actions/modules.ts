@@ -446,6 +446,22 @@ export async function holdingTradeAction(_: FormState, fd: FormData): Promise<Fo
   redirect(done("/app/inversiones?operacion=1"));
 }
 
+export async function deleteInvestmentAction(fd: FormData) {
+  const { user, workspace } = await requireWorkspace();
+  const { deleteInvestment } = await import("@/server/wealth");
+  await deleteInvestment(getDb(), workspace.id, str(fd, "investmentId"));
+  await audit("investment.deleted", { userId: user.id, workspaceId: workspace.id, entity: "investment", entityId: str(fd, "investmentId") });
+  redirect(done("/app/inversiones?borrada=1"));
+}
+
+export async function deleteAssetAction(fd: FormData) {
+  const { user, workspace } = await requireWorkspace();
+  const { deleteAsset } = await import("@/server/wealth");
+  await deleteAsset(getDb(), workspace.id, str(fd, "assetId"));
+  await audit("asset.deleted", { userId: user.id, workspaceId: workspace.id, entity: "asset", entityId: str(fd, "assetId") });
+  redirect(done("/app/patrimonio?borrado=1"));
+}
+
 export async function manualPriceAction(_: FormState, fd: FormData): Promise<FormState> {
   const { workspace } = await requireWorkspace();
   try {
