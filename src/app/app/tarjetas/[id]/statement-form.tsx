@@ -14,7 +14,7 @@ export function StatementForm({ cardId, closing, due, pdf, pdfLeft, currency, se
   const [rows, setRows] = useState<Row[]>([]);
   const [source, setSource] = useState<"manual" | "pdf">("manual");
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
-  // Compras del PDF que no están en Finan: se eligen y se suman al guardar el resumen.
+  // Compras del PDF que no están en Guafra: se eligen y se suman al guardar el resumen.
   const [missing, setMissing] = useState<{ date: string; description: string; amount: string; on: boolean }[]>([]);
   const [reading, start] = useTransition();
   const set = (k: keyof typeof v) => (e: React.ChangeEvent<HTMLInputElement>) => setV({ ...v, [k]: e.target.value });
@@ -51,7 +51,7 @@ export function StatementForm({ cardId, closing, due, pdf, pdfLeft, currency, se
   if (closingDay && cd && Math.min(Math.abs(cd - closingDay), 31 - Math.abs(cd - closingDay)) > 5) warn.push(`Tu tarjeta suele cerrar el ${closingDay} y pusiste el ${cd}. Si el banco lo movió este mes, está bien.`);
   if (loadedClosings.includes(v.closingDate)) warn.push("Ese resumen ya lo cargaste: si lo guardás de nuevo, se corrige (no se duplica).");
   if (v.total && n(v.minimum) > n(v.total)) warn.push("El pago mínimo es mayor que el total: revisalo.");
-  if (!simple && estimate != null && estimate > 0 && v.total && Math.abs(n(v.total) - estimate) / estimate > 0.3) warn.push(`Con las compras que cargaste, Finan calculaba ${fmt(estimate)}. Si la diferencia son compras que no cargaste, sumalas antes (o elegí las del PDF); si no, la diferencia queda como ajuste del resumen.`);
+  if (!simple && estimate != null && estimate > 0 && v.total && Math.abs(n(v.total) - estimate) / estimate > 0.3) warn.push(`Con las compras que cargaste, Guafra calculaba ${fmt(estimate)}. Si la diferencia son compras que no cargaste, sumalas antes (o elegí las del PDF); si no, la diferencia queda como ajuste del resumen.`);
 
   return (
     <ActionForm action={loadStatementAction} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -103,19 +103,19 @@ export function StatementForm({ cardId, closing, due, pdf, pdfLeft, currency, se
       {warn.length > 0 && <div className="notice" role="status" style={{ display: "flex", flexDirection: "column", gap: 4 }}>{warn.map((w) => <span key={w}>⚠️ {w}</span>)}</div>}
       {!simple && missing.length > 0 && (
         <div className="field">
-          <span>Compras del resumen que no están cargadas en Finan ({missing.filter((m) => m.on).length} de {missing.length} elegidas)</span>
+          <span>Compras del resumen que no están cargadas en Guafra ({missing.filter((m) => m.on).length} de {missing.length} elegidas)</span>
           <div className="list">{missing.map((m, i) => (
             <label className="li simtg" key={i} style={{ alignItems: "center" }}><input type="checkbox" checked={m.on} onChange={(e) => setMissing((x) => x.map((y, j) => (j === i ? { ...y, on: e.target.checked } : y)))} />
               <span className="grow"><span className="t">{m.description}</span><br /><span className="s">{m.date.split("-").reverse().join("/")}</span></span><b className="num">{Number(m.amount).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</b></label>
           ))}</div>
-          <span className="sub" style={{ fontWeight: 400 }}>Las elegidas se suman como compras (después les ponés categoría desde Movimientos). Las demás ya están en Finan o no las querés.</span>
+          <span className="sub" style={{ fontWeight: 400 }}>Las elegidas se suman como compras (después les ponés categoría desde Movimientos). Las demás ya están en Guafra o no las querés.</span>
           <input type="hidden" name="addPurchases" value={JSON.stringify(missing.filter((m) => m.on).map(({ date, description, amount }) => ({ date, description, amount })))} />
         </div>
       )}
 
       </>}
       <div className="stm-foot">
-        <p className="sub">{simple ? "Se guarda como el gasto de la tarjeta de ese mes." : "Lo que debías antes de usar Finan se carga como saldo de la tarjeta, no como un gasto nuevo."}</p>
+        <p className="sub">{simple ? "Se guarda como el gasto de la tarjeta de ese mes." : "Lo que debías antes de usar Guafra se carga como saldo de la tarjeta, no como un gasto nuevo."}</p>
         <Submit>Guardar resumen</Submit>
       </div>
     </ActionForm>

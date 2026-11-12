@@ -18,7 +18,7 @@ export const GUIDES: Guide[] = [
       { h: "4. Armá un fondo para imprevistos", p: ["La recomendación más común es juntar de a poco entre 3 y 6 meses de tus gastos fijos. Empezá con una meta chica, por ejemplo un mes, y no lo uses para el día a día."] },
       { h: "5. Revisalo una vez por semana", p: ["Cinco minutos alcanzan: qué vence esta semana, si algún pago cambió y cómo viene el mes. Lo importante es enterarte antes, no después."] },
     ],
-    cta: { href: "/registro", label: "Hacerlo con Finan, gratis" },
+    cta: { href: "/registro", label: "Hacerlo con Guafra, gratis" },
   },
   {
     slug: "conviene-pagar-en-cuotas",
@@ -59,7 +59,7 @@ export const GUIDES: Guide[] = [
       { h: "Otros descuentos", p: ["Comisión del acopio o corredor, flete, secada, paritarias y otros gastos se restan del bruto. Sumalos todos para no sobreestimar lo que vas a cobrar."] },
       { h: "Planificar con ventas mes a mes", p: ["Si vendés todos los meses, cargá un monto aproximado por mes y reemplazalo por la venta real cuando la hagas. Así ves la plata que viene sin contarla dos veces."] },
     ],
-    cta: { href: "/productores", label: "Ver Finan para productores" },
+    cta: { href: "/productores", label: "Ver Guafra para productores" },
   },
   {
     slug: "fondo-de-emergencia",
@@ -113,7 +113,7 @@ export const GUIDES: Guide[] = [
       { h: "3. Elegí cuál pagar primero", p: ["Método avalancha: pagás el mínimo de todas y lo que sobra va a la de tasa más alta. Es el que menos intereses te cobra.", "Método bola de nieve: lo que sobra va a la deuda más chica. Pagás algo más de intereses, pero ves resultados rápido y eso ayuda a seguir."] },
       { h: "4. Nunca solo el pago mínimo", p: ["El mínimo de la tarjeta casi no baja la deuda: el resto genera intereses muy altos. Aunque sea un poco más que el mínimo, se nota mes a mes."] },
     ],
-    cta: { href: "/registro", label: "Ordenar mis deudas en Finan" },
+    cta: { href: "/registro", label: "Ordenar mis deudas en Guafra" },
   },
 ];
 

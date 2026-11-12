@@ -48,7 +48,7 @@ export function InstallApp({ variant = "card" }: { variant?: "card" | "button" }
   return (
     <div className="card" style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
       <div style={{ flex: "1 1 220px" }}>
-        <h3 style={{ margin: 0 }}>Instalá Finan en tu celular</h3>
+        <h3 style={{ margin: 0 }}>Instalá Guafra en tu celular</h3>
         <p className="sub" style={{ margin: "4px 0 0" }}>Queda con su ícono en la pantalla de inicio y se abre a pantalla completa, como una app.</p>
         {help && <p className="sub" style={{ margin: "10px 0 0", color: "var(--fg)" }}>En iPhone: tocá <b>Compartir</b> (el cuadrado con la flecha) y después <b>Agregar a inicio</b>.</p>}
       </div>

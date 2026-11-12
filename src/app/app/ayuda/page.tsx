@@ -55,7 +55,7 @@ export default async function Help() {
                   <div className="li" key={t.id} style={{ display: "block" }}>
                     <div className="t">{t.subject}</div>
                     <div className="s">{fmtDate(t.createdAt)} · {t.status === "CLOSED" ? "Cerrada" : t.reply ? "Respondida" : "Esperando respuesta"}</div>
-                    {t.reply && <p className="notice" style={{ marginTop: 8 }}><span><b>Finan:</b> {t.reply}</span></p>}
+                    {t.reply && <p className="notice" style={{ marginTop: 8 }}><span><b>Guafra:</b> {t.reply}</span></p>}
                   </div>
                 ))}
               </div>

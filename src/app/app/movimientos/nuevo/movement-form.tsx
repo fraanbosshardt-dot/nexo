@@ -123,7 +123,7 @@ export function MovementForm({ accounts, categories, today, initialKind, initial
             return card ? (
               <div className="notice" role="status">¿Es el resumen de tu tarjeta <b style={{ fontWeight: 500 }}>{card.name}</b>? Si lo cargás acá y también en la tarjeta, se cuenta dos veces. <Link className="lk" href={`/app/tarjetas/${card.id}?ver=resumen#panel`}>Cargarlo en la tarjeta</Link>. Si es otra cosa, seguí nomás.</div>
             ) : (
-              <div className="notice" role="status">¿Es el resumen de una tarjeta de crédito? Te conviene crear la tarjeta en modo “solo el resumen”: lo anotás una vez por mes, Finan te avisa el vencimiento y no se duplica. <Link className="lk" href="/app/tarjetas">Crear la tarjeta</Link>. Si es otra cosa, seguí nomás.</div>
+              <div className="notice" role="status">¿Es el resumen de una tarjeta de crédito? Te conviene crear la tarjeta en modo “solo el resumen”: lo anotás una vez por mes, Guafra te avisa el vencimiento y no se duplica. <Link className="lk" href="/app/tarjetas">Crear la tarjeta</Link>. Si es otra cosa, seguí nomás.</div>
             );
           })()}
           <datalist id="mv-history">{[...new Set(history.map((h) => h.d))].slice(0, 40).map((d) => <option key={d} value={d} />)}</datalist>

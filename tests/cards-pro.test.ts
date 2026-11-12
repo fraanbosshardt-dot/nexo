@@ -125,7 +125,7 @@ describe("devoluciones y cuotas", () => {
 });
 
 describe("revisar el resumen y adicionales", () => {
-  it("encuentra en el PDF las compras que no están en Finan", async () => {
+  it("encuentra en el PDF las compras que no están en Guafra", async () => {
     const { ws, card } = await setup();
     await cardPurchase(db, ws, { cardId: card.id, description: "SUPER", amount: "1500", date: d("2026-11-03") });
     const p = parseStatementText(`CIERRE ACTUAL 25/11/26\nVENCIMIENTO ACTUAL 05/12/26\n03/11/26 SUPERMERCADO DIA 1.500,00\n07/11/26 FARMACIA CENTRAL 2.340,50\nSALDO ACTUAL 3.840,50`);
@@ -168,7 +168,7 @@ describe("modo simple y avisos", () => {
     await expect(cardPurchase(db, ws, { cardId: card.id, description: "Olvidada", amount: "100", date: d("2026-11-20") })).rejects.toThrow(/dos veces/);
   });
 
-  it("una compra olvidada de un resumen que Finan cerró solo lo actualiza", async () => {
+  it("una compra olvidada de un resumen que Guafra cerró solo lo actualiza", async () => {
     const { ws, card } = await setup();
     await cardPurchase(db, ws, { cardId: card.id, description: "Super", amount: "1000", date: d("2026-11-10") });
     await closeStatements(db, ws, d("2026-11-30"));

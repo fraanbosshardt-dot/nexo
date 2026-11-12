@@ -35,7 +35,7 @@ export default function CuotasPage() {
       </section>
       <section className="lp-band"><div className="lp-w lp-sec">
         <h2>Cómo se calcula</h2>
-        <p className="lp-lead" style={{ maxWidth: "68ch" }}>Cada mes sumamos lo que te sobra y restamos la cuota. Si en algún mes el saldo queda por debajo de cero, o de la plata que no querés tocar, la respuesta es no. En Finan el cálculo usa tus cuentas, tus vencimientos y lo que se repite todos los meses, no un promedio.</p>
+        <p className="lp-lead" style={{ maxWidth: "68ch" }}>Cada mes sumamos lo que te sobra y restamos la cuota. Si en algún mes el saldo queda por debajo de cero, o de la plata que no querés tocar, la respuesta es no. En Guafra el cálculo usa tus cuentas, tus vencimientos y lo que se repite todos los meses, no un promedio.</p>
         <div className="lp-faq" style={{ marginTop: 24 }}>{FAQ.map(([q, a]) => <details key={q}><summary>{q}</summary><p>{a}</p></details>)}</div>
         <div className="acts" style={{ marginTop: 28, display: "flex", flexWrap: "wrap", gap: 12 }}><Link className="ws-btn pri" href="/registro">Hacerlo con mis datos reales</Link><Link className="ws-btn" href="/herramientas/prestamo">Calcular un préstamo</Link></div>
       </div></section>

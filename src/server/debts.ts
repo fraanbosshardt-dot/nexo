@@ -114,7 +114,7 @@ export type DebtInput = {
   startDate: Date;
   firstDue?: Date | null;
   accountId?: string | null; // si el dinero entró en una cuenta
-  paidInstallments?: number; // cuotas ya pagadas antes de cargarla en Finan
+  paidInstallments?: number; // cuotas ya pagadas antes de cargarla en Guafra
   rows?: { due: Date; total: MoneyValue }[] | null; // cuotas a medida (cuando no son todas iguales)
   notes?: string | null;
   userId?: string | null;
@@ -190,7 +190,7 @@ async function debtLinks(db: Db, ws: string, debt: { id: string; creditor: strin
   return { obIds, paymentIds: payments.map((p) => p.id), disbursementIds: disb.map((d) => d.id) };
 }
 
-// Borrar una deuda cargada por error: se va con sus cuotas, los pagos registrados en Finan y la plata que entró.
+// Borrar una deuda cargada por error: se va con sus cuotas, los pagos registrados en Guafra y la plata que entró.
 export async function deleteDebt(db: Db, ws: string, id: string) {
   const debt = await db.debt.findFirst({ where: { id, workspaceId: ws } });
   if (!debt) throw new UserError("No encontramos esa deuda.");
@@ -208,7 +208,7 @@ export async function deleteDebt(db: Db, ws: string, id: string) {
 
 export type DebtEdit = Omit<DebtInput, "accountId" | "currency" | "userId">;
 
-// Editar una deuda. Sin pagos registrados en Finan, se corrige todo y el cronograma se rearma.
+// Editar una deuda. Sin pagos registrados en Guafra, se corrige todo y el cronograma se rearma.
 // Con pagos, solo el nombre, el tipo y las notas (para cambiar condiciones: borrarla y cargarla de nuevo).
 export async function updateDebt(db: Db, ws: string, id: string, input: DebtEdit) {
   const debt = await db.debt.findFirst({ where: { id, workspaceId: ws } });
@@ -248,7 +248,7 @@ export async function updateDebt(db: Db, ws: string, id: string, input: DebtEdit
   return { rebuilt: true };
 }
 
-// ¿Tiene pagos registrados en Finan? (decide qué se puede editar)
+// ¿Tiene pagos registrados en Guafra? (decide qué se puede editar)
 export async function debtHasPayments(db: Db, ws: string, id: string) {
   const debt = await db.debt.findFirst({ where: { id, workspaceId: ws } });
   return debt ? (await debtLinks(db, ws, debt)).paymentIds.length > 0 : false;

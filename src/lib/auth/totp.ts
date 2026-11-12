@@ -58,6 +58,6 @@ export function verifyTotp(secret: string, code: string, now = Date.now(), windo
   return false;
 }
 
-export function otpauthUrl(secret: string, account: string, issuer = "Finan"): string {
+export function otpauthUrl(secret: string, account: string, issuer = "Guafra"): string {
   return `otpauth://totp/${encodeURIComponent(`${issuer}:${account}`)}?secret=${secret}&issuer=${encodeURIComponent(issuer)}&algorithm=SHA1&digits=6&period=30`;
 }

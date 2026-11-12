@@ -1,4 +1,4 @@
-/* Estilos de Finan. Diseño sobrio tipo calendario de escritorio: blanco, líneas finas, un solo azul, Roboto, sin animaciones.
+/* Estilos de Guafra. Diseño sobrio tipo calendario de escritorio: blanco, líneas finas, un solo azul, Roboto, sin animaciones.
    Tailwind se suma solo con utilidades (sin reset). */
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities);

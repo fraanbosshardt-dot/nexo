@@ -265,7 +265,7 @@ export default async function Landing() {
         </div>
       </section>
 
-      {/* Planilla vs Finan */}
+      {/* Planilla vs Guafra */}
       <section className="ws-soft">
         <div className="ws-w ws-sec lx-two">
           <Reveal className="lx-two-copy"><p className="ws-eyebrow">Por qué {N}</p><h2 className="ws-h2">La planilla te muestra el pasado. {N} te muestra lo que viene.</h2><p className="ws-lead">Una planilla depende de que te acuerdes de todo. {N} repite tus pagos fijos, reparte las cuotas y te avisa antes de que un mes quede en rojo.</p></Reveal>

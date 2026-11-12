@@ -119,7 +119,7 @@ export default async function Settings({ searchParams }: { searchParams: Promise
           <div className="list">{sessions.map((s) => (
             <div className="li" key={s.id}><div className="grow"><div className="t">{s.userAgent?.match(/(Windows|Mac OS X|Android|iPhone|Linux)/)?.[1] ?? "Dispositivo"}{s.id === session.id ? " · esta sesión" : ""}</div><div className="s">Desde el {fmtDate(s.createdAt)} · vence el {fmtDate(s.expiresAt)}</div></div></div>
           ))}</div>
-          <p className="foot-note" style={{ marginTop: 10 }}>Finan nunca te pide ni guarda las contraseñas de tu banco.</p>
+          <p className="foot-note" style={{ marginTop: 10 }}>Guafra nunca te pide ni guarda las contraseñas de tu banco.</p>
         </div>
         <div className="card">
           <div className="chead"><div><h3>Tus datos</h3><p className="sub">Son tuyos: podés llevártelos o borrarlos cuando quieras.</p></div></div>
@@ -155,7 +155,7 @@ export default async function Settings({ searchParams }: { searchParams: Promise
         {sp.pago && <div className="notice g">Gracias. En cuanto Mercado Pago confirme el pago, tu plan pasa a Pro.</div>}
         {sp.cancelado && <div className="notice">{endsAt ? `Cancelaste Pro. No se te cobra más y lo seguís usando hasta el ${fmtDate(endsAt)}; después pasás a Gratis con todos tus datos.` : "Cancelaste Pro. Seguís con todo lo de Gratis y tus datos quedan."}</div>}
         <div className="card">
-          <div className="chead"><div><h3>Tu plan: {plan === "PRO" ? "Pro" : "Gratis"}</h3><p className="sub">{trial ? `Prueba gratis hasta el ${fmtDate(sub!.trialEndsAt!)}.` : endsAt ? `${sub!.status === "CANCELED" ? "Cancelado" : "Pago pendiente en Mercado Pago"}: tenés Pro hasta el ${fmtDate(endsAt)}.` : paidPro ? `Pagás con Mercado Pago, ${sub!.billingCycle === "yearly" ? "por año" : "por mes"}.` : plan === "PRO" ? "Pro activado por Finan." : "Tenés casi todo incluido, sin costo."}</p></div></div>
+          <div className="chead"><div><h3>Tu plan: {plan === "PRO" ? "Pro" : "Gratis"}</h3><p className="sub">{trial ? `Prueba gratis hasta el ${fmtDate(sub!.trialEndsAt!)}.` : endsAt ? `${sub!.status === "CANCELED" ? "Cancelado" : "Pago pendiente en Mercado Pago"}: tenés Pro hasta el ${fmtDate(endsAt)}.` : paidPro ? `Pagás con Mercado Pago, ${sub!.billingCycle === "yearly" ? "por año" : "por mes"}.` : plan === "PRO" ? "Pro activado por Guafra." : "Tenés casi todo incluido, sin costo."}</p></div></div>
           {paidPro ? (
             <form action={cancelPlanAction}><ConfirmSubmit className="btn" question={sub!.currentPeriodEnd ? `¿Cancelar Pro? No se te cobra más y lo seguís usando hasta el ${fmtDate(sub!.currentPeriodEnd)}.` : "¿Cancelar Pro? Dejás de pagar y volvés al plan Gratis."} yes="Sí, cancelar">Cancelar Pro</ConfirmSubmit></form>
           ) : bill.enabled ? (
@@ -174,7 +174,7 @@ export default async function Settings({ searchParams }: { searchParams: Promise
         </div>
         <div className="card">
           <div className="chead"><div><h3>Invitá y ganá Pro</h3><p className="sub">Cuando alguien se registra con tu link y termina la bienvenida, ustedes dos reciben {REFERRAL_DAYS} días de Pro.</p></div>{refStats.rewarded > 0 && <span className="pill g">{refStats.rewarded} {refStats.rewarded === 1 ? "invitación" : "invitaciones"}</span>}</div>
-          <ShareLink url={`${SITE.url}/?ref=${refCode}`} text="Yo uso Finan para ordenar mi plata. Probalo gratis:" />
+          <ShareLink url={`${SITE.url}/?ref=${refCode}`} text="Yo uso Guafra para ordenar mi plata. Probalo gratis:" />
           {refStats.invited > refStats.rewarded && <p className="sub" style={{ margin: "10px 0 0" }}>{refStats.invited - refStats.rewarded} {refStats.invited - refStats.rewarded === 1 ? "persona se registró y todavía no terminó" : "personas se registraron y todavía no terminaron"} la bienvenida.</p>}
           {refStats.left === 0 && <p className="sub" style={{ margin: "10px 0 0" }}>Llegaste al máximo de premios por invitar. ¡Gracias por recomendarnos!</p>}
         </div>
@@ -182,7 +182,7 @@ export default async function Settings({ searchParams }: { searchParams: Promise
         {invoices.length > 0 && (
           <div className="card"><div className="chead"><h3>Facturas</h3></div><div className="tw"><table>
             <thead><tr><th>Fecha</th><th>Detalle</th><th>Estado</th><th className="n">Importe</th></tr></thead>
-            <tbody>{invoices.map((i) => <tr key={i.id}><td>{fmtDate(i.paidAt ?? i.createdAt)}</td><td>Finan Pro</td><td>{i.status === "approved" ? <span className="pill g">Pagada</span> : i.status === "rejected" ? <span className="pill r">Rechazada</span> : <span className="pill">{i.status}</span>}</td><td className="n">{formatMoney(i.amount, i.currency)}</td></tr>)}</tbody>
+            <tbody>{invoices.map((i) => <tr key={i.id}><td>{fmtDate(i.paidAt ?? i.createdAt)}</td><td>Guafra Pro</td><td>{i.status === "approved" ? <span className="pill g">Pagada</span> : i.status === "rejected" ? <span className="pill r">Rechazada</span> : <span className="pill">{i.status}</span>}</td><td className="n">{formatMoney(i.amount, i.currency)}</td></tr>)}</tbody>
           </table></div></div>
         )}
       </>

@@ -44,7 +44,7 @@ const SETTINGS: Item[] = [
   { href: "/app/ayuda", label: "Ayuda", icon: "help" },
 ];
 
-const Mark = () => <span className="brand-mark">F</span>;
+const Mark = () => <span className="brand-mark">G</span>;
 
 export type Space = { id: string; label: string; active: boolean };
 
@@ -89,7 +89,7 @@ export function Shell({ children, modules, overdue, userName, plan, isAdmin, log
     <div className={`app ${sideOff ? "side-off" : ""}`}>
       <header className="top">
         <button className="ibtn menu-btn" aria-label={open || !sideOff ? "Ocultar menú" : "Mostrar menú"} aria-expanded={open || !sideOff} onClick={toggleMenu}><Icon name="menu" /></button>
-        <Link href="/app" className="brand" aria-label="Finan, ir al inicio"><Mark /><b>Finan</b></Link>
+        <Link href="/app" className="brand" aria-label="Guafra, ir al inicio"><Mark /><b>Guafra</b></Link>
         <form action="/app/buscar" className="search top-search" role="search"><input name="q" placeholder="Buscar movimientos, cuentas, categorías…" aria-label="Buscar" /></form>
         <span style={{ flex: 1 }} />
         <Link className="ibtn top-search-btn" href="/app/buscar" aria-label="Buscar"><Icon name="search" /></Link>
@@ -101,7 +101,7 @@ export function Shell({ children, modules, overdue, userName, plan, isAdmin, log
         <button className="avatar" style={{ border: 0, cursor: "pointer" }} aria-label="Tu cuenta" aria-haspopup="dialog" aria-expanded={menu} title={userName} onClick={() => setMenu(true)}>{initials}</button>
       </header>
       <aside className={`side ${open ? "open" : ""}`} aria-label="Menú principal">
-        <Link href="/app" className="brand" onClick={() => setOpen(false)}><Mark /><b>Finan</b></Link>
+        <Link href="/app" className="brand" onClick={() => setOpen(false)}><Mark /><b>Guafra</b></Link>
         {groups(overdue).map(([g, items]) => {
           const links = items.map(link).filter(Boolean);
           return links.length ? <nav className="navg" key={g || "inicio"}>{g && <h6>{g}</h6>}{links}</nav> : null;

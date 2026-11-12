@@ -14,7 +14,7 @@ export default async function VerifyPage() {
   return (
     <AuthShell>
       <h1>Código de verificación</h1>
-      <p className="sub">Abrí Google Authenticator (o la app que uses) y escribí el código de 6 números de Finan.</p>
+      <p className="sub">Abrí Google Authenticator (o la app que uses) y escribí el código de 6 números de Guafra.</p>
       <ActionForm action={verifyLoginCodeAction} >
         <OtpInput />
         <Submit className="btn pri auth-btn" pending="Verificando…">Verificar</Submit>

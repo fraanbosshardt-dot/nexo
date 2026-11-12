@@ -25,7 +25,7 @@ export const sourceOf = (c: string | null | undefined) => (c && D912[c as AssetC
 export const currencyFor = (c: string, ticker: string) => (c === "US_STOCK" || c === "CRYPTO" ? "USD" : D912[c as AssetClass] && /[DC]$/.test(ticker) && c !== "AR_STOCK" ? "USD" : c === "FCI" ? null : "ARS");
 
 const STALE = 15 * 60_000;
-const UA = { "User-Agent": "Finan/1.0" };
+const UA = { "User-Agent": "Guafra/1.0" };
 const get = async (url: string) => {
   const r = await fetch(url, { headers: UA, signal: AbortSignal.timeout(6000), cache: "no-store" });
   if (!r.ok) throw new Error(`${r.status}`);

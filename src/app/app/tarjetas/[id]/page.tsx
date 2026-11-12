@@ -78,7 +78,7 @@ export default async function CardDetail({ params, searchParams }: { params: Pro
   const catName = new Map(cats.map((c) => [c.id, c.name]));
   // Recién creada: el primer paso es cargar el resumen.
   const simple = card.mode === "SIMPLE";
-  // Lo que Finan calcula para el último resumen (para avisar si el del banco es muy distinto).
+  // Lo que Guafra calcula para el último resumen (para avisar si el del banco es muy distinto).
   const lastLoaded = card.statements.find((x) => x.closingDate.getTime() === lastClose.getTime());
   const estimate = simple ? null : lastLoaded ? Number(lastLoaded.totalAmount) : (await statementAmount(db, card, lastClose)).total.toNumber();
   const sel = sp.ver ?? (!card.statements.length && !g.status.open.length ? "resumen" : "");

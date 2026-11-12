@@ -1,4 +1,4 @@
-# Finan — Pendientes y completados
+# Guafra (antes Finan) — Pendientes y completados
 
 Regla general: la primera vista de cada pantalla muestra solo lo indispensable. El detalle va detrás de "⋯", "Ver más" o una pantalla propia.
 Cuando algo se termina, pasa a "Completado" con la fecha.
@@ -61,6 +61,7 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 - [ ] M4. Testimonios de usuarios reales, cuando los haya (nunca inventados).
 
 ## Completado
+- [x] 12/11/2026 — La app pasa a llamarse Guafra: textos, correos, sitio, título de las pestañas, app instalada (nombre e ícono con la G), imagen para compartir y archivos que se descargan. Falta: nombre de la aplicación en Mercado Pago, y el dominio (Z15) cuando esté.
 - [x] 12/11/2026 — Velocidad: la proyección de tarjetas ya no consulta la base mes por mes (Flujo de 51 a 25 consultas, Tarjetas de 40 a 26, Inicio de 100 a 68, Alertas de 85 a 53); los saldos se calculan una sola vez por pantalla; Alertas, Patrimonio e Inversiones piden sus datos en paralelo; 12 índices nuevos para las búsquedas frecuentes; Próximos pagos muestra 3 meses por defecto (de 282 KB a 93 KB) con "Ver los próximos 12 meses". Lo que más ayudaría ahora en producción es Z13 (app y base en la misma región).
 - [x] 12/11/2026 — Mejoras de la revisión: avisos por correo al activar o desactivar el doble factor y cuando alguien se suma a tu espacio (R3); en Inicio, "Este mes todavía pagás" separado en tarjetas, cuotas y otros (R4); en Movimientos, "Elegir varios" para cambiar la categoría o eliminar juntos (R5); en Cuentas, la línea del saldo de los últimos 6 meses (R6); en Próximos pagos, "Pagar varios juntos" desde una cuenta (R7); en Informes, comparar dos meses por categoría (R9); en Alertas, aviso si lo que vence en 10 días no alcanza con la plata de las cuentas (R10); en el Simulador, probar un préstamo (R11); en Configuración → Seguridad, el estado de la cuenta con cerrar las demás sesiones y descargar los datos (R12). Seguridad: encabezados nuevos (aislar la ventana, recursos solo del mismo sitio, forzar HTTPS en todo). Falta R1 completo (nonce), R2 (copias de la base) y R8 (decisión del flujo).
 - [x] 12/11/2026 — Revisión general: todas las pantallas de la app cargan sin errores ni valores raros; sin vulnerabilidades conocidas en las librerías; encabezados de seguridad, cookies, límite de intentos de ingreso y de doble factor, aislamiento entre espacios y permisos del panel interno revisados. Arreglado: la búsqueda de especies ahora exige el doble factor verificado como el resto. Ayuda actualizada (tarjeta en dos modos, préstamos, inversiones, presupuesto). Etiqueta "Beta" con su propio estilo.

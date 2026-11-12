@@ -36,7 +36,7 @@ export async function startCheckout(db: Db, ws: string, payerEmail: string, cycl
   const p = await mp<Preapproval>("/preapproval", {
     method: "POST",
     body: JSON.stringify({
-      reason: cycle === "yearly" ? "Finan Pro · anual" : "Finan Pro · mensual",
+      reason: cycle === "yearly" ? "Guafra Pro · anual" : "Guafra Pro · mensual",
       external_reference: discount ? `${ws}|${discount.code}` : ws,
       payer_email: payerEmail,
       back_url: backUrl,

@@ -31,8 +31,8 @@ export async function sendVerifyEmail(user: { id: string; email: string; name: s
   const { appUrl, sendEmail } = await mail();
   return sendEmail({
     to: user.email,
-    subject: "Confirmá tu correo en Finan",
-    text: `Hola ${user.name.split(" ")[0]}:\n\nPara confirmar que este correo es tuyo, entrá a este enlace (vence en ${DAYS} días):\n${appUrl()}/verificar-correo/${verifyToken(user.id, user.email)}\n\nSi no creaste una cuenta en Finan, ignorá este correo.\n\nFinan`,
+    subject: "Confirmá tu correo en Guafra",
+    text: `Hola ${user.name.split(" ")[0]}:\n\nPara confirmar que este correo es tuyo, entrá a este enlace (vence en ${DAYS} días):\n${appUrl()}/verificar-correo/${verifyToken(user.id, user.email)}\n\nSi no creaste una cuenta en Guafra, ignorá este correo.\n\nFinan`,
   });
 }
 
@@ -40,7 +40,7 @@ export async function sendPasswordChanged(user: { email: string; name: string })
   const { appUrl, sendEmail } = await mail();
   return sendEmail({
     to: user.email,
-    subject: "Cambiaste tu contraseña de Finan",
+    subject: "Cambiaste tu contraseña de Guafra",
     text: `Hola ${user.name.split(" ")[0]}:\n\nLa contraseña de tu cuenta se cambió recién y cerramos todas las sesiones abiertas.\n\nSi no fuiste vos, entrá a ${appUrl()}/recuperar para elegir una nueva y escribinos desde Ayuda.\n\nFinan`,
   });
 }
@@ -49,20 +49,20 @@ export async function sendPasswordChanged(user: { email: string; name: string })
 export async function sendSecurityNotice(user: { email: string; name: string }, what: "2fa_on" | "2fa_off" | "member_joined", extra?: string) {
   const { appUrl, sendEmail } = await mail();
   const t = {
-    "2fa_on": ["Activaste la verificación en dos pasos", "Activaste la verificación en dos pasos en tu cuenta de Finan. Desde ahora, al ingresar te pedimos el código de tu app."],
-    "2fa_off": ["Desactivaste la verificación en dos pasos", "Se desactivó la verificación en dos pasos de tu cuenta de Finan. Te recomendamos volver a activarla en Configuración → Seguridad."],
-    "member_joined": ["Alguien se sumó a tu espacio", `${extra ?? "Una persona"} aceptó tu invitación y ya puede ver tu espacio en Finan. Lo podés quitar cuando quieras en Configuración → Compartir.`],
+    "2fa_on": ["Activaste la verificación en dos pasos", "Activaste la verificación en dos pasos en tu cuenta de Guafra. Desde ahora, al ingresar te pedimos el código de tu app."],
+    "2fa_off": ["Desactivaste la verificación en dos pasos", "Se desactivó la verificación en dos pasos de tu cuenta de Guafra. Te recomendamos volver a activarla en Configuración → Seguridad."],
+    "member_joined": ["Alguien se sumó a tu espacio", `${extra ?? "Una persona"} aceptó tu invitación y ya puede ver tu espacio en Guafra. Lo podés quitar cuando quieras en Configuración → Compartir.`],
   }[what];
   return sendEmail({
     to: user.email,
-    subject: `${t[0]} · Finan`,
+    subject: `${t[0]} · Guafra`,
     text: `Hola ${user.name.split(" ")[0]}:
 
 ${t[1]}
 
 Si no fuiste vos, cambiá tu contraseña en ${appUrl()}/recuperar y escribinos desde Ayuda.
 
-Finan`,
+Guafra`,
   });
 }
 
@@ -75,7 +75,7 @@ export async function notifyNewDevice(db: PrismaClient, user: { id: string; emai
   const when = new Intl.DateTimeFormat("es-AR", { timeZone: "America/Argentina/Buenos_Aires", dateStyle: "long", timeStyle: "short" }).format(new Date());
   await sendEmail({
     to: user.email,
-    subject: "Ingreso nuevo a tu cuenta de Finan",
+    subject: "Ingreso nuevo a tu cuenta de Guafra",
     text: `Hola ${user.name.split(" ")[0]}:\n\nAlguien entró a tu cuenta desde un dispositivo que no habías usado:\n• Cuándo: ${when}\n• Dispositivo: ${describeAgent(userAgent)}${ip ? `\n• Conexión: ${ip}` : ""}\n\nSi fuiste vos, no hagas nada. Si no, cambiá la contraseña en ${appUrl()}/recuperar y activá la verificación en dos pasos en Configuración.\n\nFinan`,
   });
 }

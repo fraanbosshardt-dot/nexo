@@ -1,11 +1,11 @@
 import type { MetadataRoute } from "next";
 
-// Permite instalar Finan en el celular como una app (ícono en la pantalla de inicio, pantalla completa).
+// Permite instalar Guafra en el celular como una app (ícono en la pantalla de inicio, pantalla completa).
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: "/app",
-    name: "Finan",
-    short_name: "Finan",
+    name: "Guafra",
+    short_name: "Guafra",
     description: "Sabé cuánto tenés, cuánto debés y cuánto podés gastar hasta tu próximo cobro.",
     start_url: "/app?origen=app",
     scope: "/",
