@@ -243,6 +243,46 @@ export async function payObligation(
   });
 }
 
+// Corregir algo a futuro (un pendiente): concepto, importe, fecha, categoría y notas.
+export async function updateObligation(db: Db, ws: string, id: string, input: { description: string; amount: MoneyValue; dueDate: Date; categoryId: string | null; notes: string | null }) {
+  const ob = await db.obligation.findFirst({ where: { id, workspaceId: ws }, include: { payments: true } });
+  if (!ob) throw new UserError("No encontramos ese pendiente.");
+  if (ob.status === "SETTLED" || ob.status === "CANCELLED") throw new UserError("Ese pendiente ya está cerrado.");
+  if (ob.sourceType === "card") throw new UserError("El resumen de la tarjeta se arma con sus compras: corregí la compra desde Movimientos.");
+  if (ob.sourceType === "grain") throw new UserError("Este cobro es de una venta de cereal: corregilo desde Ventas de cereal.");
+  const description = input.description.trim();
+  if (!description) throw new UserError("Poné un concepto.");
+  const amount = round2(input.amount);
+  if (!amount.gt(0)) throw new UserError("El importe tiene que ser mayor a cero.");
+  const paid = paidSoFar(ob);
+  if (paid.gt(amount)) throw new UserError(`Ya ${ob.direction === "RECEIVABLE" ? "cobraste" : "pagaste"} ${paid.toFixed(2).replace(".", ",")}: el importe no puede ser menor.`);
+  await ownCategory(db, ws, input.categoryId, ob.direction === "RECEIVABLE" ? "INCOME" : "EXPENSE");
+  return db.$transaction(async (tx) => {
+    await tx.obligation.update({ where: { id: ob.id }, data: { description, amount: amount.toFixed(2), dueDate: input.dueDate, economicPeriod: period(input.dueDate), categoryId: input.categoryId, notes: input.notes } });
+    // Cuota de un préstamo: el cronograma muestra el monto y la fecha nuevos (la diferencia va como interés y gastos).
+    if (ob.sourceType === "debt") {
+      const inst = await tx.debtInstallment.findFirst({ where: { obligationId: ob.id } });
+      if (inst) {
+        const interest = amount.minus(dec(inst.capital));
+        await tx.debtInstallment.update({ where: { id: inst.id }, data: { total: amount.toFixed(2), dueDate: input.dueDate, ...(interest.gte(0) ? { interest: interest.toFixed(2) } : { capital: amount.toFixed(2), interest: "0" }) } });
+      }
+    }
+    return refreshStatus(tx, ob.id);
+  });
+}
+
+// Eliminar algo a futuro cargado por error. Si se repite, se cancela solo esta vez (si no, vuelve a aparecer).
+export async function deleteObligation(db: Db, ws: string, id: string) {
+  const ob = await db.obligation.findFirst({ where: { id, workspaceId: ws }, include: { payments: true } });
+  if (!ob) throw new UserError("No encontramos ese pendiente.");
+  if (ob.sourceType === "debt") throw new UserError("Es una cuota de un préstamo: corregila acá o eliminá el préstamo desde Deudas y préstamos.");
+  if (ob.sourceType === "card") throw new UserError("El resumen de la tarjeta se arma con sus compras: borrá la compra desde Movimientos.");
+  if (ob.sourceType === "grain") throw new UserError("Este cobro es de una venta de cereal: borralo desde Ventas de cereal.");
+  if (ob.payments.length) throw new UserError("Ya tiene pagos registrados: borralos desde Movimientos o cancelá lo que falta.");
+  if (ob.recurringRuleId) return db.obligation.update({ where: { id: ob.id }, data: { status: "CANCELLED" } });
+  return db.obligation.delete({ where: { id: ob.id } });
+}
+
 export async function cancelObligation(db: Db, ws: string, obligationId: string) {
   const ob = await db.obligation.findFirst({ where: { id: obligationId, workspaceId: ws } });
   if (!ob) throw new UserError("No encontramos ese pendiente.");
@@ -436,6 +476,7 @@ export type OpenItem = {
   status: string;
   category: string | null;
   recurringRuleId?: string | null;
+  source?: string | null; // "debt" | "card" | "grain"
 };
 
 export async function openObligations(db: Db, ws: string, today: Date, opts: { until?: Date; direction?: ObligationDirection } = {}): Promise<OpenItem[]> {
@@ -462,6 +503,7 @@ export async function openObligations(db: Db, ws: string, today: Date, opts: { u
     overdue: o.dueDate < today,
     status: o.status,
     category: o.category?.name ?? null,
+    source: o.sourceType,
     recurringRuleId: o.recurringRuleId,
   }));
 }

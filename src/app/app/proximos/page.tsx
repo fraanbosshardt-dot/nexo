@@ -20,10 +20,10 @@ type Row = OpenItem & { proj?: { ruleId: string; occ: string; variable: boolean 
 export const metadata: Metadata = { title: "Próximos pagos" };
 const MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 
-export default async function Upcoming({ searchParams }: { searchParams: Promise<{ ver?: string; guardado?: string; listo?: string }> }) {
+export default async function Upcoming({ searchParams }: { searchParams: Promise<{ ver?: string; guardado?: string; listo?: string; corregido?: string; borrado?: string }> }) {
   const { workspace, modules, plan } = await requireWorkspace();
   const grainOn = !!modules.cereal && (await canUse(plan, "cereal"));
-  const { ver, guardado, listo } = await searchParams;
+  const { ver, guardado, listo, corregido, borrado } = await searchParams;
   const cur = workspace.baseCurrency;
   const today = todayIn(workspace.timezone);
   const in7 = new Date(today.getTime() + 7 * 864e5);
@@ -57,6 +57,7 @@ export default async function Upcoming({ searchParams }: { searchParams: Promise
   return (
     <>
       <PageHead crumb="Pagos y deudas" title="Próximos pagos" desc="Lo que falta pagar y cobrar en los próximos 12 meses. Lo marcado como Proyectado sale de tus pagos que se repiten." actions={<Link className="btn pri" href="/app/movimientos/nuevo?estado=pendiente">+ Agregar un pago o cobro</Link>} />
+      {(corregido || borrado) && <p className="notice g" role="status">{corregido ? "Listo, guardamos los cambios." : "Listo, lo eliminamos."}</p>}
       {listo && <p className="notice g" role="status">{listo === "cobro" ? "Listo, registramos el cobro." : "Listo, registramos el pago."}</p>}
       {guardado && <div className="notice g" role="status"><span>Listo, quedó guardado.</span><Link className="btn sm" href="/app/movimientos/nuevo?estado=pendiente" style={{ marginLeft: "auto" }}>+ Cargar otro</Link></div>}
       {proj.length > 0 && <div className="sub help-line"><span className="pill">Proyectado</span> = lo que esperás de tus pagos que se repiten <Help term="proyectado" /></div>}
@@ -105,7 +106,7 @@ export default async function Upcoming({ searchParams }: { searchParams: Promise
                 </>}>
                   <div className="dchip"><b className={o.overdue ? "neg" : ""}>{o.dueDate.getUTCDate()}</b><span className={o.overdue ? "neg" : ""}>{MES[o.dueDate.getUTCMonth()]}</span></div>
                   <div className="grow">
-                    <div className="t">{o.description}</div>
+                    <div className="t">{o.source === "card" || o.source === "grain" ? o.description : <Link className="tlink" href={`/app/proximos/${o.id}?corregir=1#corregir`} title="Corregir">{o.description}</Link>}</div>
                     <div className="s">
                       {rec ? "A cobrar" : "A pagar"}
                       {o.overdue ? ` · venció el ${fmtDayMonth(o.dueDate)}` : ""}

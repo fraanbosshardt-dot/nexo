@@ -108,3 +108,27 @@ describe("corregir un movimiento", () => {
     expect((await db.obligation.findUniqueOrThrow({ where: { id: p.obligationId! } })).status).toBe("PARTIAL");
   });
 });
+
+describe("corregir o eliminar algo a futuro (pendiente)", () => {
+  it("se corrige importe, fecha y concepto", async () => {
+    const { updateObligation } = await import("@/server/ledger");
+    const p = await recordMovement(db, ws, { kind: "EXPENSE", description: "Seguro", amount: "100", accountId: banco, status: "PENDING", dueDate: d("2026-12-15") });
+    await updateObligation(db, ws, p.obligationId!, { description: "Seguro auto", amount: "130", dueDate: d("2027-01-10"), categoryId: null, notes: null });
+    const ob = await db.obligation.findUniqueOrThrow({ where: { id: p.obligationId! } });
+    expect([ob.description, ob.amount.toString(), ob.economicPeriod, ob.status]).toEqual(["Seguro auto", "130", "2027-01", "PENDING"]);
+  });
+
+  it("no deja bajar el importe por debajo de lo ya pagado", async () => {
+    const { updateObligation } = await import("@/server/ledger");
+    const p = await recordMovement(db, ws, { kind: "EXPENSE", description: "Obra", amount: "300", accountId: banco, status: "PENDING", dueDate: d("2026-12-20") });
+    await payObligation(db, ws, { obligationId: p.obligationId!, accountId: banco, amount: "100", date: d("2026-11-12") });
+    await expect(updateObligation(db, ws, p.obligationId!, { description: "Obra", amount: "50", dueDate: d("2026-12-20"), categoryId: null, notes: null })).rejects.toThrow(/no puede ser menor/);
+  });
+
+  it("se elimina del todo si se cargó por error", async () => {
+    const { deleteObligation } = await import("@/server/ledger");
+    const p = await recordMovement(db, ws, { kind: "INCOME", description: "Cobro", amount: "500", accountId: banco, status: "PENDING", dueDate: d("2026-12-01") });
+    await deleteObligation(db, ws, p.obligationId!);
+    expect(await db.obligation.count({ where: { id: p.obligationId! } })).toBe(0);
+  });
+});

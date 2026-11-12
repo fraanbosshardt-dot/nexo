@@ -10,7 +10,7 @@ import { parseDate, todayIn } from "@/lib/dates";
 import { MODULES, modulesForUses, readModules, FREE_LIMITS } from "@/lib/modules";
 import { generateTotpSecret, otpauthUrl, verifyTotp } from "@/lib/auth/totp";
 import { decryptSecret, encryptSecret } from "@/lib/crypto";
-import { adjustBalance, cancelObligation, createAccount, deleteMovement, payObligation, recordMovement, recordTransfer, updateMovement, UserError } from "@/server/ledger";
+import { adjustBalance, cancelObligation, createAccount, deleteMovement, deleteObligation, updateObligation, payObligation, recordMovement, recordTransfer, updateMovement, UserError } from "@/server/ledger";
 import type { FormState } from "./auth";
 import { createRule, materialize } from "@/server/recurring";
 import { MATERIALIZE_DAYS } from "@/server/forecast";
@@ -386,6 +386,35 @@ export async function updateMovementAction(_: FormState, fd: FormData): Promise<
   } catch (e) { return fail(e); }
   revalidatePath("/app", "layout");
   redirect("/app/movimientos?guardado=1");
+}
+
+// Corregir algo a futuro (un pendiente).
+export async function updateObligationAction(_: FormState, fd: FormData): Promise<FormState> {
+  const { user, workspace } = await requireWorkspace();
+  const id = String(fd.get("id") ?? "");
+  try {
+    await updateObligation(getDb(), workspace.id, id, {
+      description: String(fd.get("description") ?? ""),
+      amount: money(fd.get("amount"), "el importe"),
+      dueDate: date(fd.get("dueDate"), "la fecha"),
+      categoryId: String(fd.get("categoryId") ?? "") || null,
+      notes: String(fd.get("notes") ?? "").trim() || null,
+    });
+    await audit("obligation.updated", { userId: user.id, workspaceId: workspace.id, entity: "obligation", entityId: id });
+  } catch (e) { return fail(e); }
+  revalidatePath("/app", "layout");
+  redirect("/app/proximos?corregido=1");
+}
+
+export async function deleteObligationAction(_: FormState, fd: FormData): Promise<FormState> {
+  const { user, workspace } = await requireWorkspace();
+  const id = String(fd.get("id") ?? "");
+  try {
+    await deleteObligation(getDb(), workspace.id, id);
+    await audit("obligation.deleted", { userId: user.id, workspaceId: workspace.id, entity: "obligation", entityId: id });
+  } catch (e) { return fail(e); }
+  revalidatePath("/app", "layout");
+  redirect("/app/proximos?borrado=1");
 }
 
 // Borrar un movimiento cargado por error (se va del todo, con lo que dependía de él).

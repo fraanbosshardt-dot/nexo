@@ -963,3 +963,4 @@ html[data-big] body{zoom:1.15}
 .cal-day{margin-top:12px}
 /* Tablas en el celular: se ocultan las columnas secundarias para que entre lo importante */
 @media (max-width:640px){.mh{display:none}}
+.tlink{color:inherit;text-decoration:none}.tlink:hover{text-decoration:underline}
