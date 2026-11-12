@@ -96,22 +96,105 @@ export async function createDebt(db: Db, ws: string, input: DebtInput) {
         notes: input.notes?.trim() || null,
       },
     });
-    for (const r of rows) {
-      const paidBefore = r.k <= already;
-      const ob = paidBefore
-        ? null
-        : await tx.obligation.create({
-            data: { workspaceId: ws, direction: "PAYABLE", description: `${debt.creditor} — cuota ${r.k}/${rows.length}`, amount: r.total.toFixed(2), currency: input.currency, dueDate: r.due, economicPeriod: period(r.due), sourceType: "debt", sourceId: debt.id },
-          });
-      await tx.debtInstallment.create({ data: { debtId: debt.id, number: r.k, dueDate: r.due, capital: r.capital.toFixed(2), interest: r.interest.toFixed(2), total: r.total.toFixed(2), balanceAfter: r.balance.toFixed(2), obligationId: ob?.id ?? null } });
-    }
+    await writeSchedule(tx, ws, debt, rows, already);
     if (input.accountId) {
       // El préstamo entra como dinero, pero no es un ingreso: es una deuda.
       const acc = await tx.account.findFirstOrThrow({ where: { id: input.accountId, workspaceId: ws } });
-      await tx.transaction.create({ data: { workspaceId: ws, accountId: acc.id, type: "DEBT_DISBURSEMENT", direction: "IN", amount: P.toFixed(2), currency: acc.currency, description: `Préstamo de ${debt.creditor}`, effectiveDate: input.startDate, economicPeriod: period(input.startDate), createdById: input.userId ?? null } });
+      await tx.transaction.create({ data: { workspaceId: ws, accountId: acc.id, type: "DEBT_DISBURSEMENT", direction: "IN", amount: P.toFixed(2), currency: acc.currency, description: `Préstamo de ${debt.creditor}`, effectiveDate: input.startDate, economicPeriod: period(input.startDate), notes: `debt:${debt.id}`, createdById: input.userId ?? null } });
     }
     return debt;
   });
+}
+
+type Tx = Parameters<Parameters<Db["$transaction"]>[0]>[0];
+
+// Cada cuota es un pendiente (salvo las que ya estaban pagadas antes de cargarla).
+async function writeSchedule(tx: Tx, ws: string, debt: { id: string; creditor: string; currency: string }, rows: ScheduleRow[], already: number) {
+  for (const r of rows) {
+    const ob = r.k <= already
+      ? null
+      : await tx.obligation.create({
+          data: { workspaceId: ws, direction: "PAYABLE", description: `${debt.creditor} — cuota ${r.k}/${rows.length}`, amount: r.total.toFixed(2), currency: debt.currency, dueDate: r.due, economicPeriod: period(r.due), sourceType: "debt", sourceId: debt.id },
+        });
+    await tx.debtInstallment.create({ data: { debtId: debt.id, number: r.k, dueDate: r.due, capital: r.capital.toFixed(2), interest: r.interest.toFixed(2), total: r.total.toFixed(2), balanceAfter: r.balance.toFixed(2), obligationId: ob?.id ?? null } });
+  }
+}
+
+// Todo lo que cuelga de una deuda: sus cuotas pendientes, los pagos registrados y la plata que entró.
+async function debtLinks(db: Db, ws: string, debt: { id: string; creditor: string; accountId: string | null; principal: MoneyValue; startDate: Date }) {
+  const obs = await db.obligation.findMany({ where: { workspaceId: ws, sourceType: "debt", sourceId: debt.id }, select: { id: true } });
+  const obIds = obs.map((o) => o.id);
+  const payments = await db.transaction.findMany({ where: { workspaceId: ws, OR: [{ obligationId: { in: obIds } }, { notes: `debt:${debt.id}`, type: { not: "DEBT_DISBURSEMENT" } }] }, select: { id: true } });
+  // La plata que entró: las nuevas llevan la marca de la deuda; las de antes se reconocen por cuenta, monto, fecha y nombre.
+  const disb = await db.transaction.findMany({
+    where: { workspaceId: ws, type: "DEBT_DISBURSEMENT", OR: [{ notes: `debt:${debt.id}` }, ...(debt.accountId ? [{ notes: null, accountId: debt.accountId, amount: round2(debt.principal).toFixed(2), effectiveDate: debt.startDate, description: `Préstamo de ${debt.creditor}` }] : [])] },
+    select: { id: true },
+  });
+  return { obIds, paymentIds: payments.map((p) => p.id), disbursementIds: disb.map((d) => d.id) };
+}
+
+// Borrar una deuda cargada por error: se va con sus cuotas, los pagos registrados en Finan y la plata que entró.
+export async function deleteDebt(db: Db, ws: string, id: string) {
+  const debt = await db.debt.findFirst({ where: { id, workspaceId: ws } });
+  if (!debt) throw new UserError("No encontramos esa deuda.");
+  const l = await debtLinks(db, ws, debt);
+  const txIds = [...l.paymentIds, ...l.disbursementIds];
+  await db.$transaction(async (tx) => {
+    await tx.transaction.deleteMany({ where: { workspaceId: ws, reversalOfId: { in: txIds } } });
+    await tx.transaction.deleteMany({ where: { workspaceId: ws, id: { in: txIds } } });
+    await tx.debtInstallment.deleteMany({ where: { debtId: debt.id } });
+    await tx.obligation.deleteMany({ where: { workspaceId: ws, id: { in: l.obIds } } });
+    await tx.debt.delete({ where: { id: debt.id } });
+  });
+  return { payments: l.paymentIds.length };
+}
+
+export type DebtEdit = Omit<DebtInput, "accountId" | "currency" | "userId">;
+
+// Editar una deuda. Sin pagos registrados en Finan, se corrige todo y el cronograma se rearma.
+// Con pagos, solo el nombre, el tipo y las notas (para cambiar condiciones: borrarla y cargarla de nuevo).
+export async function updateDebt(db: Db, ws: string, id: string, input: DebtEdit) {
+  const debt = await db.debt.findFirst({ where: { id, workspaceId: ws } });
+  if (!debt) throw new UserError("No encontramos esa deuda.");
+  if (!input.creditor.trim()) throw new UserError("Indicá a quién le debés.");
+  const l = await debtLinks(db, ws, debt);
+  const names = { creditor: input.creditor.trim(), kind: input.kind, notes: input.notes?.trim() || null };
+  if (l.paymentIds.length) {
+    await db.$transaction(async (tx) => {
+      await tx.debt.update({ where: { id: debt.id }, data: names });
+      // Las cuotas que faltan llevan el nombre nuevo.
+      const sched = await tx.debtInstallment.findMany({ where: { debtId: debt.id, obligationId: { not: null } } });
+      for (const r of sched) await tx.obligation.update({ where: { id: r.obligationId! }, data: { description: `${names.creditor} — cuota ${r.number}/${debt.installments ?? sched.length}` } });
+    });
+    return { rebuilt: false };
+  }
+  const P = round2(input.principal);
+  if (!P.gt(0)) throw new UserError("El importe tiene que ser mayor a cero.");
+  const rows = input.system === "MANUAL" || input.system === "NONE" ? [] : buildSchedule({ system: input.system, principal: P, installments: input.installments ?? 0, tna: input.tna, installmentAmount: input.installmentAmount, firstDue: input.firstDue ?? addMonths(input.startDate, 1) });
+  const already = Math.min(input.paidInstallments ?? 0, rows.length);
+  await db.$transaction(async (tx) => {
+    await tx.debtInstallment.deleteMany({ where: { debtId: debt.id } });
+    await tx.obligation.deleteMany({ where: { workspaceId: ws, id: { in: l.obIds } } });
+    const updated = await tx.debt.update({
+      where: { id: debt.id },
+      data: {
+        ...names, principal: P.toFixed(2), system: input.system,
+        tna: input.tna != null ? dec(input.tna).toFixed(4) : null, tea: input.tea != null ? dec(input.tea).toFixed(4) : null, cft: input.cft != null ? dec(input.cft).toFixed(4) : null,
+        installmentAmount: input.installmentAmount != null ? round2(input.installmentAmount).toFixed(2) : null,
+        startDate: input.startDate, installments: rows.length || null, status: "ACTIVE", cancelledAt: null,
+      },
+    });
+    await writeSchedule(tx, ws, updated, rows, already);
+    // Si la plata había entrado en una cuenta, se corrige con el monto, la fecha y el nombre nuevos.
+    if (l.disbursementIds.length) await tx.transaction.updateMany({ where: { id: { in: l.disbursementIds } }, data: { amount: P.toFixed(2), effectiveDate: input.startDate, economicPeriod: period(input.startDate), description: `Préstamo de ${names.creditor}`, notes: `debt:${debt.id}` } });
+  });
+  return { rebuilt: true };
+}
+
+// ¿Tiene pagos registrados en Finan? (decide qué se puede editar)
+export async function debtHasPayments(db: Db, ws: string, id: string) {
+  const debt = await db.debt.findFirst({ where: { id, workspaceId: ws } });
+  return debt ? (await debtLinks(db, ws, debt)).paymentIds.length > 0 : false;
 }
 
 export async function debtDetail(db: Db, ws: string, debtId: string) {

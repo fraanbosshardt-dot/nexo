@@ -12,8 +12,9 @@ import { DebtFormFields } from "./debt-form";
 
 export const metadata: Metadata = { title: "Deudas y préstamos" };
 
-export default async function Debts() {
+export default async function Debts({ searchParams }: { searchParams: Promise<{ borrada?: string }> }) {
   const { workspace } = await requireWorkspace();
+  const { borrada } = await searchParams;
   const db = getDb();
   const today = todayIn(workspace.timezone);
   const [all, accounts] = await Promise.all([listDebts(db, workspace.id, today), db.account.findMany({ where: { workspaceId: workspace.id, active: true, type: { notIn: ["CREDIT_CARD", "INVESTMENT"] } }, select: { id: true, name: true, currency: true } })]);
@@ -24,7 +25,8 @@ export default async function Debts() {
   const lastDue = active.flatMap((d) => d.open).reduce<Date | null>((m, r) => (!m || r.dueDate > m ? r.dueDate : m), null);
   return (
     <>
-      <PageHead crumb="Pagos y deudas" title="Deudas y préstamos" desc="Tocá una deuda para ver cuotas, tasas y cuánto ahorrás si la cancelás." />
+      <PageHead crumb="Pagos y deudas" title="Deudas y préstamos" desc="Tocá una deuda para ver cuotas, tasas y cuánto ahorrás si la cancelás. Desde ahí también la editás o la eliminás." />
+      {borrada && <p className="notice g" role="status">Listo, eliminamos el préstamo con sus cuotas.</p>}
       {active.length > 0 && <div className="card" style={{ display: "flex", gap: 28, flexWrap: "wrap" }}><Stat label="Capital que debés" value={formatMoney(total, cur)} /><Stat label="Falta pagar este mes" value={thisMonth.isZero() ? "Al día" : formatMoney(thisMonth, cur)} tone={thisMonth.isZero() ? "pos" : undefined} /><Stat label="Terminás de pagar" value={lastDue ? fmtPeriod(period(lastDue)) : "—"} /></div>}
       {active.length > 0 && (
         <div className="grid g3">{active.map((d) => (

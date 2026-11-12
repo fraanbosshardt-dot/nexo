@@ -3,19 +3,20 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { requireWorkspace } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
-import { debtDetail } from "@/server/debts";
+import { debtDetail, debtHasPayments } from "@/server/debts";
 import { formatMoney } from "@/lib/money";
 import { fmtDate, fmtPeriod, isoDate, period, todayIn } from "@/lib/dates";
 import { PageHead } from "@/components/page";
 import { ActionForm, Submit } from "@/components/forms";
-import { cancelDebtAction, payDebtOnAccountAction } from "@/app/actions/modules";
+import { cancelDebtAction, deleteDebtAction, payDebtOnAccountAction, updateDebtAction } from "@/app/actions/modules";
+import { DebtFormFields } from "../debt-form";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 
 export const metadata: Metadata = { title: "Deuda" };
 const SYS: Record<string, string> = { FRENCH: "Francés", GERMAN: "Alemán", AMERICAN: "Americano", NO_INTEREST: "Sin interés", MANUAL: "Manual", NONE: "Sin cronograma" };
 const pct = (v: unknown) => (v == null ? "No informada" : `${Number(v).toFixed(2).replace(".", ",")}%`);
 
-export default async function DebtPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ cancelada?: string }> }) {
+export default async function DebtPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ cancelada?: string; editada?: string }> }) {
   const { id } = await params;
   const { workspace } = await requireWorkspace();
   const db = getDb();
@@ -27,11 +28,17 @@ export default async function DebtPage({ params, searchParams }: { params: Promi
   const fm = (v: Parameters<typeof formatMoney>[0]) => formatMoney(v, debt.currency);
   const active = debt.status === "ACTIVE";
   const lastDue = det.open.at(-1)?.dueDate;
+  const sp = await searchParams;
+  const hasPayments = await debtHasPayments(db, workspace.id, debt.id);
+  const num = (v: unknown) => (v == null ? "" : String(v).replace(".", ","));
+  const firstDue = debt.schedule[0]?.dueDate;
+  const paidBefore = debt.schedule.filter((r) => !r.obligationId).length;
   return (
     <>
       <Link className="lk" href="/app/deudas">← Deudas y préstamos</Link>
       <PageHead crumb={debt.kind} title={debt.creditor} actions={active && det.next ? <Link className="btn pri" href={`/app/proximos/${det.next.obligationId}`}>Pagar cuota {det.next.number}</Link> : undefined} />
-      {(await searchParams).cancelada && <div className="notice g"><div>Deuda cancelada. Las cuotas que faltaban se cerraron y ya no aparecen en tus pagos.</div></div>}
+      {sp.editada && <p className="notice g" role="status">{sp.editada === "todo" ? "Listo, el préstamo quedó corregido y el cronograma se armó de nuevo." : "Listo, guardamos los cambios."}</p>}
+      {sp.cancelada && <div className="notice g"><div>Deuda cancelada. Las cuotas que faltaban se cerraron y ya no aparecen en tus pagos.</div></div>}
       <div className="card hero">
         <div><div className="lbl">{active ? "Te falta devolver" : debt.status === "CANCELLED" ? "Cancelada" : "Pagada"}</div><div className="big">{active ? fm(det.remainingCapital) : <span className="pos">✓</span>}</div>
           {debt.installments ? <><div className="bar" style={{ margin: "10px 0 6px", height: 10 }}><i style={{ width: `${(det.settledCount / debt.installments) * 100}%`, background: "var(--ink)" }} /></div><p className="sub">{det.settledCount} de {debt.installments} cuotas pagadas</p></> : <p className="sub">Sin cuotas ni fecha pactada.</p>}</div>
@@ -73,10 +80,33 @@ export default async function DebtPage({ params, searchParams }: { params: Promi
             </table></div>
           </details>
         )}
+        <details className="more"><summary>Editar préstamo</summary>
+          <ActionForm action={updateDebtAction} style={{ display: "flex", flexDirection: "column", gap: 12, paddingTop: 10, maxWidth: 640 }}>
+            <input type="hidden" name="debtId" value={debt.id} />
+            {hasPayments ? (
+              <>
+                <div className="frow"><label className="field">¿A quién le debés?<input name="creditor" defaultValue={debt.creditor} /></label><label className="field">Tipo<input name="kind" defaultValue={debt.kind} /></label></div>
+                <label className="field">Notas<input name="notes" defaultValue={debt.notes ?? ""} /></label>
+                <p className="sub" style={{ margin: 0 }}>Ya registraste pagos de este préstamo, así que acá se cambian el nombre, el tipo y las notas. Si el monto, las cuotas o la tasa están mal, eliminalo y cargalo de nuevo.</p>
+              </>
+            ) : (
+              <>
+                <DebtFormFields edit accounts={[]} today={isoDate(today)} baseCurrency={debt.currency} d={{ creditor: debt.creditor, kind: debt.kind, system: debt.system, principal: num(debt.principal), installments: debt.installments ? String(debt.installments) : "", firstDue: firstDue ? isoDate(firstDue) : "", installmentAmount: num(debt.installmentAmount), tna: num(debt.tna), tea: num(debt.tea), cft: num(debt.cft), startDate: isoDate(debt.startDate), paidInstallments: paidBefore ? String(paidBefore) : "", notes: debt.notes ?? "" }} />
+                <p className="sub" style={{ margin: 0 }}>Al guardar se arma de nuevo el cronograma con estos datos.</p>
+              </>
+            )}
+            <div><Submit>Guardar cambios</Submit></div>
+          </ActionForm>
+        </details>
         <details className="more"><summary>Condiciones</summary>
-          <dl className="kv" style={{ paddingTop: 8 }}><dt>Sistema</dt><dd>{SYS[debt.system]}</dd><dt>Desde</dt><dd>{fmtDate(debt.startDate)}</dd><dt>TNA</dt><dd>{pct(debt.tna)}</dd><dt>TEA</dt><dd>{pct(debt.tea)}</dd><dt>CFT</dt><dd>{pct(debt.cft)}</dd>{debt.notes && <><dt>Notas</dt><dd>{debt.notes}</dd></>}</dl>
+          <dl className="kv" style={{ paddingTop: 8 }}>{debt.installmentAmount && <><dt>Cuota informada</dt><dd>{fm(debt.installmentAmount)}</dd></>}<dt>Sistema</dt><dd>{SYS[debt.system]}</dd><dt>Desde</dt><dd>{fmtDate(debt.startDate)}</dd><dt>TNA</dt><dd>{pct(debt.tna)}</dd><dt>TEA</dt><dd>{pct(debt.tea)}</dd><dt>CFT</dt><dd>{pct(debt.cft)}</dd>{debt.notes && <><dt>Notas</dt><dd>{debt.notes}</dd></>}</dl>
         </details>
       </div>
+      <form action={deleteDebtAction} className="card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+        <input type="hidden" name="debtId" value={debt.id} />
+        <p className="sub" style={{ margin: 0, maxWidth: "52ch" }}>¿Lo cargaste por error? Eliminalo: se borran las cuotas{hasPayments ? ", los pagos que registraste" : ""}{debt.accountId ? " y la plata que entró en la cuenta" : ""}.</p>
+        <ConfirmSubmit className="btn danger" question={`¿Eliminar el préstamo de ${debt.creditor}? Se borran todas sus cuotas${hasPayments ? ", los pagos que registraste (el saldo de tus cuentas vuelve a como estaba)" : ""}${debt.accountId ? " y la plata que entró en la cuenta" : ""}. No se puede deshacer.`} yes="Sí, eliminar">Eliminar préstamo</ConfirmSubmit>
+      </form>
     </>
   );
 }

@@ -11,7 +11,7 @@ import { UserError } from "@/server/ledger";
 import { changeRuleFrom, createRule, endRule, materialize, pauseRule } from "@/server/recurring";
 import { MATERIALIZE_DAYS } from "@/server/forecast";
 import { cardPurchase, createCard } from "@/server/cards";
-import { cancelDebt, createDebt, payDebtOnAccount } from "@/server/debts";
+import { cancelDebt, createDebt, deleteDebt, payDebtOnAccount, updateDebt } from "@/server/debts";
 import { addContribution, copyBudget, saveBudget } from "@/server/planning";
 import { addValuation, createAsset, createInvestment, investmentMove, saveManualRate } from "@/server/wealth";
 import { createGrainSale } from "@/server/grain";
@@ -205,6 +205,36 @@ export async function createDebtAction(_: FormState, fd: FormData): Promise<Form
     id = d.id;
   } catch (e) { return fail(e); }
   redirect(done(`/app/deudas/${id}`));
+}
+
+export async function updateDebtAction(_: FormState, fd: FormData): Promise<FormState> {
+  const { user, workspace } = await requireWorkspace();
+  const id = str(fd, "debtId");
+  let rebuilt = false;
+  try {
+    const system = z.enum(["FRENCH", "GERMAN", "AMERICAN", "NO_INTEREST", "MANUAL", "NONE"]).parse(fd.get("system") ?? "NONE");
+    const r = await updateDebt(getDb(), workspace.id, id, {
+      creditor: str(fd, "creditor"), kind: str(fd, "kind") || "Préstamo", system,
+      // Con pagos registrados el formulario solo manda nombre, tipo y notas: el resto no se usa.
+      principal: str(fd, "principal") ? money(fd, "principal", "el importe") : "1",
+      installments: int(fd, "installments"), tna: optMoney(fd, "tna", "la TNA"), tea: optMoney(fd, "tea", "la TEA"), cft: optMoney(fd, "cft", "el CFT"),
+      installmentAmount: optMoney(fd, "installmentAmount", "la cuota"), startDate: str(fd, "startDate") ? date(fd, "startDate", "la fecha") : todayIn(workspace.timezone),
+      firstDue: str(fd, "firstDue") ? date(fd, "firstDue", "la primera cuota") : null, paidInstallments: int(fd, "paidInstallments") ?? 0, notes: str(fd, "notes"),
+    });
+    rebuilt = r.rebuilt;
+    await audit("debt.updated", { userId: user.id, workspaceId: workspace.id, entity: "debt", entityId: id, meta: { rebuilt } });
+  } catch (e) { return fail(e); }
+  revalidatePath("/app", "layout");
+  redirect(`/app/deudas/${id}?editada=${rebuilt ? "todo" : "nombre"}`);
+}
+
+export async function deleteDebtAction(fd: FormData) {
+  const { user, workspace } = await requireWorkspace();
+  const id = str(fd, "debtId");
+  await deleteDebt(getDb(), workspace.id, id);
+  await audit("debt.deleted", { userId: user.id, workspaceId: workspace.id, entity: "debt", entityId: id });
+  revalidatePath("/app", "layout");
+  redirect("/app/deudas?borrada=1");
 }
 
 export async function cancelDebtAction(_: FormState, fd: FormData): Promise<FormState> {
