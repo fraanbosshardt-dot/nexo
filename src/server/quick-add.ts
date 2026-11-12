@@ -6,7 +6,7 @@ export async function quickAddData(wsId: string, tz: string) {
   const db = getDb();
   const since = new Date(Date.now() - 120 * 864e5);
   const [accounts, cats, usage] = await Promise.all([
-    db.account.findMany({ where: { workspaceId: wsId, active: true, type: { notIn: ["CREDIT_CARD", "INVESTMENT"] } }, select: { id: true, name: true, currency: true }, orderBy: { createdAt: "asc" } }),
+    db.account.findMany({ where: { workspaceId: wsId, active: true, type: { notIn: ["CREDIT_CARD", "INVESTMENT"] } }, select: { id: true, name: true, currency: true }, orderBy: [{ position: "asc" }, { createdAt: "asc" }] }),
     db.category.findMany({ where: { workspaceId: wsId, archived: false, parentId: null }, select: { id: true, name: true, kind: true } }),
     db.transaction.groupBy({ by: ["categoryId"], where: { workspaceId: wsId, categoryId: { not: null }, effectiveDate: { gte: since } }, _count: { _all: true } }),
   ]);

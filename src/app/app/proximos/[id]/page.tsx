@@ -29,7 +29,7 @@ export default async function PayPage({ params, searchParams }: { params: Promis
   if (!ob || ob.status === "SETTLED" || ob.status === "CANCELLED") notFound();
   // Una venta de cereal estimada se completa cargando la venta (quintales y precio), no con un cobro suelto.
   if (modules.cereal && isEstimatedGrain({ ...ob, category: ob.category?.name, paid: paidSoFar(ob) }) && (await canUse(plan, "cereal"))) redirect(loadSaleHref(ob.dueDate));
-  const accounts = await db.account.findMany({ where: { workspaceId: workspace.id, active: true, currency: ob.currency, type: { notIn: ["CREDIT_CARD", "INVESTMENT"] } }, orderBy: { createdAt: "asc" } });
+  const accounts = await db.account.findMany({ where: { workspaceId: workspace.id, active: true, currency: ob.currency, type: { notIn: ["CREDIT_CARD", "INVESTMENT"] } }, orderBy: [{ position: "asc" }, { createdAt: "asc" }] });
   const left = remaining(ob);
   const inc = ob.direction === "RECEIVABLE";
   // Cuenta propuesta: la del pago que se repite o la de pago de la tarjeta; si no, la primera.

@@ -11,6 +11,10 @@ import { createAccountAction } from "@/app/actions/app";
 import { FREE_LIMITS } from "@/lib/modules";
 import { ACCOUNT_TYPE_LABEL } from "@/lib/labels";
 import { CURRENCIES, currencyName } from "@/lib/countries";
+import { SortableAccounts } from "./sortable";
+
+// Grupos de cuentas por tipo (dentro de cada uno, el orden lo elegís arrastrando).
+const GROUPS: [string, string[]][] = [["Efectivo", ["CASH"]], ["Bancos", ["SAVINGS", "CHECKING"]], ["Billeteras virtuales", ["WALLET"]], ["En otra moneda", ["FOREIGN"]], ["Inversiones", ["INVESTMENT"]], ["Otras", ["OTHER"]]];
 
 export const metadata: Metadata = { title: "Cuentas" };
 
@@ -18,7 +22,7 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
   const { workspace, plan } = await requireWorkspace();
   const sp = await searchParams;
   const db = getDb();
-  const [accounts, balances] = await Promise.all([db.account.findMany({ where: { workspaceId: workspace.id, type: { not: "CREDIT_CARD" } }, orderBy: { createdAt: "asc" } }), accountBalances(db, workspace.id, todayIn(workspace.timezone))]);
+  const [accounts, balances] = await Promise.all([db.account.findMany({ where: { workspaceId: workspace.id, type: { not: "CREDIT_CARD" } }, orderBy: [{ position: "asc" }, { createdAt: "asc" }] }), accountBalances(db, workspace.id, todayIn(workspace.timezone))]);
   const act = accounts.filter((a) => a.active), ina = accounts.filter((a) => !a.active);
   const cur = workspace.baseCurrency;
   const total = (f: (a: (typeof accounts)[number]) => boolean, c = cur) => act.filter((a) => a.currency === c && f(a)).reduce((s, a) => s.plus(balances.get(a.id) ?? ZERO), ZERO);
@@ -37,7 +41,7 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
   const atLimit = plan === "FREE" && act.length >= FREE_LIMITS.accounts;
   return (
     <>
-      <PageHead crumb="Mi dinero" title="Cuentas" desc="Tocá una cuenta para ver su detalle y sus movimientos." />
+      <PageHead crumb="Mi dinero" title="Cuentas" desc="Tocá una cuenta para ver su detalle. Para cambiar el orden, arrastrala desde ⠿." />
       {act.length > 0 && (
         <div className="card" style={{ display: "flex", gap: 28, flexWrap: "wrap" }}>
           <Stat label={`En ${currencyName(cur).toLowerCase()}`} value={formatMoney(total((a) => a.type !== "INVESTMENT"), cur)} />
@@ -45,7 +49,20 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
           {act.some((a) => a.type === "INVESTMENT") && <Stat label="En cuentas de inversión" value={formatMoney(total((a) => a.type === "INVESTMENT"), cur)} />}
         </div>
       )}
-      {act.length > 0 && <div className="grid g3">{act.map(card)}</div>}
+      {(() => {
+        const groups = GROUPS.map(([label, types]) => ({ label, list: act.filter((a) => types.includes(a.type)) })).filter((g) => g.list.length);
+        const many = groups.length > 1;
+        return groups.map((g) => {
+          const curs = [...new Set(g.list.map((a) => a.currency))];
+          const sub = curs.length === 1 ? g.list.reduce((t, a) => t.plus(balances.get(a.id) ?? ZERO), ZERO) : null;
+          return (
+            <section key={g.label} className="acc-group">
+              {many && <div className="acc-gh"><h2>{g.label}</h2>{sub && g.list.length > 1 && <span className="num">{formatMoney(sub, curs[0])}</span>}</div>}
+              <SortableAccounts ids={g.list.map((a) => a.id)} names={g.list.map((a) => a.name)}>{g.list.map(card)}</SortableAccounts>
+            </section>
+          );
+        });
+      })()}
       <div className="card">
         <details className="more" open={sp.nueva === "1" || act.length === 0}>
           <summary>+ Nueva cuenta</summary>

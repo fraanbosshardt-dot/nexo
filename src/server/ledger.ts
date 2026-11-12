@@ -43,9 +43,11 @@ export async function createAccount(
 ) {
   const name = input.name.trim();
   if (!name) throw new UserError("Poné un nombre para la cuenta.");
+  const last = await db.account.aggregate({ where: { workspaceId: ws }, _max: { position: true } });
   return db.account.create({
     data: {
       workspaceId: ws,
+      position: (last._max.position ?? 0) + 1,
       name,
       institution: input.institution?.trim() || null,
       type: input.type,
@@ -55,6 +57,18 @@ export async function createAccount(
       notes: input.notes?.trim() || null,
     },
   });
+}
+
+// Guardar el orden de las cuentas (el que quedó al arrastrarlas). Solo toca cuentas del espacio.
+export async function reorderAccounts(db: Db, ws: string, ids: string[]) {
+  // Se ordena un grupo (por ej. Bancos): sus cuentas se reparten los mismos lugares que ya ocupaban.
+  const own = await db.account.findMany({ where: { workspaceId: ws, id: { in: ids } }, select: { id: true, position: true } });
+  const ok = new Set(own.map((a) => a.id));
+  const list = [...new Set(ids)].filter((id) => ok.has(id));
+  const slots = own.map((a) => a.position).sort((x, y) => x - y);
+  // Si había lugares repetidos, se separan para que el orden quede claro.
+  for (let i = 1; i < slots.length; i++) if (slots[i] <= slots[i - 1]) slots[i] = slots[i - 1] + 1;
+  await db.$transaction(list.map((id, i) => db.account.update({ where: { id }, data: { position: slots[i] } })));
 }
 
 // Saldo = saldo inicial + entradas − salidas. Se calcula siempre desde el libro.
@@ -579,7 +593,7 @@ export async function monthSummary(db: Db, ws: string, p: string, currency: stri
 
 export async function dashboard(db: Db, ws: string, currency: string, today: Date) {
   const [accounts, balances, summary] = await Promise.all([
-    db.account.findMany({ where: { workspaceId: ws, active: true }, orderBy: { createdAt: "asc" } }),
+    db.account.findMany({ where: { workspaceId: ws, active: true }, orderBy: [{ position: "asc" }, { createdAt: "asc" }] }),
     accountBalances(db, ws, today),
     monthSummary(db, ws, period(today), currency, today),
   ]);

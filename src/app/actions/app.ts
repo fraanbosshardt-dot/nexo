@@ -10,7 +10,7 @@ import { parseDate, todayIn } from "@/lib/dates";
 import { MODULES, modulesForUses, readModules, FREE_LIMITS } from "@/lib/modules";
 import { generateTotpSecret, otpauthUrl, verifyTotp } from "@/lib/auth/totp";
 import { decryptSecret, encryptSecret } from "@/lib/crypto";
-import { adjustBalance, cancelObligation, createAccount, deleteMovement, deleteObligation, linkToPending, matchingPending, updateObligation, payObligation, recordMovement, recordTransfer, updateMovement, UserError } from "@/server/ledger";
+import { adjustBalance, cancelObligation, createAccount, reorderAccounts, deleteMovement, deleteObligation, linkToPending, matchingPending, updateObligation, payObligation, recordMovement, recordTransfer, updateMovement, UserError } from "@/server/ledger";
 import type { FormState } from "./auth";
 import { createRule, materialize } from "@/server/recurring";
 import { MATERIALIZE_DAYS } from "@/server/forecast";
@@ -133,6 +133,14 @@ export async function updateAccountAction(_: FormState, fd: FormData): Promise<F
   await db.account.update({ where: { id }, data: { name, institution: String(fd.get("institution") ?? "").trim() || null, notes: String(fd.get("notes") ?? "").trim() || null } });
   revalidatePath(`/app/cuentas/${id}`);
   return { ok: "Cuenta actualizada." };
+}
+
+// Orden de las cuentas al arrastrarlas (se guarda sin recargar la pantalla).
+export async function reorderAccountsAction(ids: string[]) {
+  const { workspace } = await requireWorkspace();
+  if (!Array.isArray(ids) || ids.length > 500) return;
+  await reorderAccounts(getDb(), workspace.id, ids.map(String));
+  revalidatePath("/app", "layout");
 }
 
 export async function toggleAccountAction(fd: FormData) {

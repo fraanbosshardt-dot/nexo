@@ -24,7 +24,7 @@ export default async function MovementDetail({ params, searchParams }: { params:
     db.category.findMany({ where: { workspaceId: workspace.id, archived: false, kind }, orderBy: [{ parentId: "asc" }, { name: "asc" }] }),
     db.installmentPlan.findFirst({ where: { transactionId: t.id } }),
     t.transferGroupId ? db.transaction.findMany({ where: { workspaceId: workspace.id, transferGroupId: t.transferGroupId, id: { not: t.id } }, include: { account: { select: { name: true } } } }) : Promise.resolve([]),
-    db.account.findMany({ where: { workspaceId: workspace.id, active: true, currency: t.currency, type: { not: "CREDIT_CARD" } }, select: { id: true, name: true }, orderBy: { createdAt: "asc" } }),
+    db.account.findMany({ where: { workspaceId: workspace.id, active: true, currency: t.currency, type: { not: "CREDIT_CARD" } }, select: { id: true, name: true }, orderBy: [{ position: "asc" }, { createdAt: "asc" }] }),
   ]);
   const parents = cats.filter((c) => !c.parentId);
   const options = parents.flatMap((p) => [{ id: p.id, label: p.name }, ...cats.filter((c) => c.parentId === p.id).map((c) => ({ id: c.id, label: `${p.name} › ${c.name}` }))]);

@@ -16,7 +16,7 @@ export default async function ImportExport({ searchParams }: { searchParams: Pro
   const sp = await searchParams;
   const db = getDb();
   const [accounts, batches] = await Promise.all([
-    db.account.findMany({ where: { workspaceId: workspace.id, active: true, type: { notIn: ["CREDIT_CARD", "INVESTMENT"] } }, orderBy: { createdAt: "asc" } }),
+    db.account.findMany({ where: { workspaceId: workspace.id, active: true, type: { notIn: ["CREDIT_CARD", "INVESTMENT"] } }, orderBy: [{ position: "asc" }, { createdAt: "asc" }] }),
     db.importBatch.findMany({ where: { workspaceId: workspace.id }, orderBy: { createdAt: "desc" }, take: 20 }),
   ]);
   return (
