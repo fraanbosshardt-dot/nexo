@@ -1,5 +1,5 @@
 "use client";
-import { createContext, startTransition, useActionState, useContext, useState, type ReactNode } from "react";
+import { createContext, startTransition, useActionState, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { useFormStatus } from "react-dom";
 
 export type FormState = { error?: string; ok?: string } | null;
@@ -9,12 +9,16 @@ const Pending = createContext(false);
 
 // Formulario que muestra el error o la confirmación que devuelve la acción del servidor.
 // Se envía con onSubmit (y no con action=) para que, si hay un error, no se borre lo escrito.
-export function ActionForm({ action, children, className, style, id }: { action: Action; children: ReactNode; className?: string; style?: React.CSSProperties; id?: string }) {
+export function ActionForm({ action, children, className, style, id, resetOnOk = false }: { action: Action; children: ReactNode; className?: string; style?: React.CSSProperties; id?: string; resetOnOk?: boolean }) {
   const [state, run, pending] = useActionState(action, null);
+  // Después de guardar bien, el formulario queda limpio para cargar otro.
+  const ref = useRef<HTMLFormElement>(null);
+  useEffect(() => { if (resetOnOk && state?.ok) ref.current?.reset(); }, [state, resetOnOk]);
   // El error se oculta apenas la persona empieza a corregir; vuelve a aparecer si el próximo envío falla.
   const [edited, setEdited] = useState(false);
   return (
     <form
+      ref={ref}
       onInput={() => { if (state?.error && !edited) setEdited(true); }}
       id={id}
       className={className}
@@ -31,8 +35,8 @@ export function ActionForm({ action, children, className, style, id }: { action:
       }}
     >
       <Pending.Provider value={pending}>{children}</Pending.Provider>
-      {state?.error && !edited && <p className="auth-err" role="alert">{state.error}</p>}
-      {state?.ok && <p className="notice g" role="status">{state.ok}</p>}
+      {state?.error && !edited && <p className="auth-err form-msg" role="alert">{state.error}</p>}
+      {state?.ok && <p className="notice g form-msg" role="status">{state.ok}</p>}
     </form>
   );
 }

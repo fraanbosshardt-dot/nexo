@@ -32,14 +32,16 @@ export default async function Goals() {
               <div className="bar" style={{ margin: "6px 0 12px", height: 10 }}><i style={{ width: `${g.pct}%`, background: "var(--ink)" }} /></div>
               {!g.done && <dl className="kv"><dt>Te falta</dt><dd>{fm(g.left)}</dd>{g.monthsLeft && <><dt>Necesitás por mes</dt><dd><b>{fm(g.needed)}</b> durante {g.monthsLeft} meses</dd></>}{g.eta && <><dt>Con tu aporte llegás en</dt><dd>{fmtPeriod(g.eta)}</dd></>}</dl>}
               {!g.done && <GoalSim goalId={g.goal.id} left={g.left.toNumber()} planned={g.planned?.toNumber() ?? Math.max(1, g.needed.toNumber())} currency={g.goal.currency} today={today.toISOString().slice(0, 7)} />}
-              <details className="more"><summary>Sumar un aporte</summary>
-                <ActionForm action={contributeAction} style={{ display: "flex", gap: 10, alignItems: "flex-end", paddingTop: 8, flexWrap: "wrap" }}>
-                  <input type="hidden" name="goalId" value={g.goal.id} />
-                  <label className="field" style={{ flex: "1 1 160px" }}>Importe<input name="amount" inputMode="decimal" placeholder="0,00" /></label>
-                  <Submit className="btn">Sumar</Submit>
-                </ActionForm>
-                <form action={deleteGoalAction} style={{ marginTop: 8 }}><input type="hidden" name="goalId" value={g.goal.id} /><ConfirmSubmit className="btn sm ghost" question={`¿Eliminar el objetivo "${g.goal.name}"?`} yes="Sí, eliminar">Eliminar objetivo</ConfirmSubmit></form>
-              </details>
+              <div className="goal-foot">
+                <details className="goal-add"><summary className="btn sm">+ Sumar un aporte</summary>
+                  <ActionForm action={contributeAction} resetOnOk className="goal-add-form">
+                    <input type="hidden" name="goalId" value={g.goal.id} />
+                    <label className="field">¿Cuánto separaste?<input name="amount" inputMode="decimal" placeholder="0,00" /></label>
+                    <Submit className="btn pri">Sumar</Submit>
+                  </ActionForm>
+                </details>
+                <form action={deleteGoalAction} className="goal-del"><input type="hidden" name="goalId" value={g.goal.id} /><ConfirmSubmit className="btn sm ghost" question={`¿Eliminar el objetivo "${g.goal.name}"?`} yes="Sí, eliminar">Eliminar</ConfirmSubmit></form>
+              </div>
             </div>
           );
         })}</div>

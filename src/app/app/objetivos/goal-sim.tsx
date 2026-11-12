@@ -13,12 +13,12 @@ export function GoalSim({ goalId, left, planned, currency, today }: { goalId: st
   const [y, m] = today.split("-").map(Number);
   const when = months != null ? new Date(Date.UTC(y, m - 1 + months, 1)) : null;
   return (
-    <form action={updateGoalPlanAction} className="field" style={{ marginTop: 10 }}>
+    <form action={updateGoalPlanAction} className="goal-sim">
       <input type="hidden" name="goalId" value={goalId} />
       <input type="hidden" name="monthly" value={String(v)} />
       <span>Si aportás <b className="num" style={{ color: "var(--fg)" }}>{formatMoney(v, currency)}</b> por mes, llegás en <b style={{ color: "var(--fg)" }}>{when ? `${MES[when.getUTCMonth()]} ${when.getUTCFullYear()}` : "nunca"}</b>.</span>
       <input type="range" min={0} max={max} step={Math.max(1, Math.round(max / 100))} value={v} onChange={(e) => setV(Number(e.target.value))} aria-label="Aporte mensual" />
-      <div><button className="btn sm" type="submit">Usar este aporte</button></div>
+      <div className="goal-sim-row"><span className="sub">Mové la barra para probar otro aporte.</span><button className="btn sm" type="submit" disabled={Math.round(planned) === v}>Guardar este aporte</button></div>
     </form>
   );
 }

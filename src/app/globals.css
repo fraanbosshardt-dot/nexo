@@ -1027,3 +1027,22 @@ html[data-big] body{zoom:1.15}
 .ctile-kv{display:flex;flex-wrap:wrap;gap:6px 22px;margin:2px 0 0}.ctile-kv>div{display:flex;flex-direction:column;gap:1px}.ctile-kv dt{font-size:12px;color:var(--muted)}.ctile-kv dd{margin:0;font-weight:500;font-size:14px}
 .ctile-cta{font-size:13.5px;color:var(--blue)}
 @media (max-width:640px){.ctile{grid-template-columns:1fr;gap:14px}.ccard-sm{max-width:240px}}
+/* Presupuesto: solo las categorías con límite */
+.bud-rows{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.bud-row{display:grid;grid-template-columns:minmax(0,1fr) 170px 40px;gap:12px;align-items:center;padding:10px 12px 10px 16px;border-bottom:1px solid var(--line)}
+.bud-name{display:flex;flex-direction:column;gap:2px;min-width:0}.bud-name b{font-weight:500}.bud-name .sub{margin:0;font-size:12.5px}
+.bud-amt{display:flex;align-items:center;gap:6px;border:1px solid var(--line-2);border-radius:8px;padding:0 10px;background:var(--canvas)}
+.bud-amt em{font-style:normal;color:var(--muted)}.bud-amt input{border:0!important;background:transparent!important;min-height:40px;width:100%;text-align:right;padding:0!important;box-shadow:none!important}
+.bud-total{display:flex;justify-content:space-between;padding:12px 16px;background:var(--surface-2);font-size:14px}
+.bud-add select{max-width:360px}
+@media (max-width:640px){.bud-row{grid-template-columns:minmax(0,1fr) 130px 36px;padding:10px}}
+.form-msg{flex-basis:100%;width:100%;margin:0}
+/* Objetivos: simulador y acciones ordenadas */
+.goal-sim{display:flex;flex-direction:column;gap:10px;margin-top:14px;padding:14px;border-radius:12px;background:var(--surface-2);font-size:14px}
+.goal-sim input[type=range]{width:100%}
+.goal-sim-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}.goal-sim-row .sub{margin:0}
+.goal-foot{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.goal-add{flex:1 1 auto}.goal-add>summary{list-style:none;display:inline-flex}.goal-add>summary::-webkit-details-marker{display:none}
+.goal-add[open]>summary{margin-bottom:10px}
+.goal-add-form{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px}.goal-add-form .field{flex:1 1 180px;max-width:260px}
+.goal-del{flex:none}

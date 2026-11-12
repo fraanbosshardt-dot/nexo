@@ -6,8 +6,9 @@ import { budgetFor } from "@/server/planning";
 import { formatMoney, ZERO } from "@/lib/money";
 import { addMonths, fmtPeriod, period, todayIn } from "@/lib/dates";
 import { PageHead, Stat } from "@/components/page";
-import { ActionForm, Submit } from "@/components/forms";
-import { copyBudgetAction, saveBudgetAction } from "@/app/actions/modules";
+import { copyBudgetAction } from "@/app/actions/modules";
+import { BudgetEditor } from "./budget-editor";
+import { symbolOf } from "@/lib/countries";
 
 export const metadata: Metadata = { title: "Presupuestos" };
 
@@ -24,6 +25,16 @@ export default async function Budgets({ searchParams }: { searchParams: Promise<
   const lim = sum((r) => r.limit!), spentLim = sum((r) => r.spent), commLim = sum((r) => r.committed);
   const left = lim.minus(spentLim).minus(commLim);
   const hasBudget = !!b.budget && lim.gt(0);
+  // Promedio gastado por categoría en los 3 meses anteriores (para sugerir el límite).
+  const db = getDb();
+  const prev = [addMonths(p, -1), addMonths(p, -2), addMonths(p, -3)];
+  const [txs, allCats] = await Promise.all([
+    db.transaction.groupBy({ by: ["categoryId", "direction"], where: { workspaceId: workspace.id, currency: cur, type: "EXPENSE", economicPeriod: { in: prev } }, _sum: { amount: true } }),
+    db.category.findMany({ where: { workspaceId: workspace.id, kind: "EXPENSE" }, select: { id: true, parentId: true } }),
+  ]);
+  const parentOf = new Map(allCats.map((c) => [c.id, c.parentId ?? c.id]));
+  const avg = new Map<string, number>();
+  for (const t of txs) { const k = parentOf.get(t.categoryId ?? "") ?? ""; const v = Number(t._sum.amount ?? 0) * (t.direction === "OUT" ? 1 : -1); avg.set(k, (avg.get(k) ?? 0) + v / 3); }
   return (
     <>
       <PageHead crumb="Planificar" title="Presupuestos" desc="Cuánto querés gastar por categoría, contra lo gastado y lo que ya está comprometido en el mes."
@@ -50,14 +61,7 @@ export default async function Budgets({ searchParams }: { searchParams: Promise<
       <div className="card">
         <details className="more" open={!hasBudget}>
           <summary>{hasBudget ? "Editar límites" : "Armar el presupuesto"}</summary>
-          <ActionForm action={saveBudgetAction} style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 10 }}>
-            <input type="hidden" name="period" value={p} />
-            <div className="grid g3">{b.categories.map((c) => {
-              const cur0 = b.budget?.lines.find((l) => l.categoryId === c.id);
-              return <label className="field" key={c.id}>{c.name}<input name={`limit:${c.id}`} inputMode="decimal" placeholder="Sin límite" defaultValue={cur0 ? cur0.limitAmount.toFixed(0) : ""} /></label>;
-            })}</div>
-            <div><Submit>Guardar presupuesto</Submit></div>
-          </ActionForm>
+          <BudgetEditor period={p} symbol={symbolOf(cur)} hasBudget={hasBudget} cats={b.categories.map((c) => { const l = b.budget?.lines.find((x) => x.categoryId === c.id); return { id: c.id, name: c.name, avg: avg.get(c.id) ?? 0, limit: l ? Number(l.limitAmount) : null }; })} />
         </details>
       </div>
     </>
