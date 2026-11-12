@@ -91,7 +91,7 @@ export default async function DebtPage({ params, searchParams }: { params: Promi
               </>
             ) : (
               <>
-                <DebtFormFields edit accounts={[]} today={isoDate(today)} baseCurrency={debt.currency} d={{ creditor: debt.creditor, kind: debt.kind, system: debt.system, principal: num(debt.principal), installments: debt.installments ? String(debt.installments) : "", firstDue: firstDue ? isoDate(firstDue) : "", installmentAmount: num(debt.installmentAmount), tna: num(debt.tna), tea: num(debt.tea), cft: num(debt.cft), startDate: isoDate(debt.startDate), paidInstallments: paidBefore ? String(paidBefore) : "", notes: debt.notes ?? "" }} />
+                <DebtFormFields edit accounts={[]} today={isoDate(today)} baseCurrency={debt.currency} d={{ creditor: debt.creditor, kind: debt.kind, system: debt.system, principal: num(debt.principal), installments: debt.installments ? String(debt.installments) : "", firstDue: firstDue ? isoDate(firstDue) : "", installmentAmount: num(debt.installmentAmount), tna: num(debt.tna), tea: num(debt.tea), cft: num(debt.cft), startDate: isoDate(debt.startDate), paidInstallments: paidBefore ? String(paidBefore) : "", notes: debt.notes ?? "", rows: debt.system === "MANUAL" ? debt.schedule.map((r) => ({ due: isoDate(r.dueDate), total: String(r.total) })) : undefined }} />
                 <p className="sub" style={{ margin: 0 }}>Al guardar se arma de nuevo el cronograma con estos datos.</p>
               </>
             )}

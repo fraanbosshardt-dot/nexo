@@ -15,6 +15,46 @@ const addMonths = (d: Date, k: number) => {
   return new Date(Date.UTC(yy, mm, Math.min(day, new Date(Date.UTC(yy, mm + 1, 0)).getUTCDate())));
 };
 
+// Tasa mensual que hace que n cuotas iguales de c devuelvan P (sistema francés). Es la que surge de la cuota del banco.
+export function impliedMonthlyRate(P: number, n: number, c: number): number {
+  if (c * n <= P + 0.005) return 0;
+  const pay = (i: number) => (P * i) / (1 - Math.pow(1 + i, -n));
+  let lo = 0, hi = 1;
+  for (let k = 0; k < 200; k++) { const mid = (lo + hi) / 2; if (pay(mid) > c) hi = mid; else lo = mid; }
+  return (lo + hi) / 2;
+}
+
+// Tasa mensual con la que una lista de cuotas (cada una distinta) devuelve P.
+function rateForPayments(P: number, totals: number[]): number {
+  const pv = (i: number) => totals.reduce((s, t, k) => s + t / Math.pow(1 + i, k + 1), 0);
+  if (pv(0) <= P + 0.005) return 0;
+  let lo = 0, hi = 1;
+  for (let k = 0; k < 200; k++) { const mid = (lo + hi) / 2; if (pv(mid) > P) lo = mid; else hi = mid; }
+  return (lo + hi) / 2;
+}
+
+// Cuotas a medida (del contrato, pegadas o corregidas una por una): cada una con su fecha y su importe.
+// Capital e interés se separan con la tasa que surge de esas cuotas, para mostrar cuánto falta devolver.
+export function buildCustomSchedule(principal: MoneyValue, list: { due: Date; total: MoneyValue }[]): ScheduleRow[] {
+  const P = round2(principal);
+  const items = [...list].map((r) => ({ due: r.due, total: round2(r.total) })).filter((r) => r.total.gt(0)).sort((a, b) => a.due.getTime() - b.due.getTime());
+  if (!items.length) throw new UserError("Cargá al menos una cuota con fecha e importe.");
+  if (items.length > 480) throw new UserError("Son demasiadas cuotas (hasta 480).");
+  const sum = items.reduce((s, r) => s.plus(r.total), ZERO);
+  if (sum.lt(P)) throw new UserError("Las cuotas suman menos que lo que te prestaron. Revisá el monto o las cuotas.");
+  const i = dec(rateForPayments(P.toNumber(), items.map((r) => r.total.toNumber())));
+  let bal = P;
+  return items.map((r, idx) => {
+    const last = idx === items.length - 1;
+    let int = last ? r.total.minus(bal) : round2(bal.times(i));
+    if (int.lt(0)) int = ZERO;
+    if (int.gt(r.total)) int = r.total;
+    const cap = r.total.minus(int);
+    bal = last ? ZERO : bal.minus(cap);
+    return { k: idx + 1, due: r.due, capital: cap, interest: int, total: r.total, balance: bal.lt(0) ? ZERO : bal };
+  });
+}
+
 export function buildSchedule(input: { system: AmortizationSystem; principal: MoneyValue; installments: number; tna?: MoneyValue | null; installmentAmount?: MoneyValue | null; firstDue: Date }): ScheduleRow[] {
   const P = round2(input.principal), n = input.installments;
   if (input.system === "MANUAL" || input.system === "NONE") return [];
@@ -26,7 +66,16 @@ export function buildSchedule(input: { system: AmortizationSystem; principal: Mo
     bal = bal.minus(cap);
     rows.push({ k, due: addMonths(input.firstDue, k - 1), capital: cap, interest: int, total: cap.plus(int), balance: bal });
   };
-  if (input.system === "FRENCH" && i && i.gt(0)) {
+  // Francés con la cuota del banco: manda la cuota (la tasa sale de ahí). Así el cronograma da lo mismo que el banco.
+  const given = input.installmentAmount && round2(input.installmentAmount).gt(0) ? round2(input.installmentAmount) : null;
+  if (input.system === "FRENCH" && given) {
+    if (given.times(n).lt(P)) throw new UserError("Con esa cuota no se llega a devolver lo que te prestaron. Revisá el monto, las cuotas o la cuota.");
+    const im = dec(impliedMonthlyRate(P.toNumber(), n, given.toNumber()));
+    for (let k = 1; k <= n; k++) {
+      const int = round2(bal.times(im));
+      push(k, k === n ? bal : given.minus(int), k === n ? given.minus(bal).lt(0) ? ZERO : given.minus(bal) : int);
+    }
+  } else if (input.system === "FRENCH" && i && i.gt(0)) {
     const c = round2(P.times(i).dividedBy(dec(1).minus(dec(1).plus(i).pow(-n))));
     for (let k = 1; k <= n; k++) {
       const int = round2(bal.times(i));
@@ -46,7 +95,7 @@ export function buildSchedule(input: { system: AmortizationSystem; principal: Mo
   } else if (input.system === "NO_INTEREST") {
     for (const [idx, cap] of allocate(P, n).entries()) push(idx + 1, cap, ZERO);
   } else {
-    throw new UserError("Para este sistema, cargá la TNA o el importe de la cuota.");
+    throw new UserError("Poné cuánto pagás por mes (la cuota) o la TNA.");
   }
   return rows;
 }
@@ -66,15 +115,23 @@ export type DebtInput = {
   firstDue?: Date | null;
   accountId?: string | null; // si el dinero entró en una cuenta
   paidInstallments?: number; // cuotas ya pagadas antes de cargarla en Finan
+  rows?: { due: Date; total: MoneyValue }[] | null; // cuotas a medida (cuando no son todas iguales)
   notes?: string | null;
   userId?: string | null;
 };
+
+function scheduleFor(P: Decimal, input: Pick<DebtInput, "system" | "installments" | "tna" | "installmentAmount" | "firstDue" | "startDate" | "rows">) {
+  if (input.rows?.length) return buildCustomSchedule(P, input.rows);
+  if (input.system === "MANUAL") throw new UserError("Cargá las cuotas: pegá el cronograma o agregalas una por una.");
+  if (input.system === "NONE") return [];
+  return buildSchedule({ system: input.system, principal: P, installments: input.installments ?? 0, tna: input.tna, installmentAmount: input.installmentAmount, firstDue: input.firstDue ?? addMonths(input.startDate, 1) });
+}
 
 export async function createDebt(db: Db, ws: string, input: DebtInput) {
   if (!input.creditor.trim()) throw new UserError("Indicá a quién le debés.");
   const P = round2(input.principal);
   if (!P.gt(0)) throw new UserError("El importe tiene que ser mayor a cero.");
-  const rows = input.system === "MANUAL" || input.system === "NONE" ? [] : buildSchedule({ system: input.system, principal: P, installments: input.installments ?? 0, tna: input.tna, installmentAmount: input.installmentAmount, firstDue: input.firstDue ?? addMonths(input.startDate, 1) });
+  const rows = scheduleFor(P, input);
   const already = Math.min(input.paidInstallments ?? 0, rows.length);
   if (input.accountId && !(await db.account.findFirst({ where: { id: input.accountId, workspaceId: ws } }))) throw new UserError("No encontramos esa cuenta.");
   return db.$transaction(async (tx) => {
@@ -85,7 +142,7 @@ export async function createDebt(db: Db, ws: string, input: DebtInput) {
         kind: input.kind,
         principal: P.toFixed(2),
         currency: input.currency,
-        system: input.system,
+        system: input.rows?.length ? "MANUAL" : input.system,
         tna: input.tna != null ? dec(input.tna).toFixed(4) : null,
         tea: input.tea != null ? dec(input.tea).toFixed(4) : null,
         cft: input.cft != null ? dec(input.cft).toFixed(4) : null,
@@ -170,7 +227,7 @@ export async function updateDebt(db: Db, ws: string, id: string, input: DebtEdit
   }
   const P = round2(input.principal);
   if (!P.gt(0)) throw new UserError("El importe tiene que ser mayor a cero.");
-  const rows = input.system === "MANUAL" || input.system === "NONE" ? [] : buildSchedule({ system: input.system, principal: P, installments: input.installments ?? 0, tna: input.tna, installmentAmount: input.installmentAmount, firstDue: input.firstDue ?? addMonths(input.startDate, 1) });
+  const rows = scheduleFor(P, input);
   const already = Math.min(input.paidInstallments ?? 0, rows.length);
   await db.$transaction(async (tx) => {
     await tx.debtInstallment.deleteMany({ where: { debtId: debt.id } });
@@ -178,7 +235,7 @@ export async function updateDebt(db: Db, ws: string, id: string, input: DebtEdit
     const updated = await tx.debt.update({
       where: { id: debt.id },
       data: {
-        ...names, principal: P.toFixed(2), system: input.system,
+        ...names, principal: P.toFixed(2), system: input.rows?.length ? "MANUAL" : input.system,
         tna: input.tna != null ? dec(input.tna).toFixed(4) : null, tea: input.tea != null ? dec(input.tea).toFixed(4) : null, cft: input.cft != null ? dec(input.cft).toFixed(4) : null,
         installmentAmount: input.installmentAmount != null ? round2(input.installmentAmount).toFixed(2) : null,
         startDate: input.startDate, installments: rows.length || null, status: "ACTIVE", cancelledAt: null,

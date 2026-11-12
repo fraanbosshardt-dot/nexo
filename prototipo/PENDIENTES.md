@@ -6,11 +6,15 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 ## Pendientes
 
 ### Funciones para pulir (de a una)
-- [ ] F1. Préstamos con cuotas distintas: pegar el cronograma del banco (copiado del homebanking o del PDF), ver cómo queda y corregir antes de guardar. Si el banco da Excel, subirlo.
 - [ ] F2. Préstamos: impuesto sobre los intereses (ej. IVA) y seguro sobre el saldo, para que el francés dé igual que el banco.
 - [ ] F3. Flujo de caja cuando los ingresos no se repiten (ver Z8: "Estimar con mi promedio", "Simular un ingreso" o las dos).
 - [ ] F4. Leer resúmenes en PDF de varios bancos y ajustar los formatos que no reconozca (ver P6; necesita resúmenes reales).
 - [ ] F5. Probar en la pantalla la protección contra cobros y pagos duplicados (ya programada y con pruebas).
+- [ ] F6. Deudas: adelantar cuotas o precancelación parcial (elegir si baja la cuota o el plazo).
+- [ ] F7. Deudas: resumen más claro (intereses totales y pagados, costo real según tus cuotas, qué parte de tus ingresos se va en cuotas, con aviso).
+- [ ] F8. Deudas: plata que te deben (préstamos que hiciste vos), como cobros esperados.
+- [ ] F9. Deudas: refinanciar (rearmar las cuotas desde la que sigue sin perder lo pagado).
+- [ ] F10. Deudas: subir el cronograma en Excel (además de PDF y pegado).
 
 ### Necesitan algo tuyo
 - [ ] Z2. Cargar las claves reales en Vercel para activar lo que ya está programado: RESEND_API_KEY y EMAIL_FROM (emails), CRON_SECRET (tarea diaria), MP_ACCESS_TOKEN y MP_WEBHOOK_SECRET (Mercado Pago: el Access Token de producción y la clave secreta de Webhooks de la aplicación Finan). Están explicadas en .env.example.
@@ -51,6 +55,7 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 - [ ] M4. Testimonios de usuarios reales, cuando los haya (nunca inventados).
 
 ## Completado
+- [x] 12/11/2026 — F1. Deudas y préstamos, formulario nuevo: lo ideal es subir el contrato en PDF (se lee sin IA, no se guarda el archivo) y Finan completa acreedor, monto, cuotas, cuota, tasas, fechas, sistema y el cronograma completo; vos lo revisás antes de guardar. A mano alcanza con 5 datos (a quién, cuánto, cuántas cuotas, cuánto pagás por mes, primera cuota): con la cuota del banco el francés da igual que el banco y la tasa sale de ahí. "Mis cuotas cambian": pegar el cronograma o cargar/corregir cuota por cuota (cada una con su fecha e importe). Lo técnico quedó en "Más detalles".
 - [x] 12/11/2026 — Cuentas agrupadas por tipo (Efectivo, Bancos, Billeteras virtuales, En otra moneda, Inversiones) con el total de cada grupo. Dentro de cada grupo se ordenan arrastrando desde ⠿ (mouse, dedo o flechas del teclado) y ese orden se usa también al elegir cuenta en los formularios.
 - [x] 12/11/2026 — Sin duplicados entre lo cargado a mano y lo pendiente: si cargás un cobro o pago que ya figuraba en Próximos pagos (mismo concepto, fecha cercana), se une con ese y queda con el importe real. Al cobrar un pendiente que ya cargaste a mano, Finan te avisa y con "Es el mismo" lo une. "Sí, lo cobré" en Inicio hace lo mismo.
 - [x] 12/11/2026 — Lo cargado a futuro (Próximos pagos) se puede corregir o eliminar: tocás el concepto y cambiás concepto, importe, fecha, categoría y notas. Si se repite, el cambio es solo para esa vez. En una cuota de préstamo se puede cambiar el monto (sirve para cuotas que no son todas iguales). Eliminar borra lo cargado por error; si se repite, lo saca solo esa vez. El resumen de la tarjeta y los cobros de cereal se corrigen desde su pantalla.

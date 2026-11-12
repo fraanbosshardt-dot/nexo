@@ -69,20 +69,25 @@ export function parseStatementText(text: string): ParsedStatement {
 }
 
 export async function readStatementPdf(bytes: Uint8Array): Promise<ParsedStatement> {
+  return parseStatementText(await pdfText(bytes, { maxPages: 30, what: "el resumen" }));
+}
+
+// Texto de un PDF (sin IA). Avisa con palabras simples si tiene contraseña o es una foto.
+export async function pdfText(bytes: Uint8Array, opt: { maxPages: number; what: string }): Promise<string> {
   if (bytes.length > 5_000_000) throw new UserError("El PDF supera 5 MB.");
   if (String.fromCharCode(...bytes.slice(0, 5)) !== "%PDF-") throw new UserError("El archivo no es un PDF.");
   let text = "";
   try {
     const pdf = await getDocumentProxy(bytes);
-    if (pdf.numPages > 30) throw new UserError("El PDF tiene demasiadas páginas para ser un resumen.");
+    if (pdf.numPages > opt.maxPages) throw new UserError("El PDF tiene demasiadas páginas.");
     const r = await extractText(pdf, { mergePages: false });
     text = (Array.isArray(r.text) ? r.text : [r.text]).join("\n");
   } catch (e) {
     if (e instanceof UserError) throw e;
     const msg = String((e as Error)?.message ?? "");
-    if (/password/i.test(msg)) throw new UserError("El PDF tiene contraseña. Abrilo, guardalo sin contraseña o cargá el resumen a mano.");
-    throw new UserError("No pudimos leer ese PDF. Cargá el resumen a mano.");
+    if (/password/i.test(msg)) throw new UserError(`El PDF tiene contraseña. Abrilo, guardalo sin contraseña o cargá ${opt.what} a mano.`);
+    throw new UserError(`No pudimos leer ese PDF. Cargá ${opt.what} a mano.`);
   }
-  if (text.replace(/\s/g, "").length < 40) throw new UserError("El PDF no tiene texto (parece una foto o un escaneo). Cargá el resumen a mano.");
-  return parseStatementText(text);
+  if (text.replace(/\s/g, "").length < 40) throw new UserError(`El PDF no tiene texto (parece una foto o un escaneo). Cargá ${opt.what} a mano.`);
+  return text;
 }

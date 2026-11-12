@@ -187,6 +187,21 @@ export async function cardPurchaseAction(_: FormState, fd: FormData): Promise<Fo
 
 // ---------- Deudas ----------
 
+// Cuotas a medida que manda el formulario: [{ due: "AAAA-MM-DD", total: "1234.56" }].
+function debtRows(fd: FormData) {
+  const raw = str(fd, "rows");
+  if (!raw) return null;
+  let list: unknown;
+  try { list = JSON.parse(raw); } catch { throw new UserError("No pudimos leer las cuotas. Revisalas."); }
+  const r = z.array(z.object({ due: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), total: z.string() })).max(480).safeParse(list);
+  if (!r.success) throw new UserError("Revisá las cuotas: cada una necesita fecha e importe.");
+  return r.data.map((x, k) => {
+    const n = Number(x.total);
+    if (!(n > 0)) throw new UserError(`La cuota ${k + 1} no tiene un importe válido.`);
+    return { due: new Date(`${x.due}T00:00:00Z`), total: n.toFixed(2) };
+  });
+}
+
 export async function createDebtAction(_: FormState, fd: FormData): Promise<FormState> {
   const { user, workspace } = await requireWorkspace();
   let id = "";
@@ -200,7 +215,7 @@ export async function createDebtAction(_: FormState, fd: FormData): Promise<Form
       installments: int(fd, "installments"), tna: optMoney(fd, "tna", "la TNA"), tea: optMoney(fd, "tea", "la TEA"), cft: optMoney(fd, "cft", "el CFT"),
       installmentAmount: optMoney(fd, "installmentAmount", "la cuota"), startDate: str(fd, "startDate") ? date(fd, "startDate", "la fecha") : todayIn(workspace.timezone),
       firstDue: str(fd, "firstDue") ? date(fd, "firstDue", "la primera cuota") : null, accountId: fd.get("credited") === "on" ? accountId : null,
-      paidInstallments: int(fd, "paidInstallments") ?? 0, notes: str(fd, "notes"), userId: user.id,
+      paidInstallments: int(fd, "paidInstallments") ?? 0, notes: str(fd, "notes"), userId: user.id, rows: debtRows(fd),
     });
     id = d.id;
   } catch (e) { return fail(e); }
@@ -219,7 +234,7 @@ export async function updateDebtAction(_: FormState, fd: FormData): Promise<Form
       principal: str(fd, "principal") ? money(fd, "principal", "el importe") : "1",
       installments: int(fd, "installments"), tna: optMoney(fd, "tna", "la TNA"), tea: optMoney(fd, "tea", "la TEA"), cft: optMoney(fd, "cft", "el CFT"),
       installmentAmount: optMoney(fd, "installmentAmount", "la cuota"), startDate: str(fd, "startDate") ? date(fd, "startDate", "la fecha") : todayIn(workspace.timezone),
-      firstDue: str(fd, "firstDue") ? date(fd, "firstDue", "la primera cuota") : null, paidInstallments: int(fd, "paidInstallments") ?? 0, notes: str(fd, "notes"),
+      firstDue: str(fd, "firstDue") ? date(fd, "firstDue", "la primera cuota") : null, paidInstallments: int(fd, "paidInstallments") ?? 0, notes: str(fd, "notes"), rows: debtRows(fd),
     });
     rebuilt = r.rebuilt;
     await audit("debt.updated", { userId: user.id, workspaceId: workspace.id, entity: "debt", entityId: id, meta: { rebuilt } });
@@ -596,6 +611,27 @@ export async function readStatementPdfAction(fd: FormData): Promise<{ error?: st
     const data = await readStatementPdf(new Uint8Array(await file.arrayBuffer()));
     await audit("card.pdf_read", { userId: user.id, workspaceId: workspace.id, meta: { found: data.found } });
     return { data, left: limit - used - 1 };
+  } catch (e) {
+    const r = fail(e);
+    return { error: r?.error ?? "No pudimos leer ese PDF." };
+  }
+}
+
+// Lee el contrato del préstamo en PDF (sin IA, en el servidor). No guarda el archivo:
+// devuelve los datos para completar el formulario, que la persona revisa antes de guardar.
+export async function readDebtPdfAction(fd: FormData): Promise<{ error?: string; data?: import("@/lib/debt-text").ParsedContract }> {
+  const { user, workspace } = await requireWorkspace();
+  const now = new Date();
+  const used = await getDb().auditLog.count({ where: { workspaceId: workspace.id, action: "debt.pdf_read", createdAt: { gte: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)) } } });
+  if (used >= 30) return { error: "Ya leíste muchos contratos este mes. Cargá este a mano." };
+  const file = fd.get("file");
+  if (!(file instanceof File) || !file.size) return { error: "Elegí el PDF del contrato." };
+  try {
+    const { pdfText } = await import("@/server/statement-pdf");
+    const { parseContract } = await import("@/lib/debt-text");
+    const data = parseContract(await pdfText(new Uint8Array(await file.arrayBuffer()), { maxPages: 60, what: "el préstamo" }));
+    await audit("debt.pdf_read", { userId: user.id, workspaceId: workspace.id, meta: { found: data.found } });
+    return { data };
   } catch (e) {
     const r = fail(e);
     return { error: r?.error ?? "No pudimos leer ese PDF." };
