@@ -4,7 +4,6 @@
 // 2) a mano: 5 datos fáciles (cuánto, cuántas cuotas, cuánto pagás por mes, cuándo vence la primera);
 // 3) si las cuotas no son todas iguales: pegar el cronograma o corregirlas una por una;
 // 4) lo técnico (sistema, tasas, etc.) queda en "Más detalles".
-import { Help } from "@/components/help";
 import { useMemo, useState, useTransition } from "react";
 import { readDebtPdfAction } from "@/app/actions/modules";
 import { parseSchedule } from "@/lib/debt-text";
@@ -43,6 +42,7 @@ export function DebtFormFields({ accounts, today, baseCurrency, d: initial = {},
   const [rows, setRows] = useState<{ due: string; total: string }[]>((initial.rows ?? []).map((r) => ({ due: r.due, total: fmt(Number(r.total)) })));
   const [custom, setCustom] = useState(!!initial.rows?.length);
   const [paste, setPaste] = useState("");
+  const [mode, setMode] = useState<"pegar" | "lista">(initial.rows?.length ? "lista" : "pegar");
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const [reading, start] = useTransition();
   const free = !custom && sys === "NONE";
@@ -59,7 +59,7 @@ export function DebtFormFields({ accounts, today, baseCurrency, d: initial = {},
       const c = r.data;
       setD((o) => ({ ...o, creditor: c.creditor ?? o.creditor, principal: es(c.principal) ?? o.principal, installments: c.installments ?? o.installments, installmentAmount: es(c.installmentAmount) ?? o.installmentAmount, tna: pctEs(c.tna) ?? o.tna, tea: pctEs(c.tea) ?? o.tea, cft: pctEs(c.cft) ?? o.cft, firstDue: c.firstDue ?? o.firstDue, startDate: c.startDate ?? o.startDate }));
       if (c.system) setSys(c.system);
-      if (c.rows.length) { setRows(c.rows.map((x) => ({ due: x.due, total: fmt(Number(x.total)) }))); setCustom(true); }
+      if (c.rows.length) { setRows(c.rows.map((x) => ({ due: x.due, total: fmt(Number(x.total)) }))); setCustom(true); setMode("lista"); }
       setVer((v) => v + 1);
       const missing = [!c.principal && "el monto", !c.rows.length && !c.installments && "la cantidad de cuotas", !c.rows.length && !c.installmentAmount && !c.tna && "la cuota"].filter(Boolean);
       setMsg({ kind: c.found.length && !missing.length ? "ok" : "err", text: `${c.found.length ? `Encontramos: ${c.found.join(", ")}.` : "No encontramos datos en el PDF."}${missing.length ? ` Falta ${missing.join(", ")}: completalo a mano.` : ""} Revisá todo contra tu contrato antes de guardar.` });
@@ -71,6 +71,7 @@ export function DebtFormFields({ accounts, today, baseCurrency, d: initial = {},
     if (!found.length) { setMsg({ kind: "err", text: "No encontramos cuotas en lo que pegaste. Cada renglón tiene que tener una fecha y un importe." }); return; }
     setRows(found.map((x) => ({ due: x.due, total: fmt(Number(x.total)) })));
     setPaste("");
+    setMode("lista");
     setMsg({ kind: "ok", text: `Encontramos ${found.length} cuotas. Revisalas y corregí lo que haga falta.` });
   };
 
@@ -106,32 +107,41 @@ export function DebtFormFields({ accounts, today, baseCurrency, d: initial = {},
 
       {!free && (
         custom ? (
-          <div className="card" style={{ margin: 0, display: "flex", flexDirection: "column", gap: 10 }}>
-            <div className="chead" style={{ margin: 0 }}><div><h3>Tus cuotas</h3><p className="sub" style={{ margin: 0 }}>Cada una con su fecha y su importe, como en el banco.</p></div>
-              <button type="button" className="btn sm" onClick={() => setCustom(false)}>Todas las cuotas son iguales</button></div>
-            <label className="field">Pegá el cronograma (copiado del homebanking o del PDF)
-              <textarea rows={3} value={paste} onChange={(e) => setPaste(e.target.value)} placeholder={"Ej.:\n1  05/12/2026  $ 120.500,00\n2  05/01/2027  $ 118.900,10"} />
-            </label>
-            {paste.trim() && <div><button type="button" className="btn sm pri" onClick={readPaste}>Leer cuotas</button></div>}
-            {rows.length > 0 && (
-              <div className="tw" style={{ maxHeight: 360, overflow: "auto" }}>
-                <table><thead><tr><th>#</th><th>Vence</th><th className="n">Cuota</th><th aria-label="Quitar" /></tr></thead>
-                  <tbody>{rows.map((r, i) => (
-                    <tr key={i}><td>{i + 1}</td>
-                      <td><input type="date" aria-label={`Vencimiento de la cuota ${i + 1}`} value={r.due} onChange={(e) => setRow(i, "due", e.target.value)} /></td>
-                      <td className="n"><input inputMode="decimal" aria-label={`Importe de la cuota ${i + 1}`} value={r.total} onChange={(e) => setRow(i, "total", e.target.value)} style={{ textAlign: "right", maxWidth: 140 }} /></td>
-                      <td><button type="button" className="dots" aria-label={`Quitar la cuota ${i + 1}`} onClick={() => setRows((rs) => rs.filter((_, j) => j !== i))}>×</button></td></tr>
-                  ))}</tbody>
-                  <tfoot><tr><td colSpan={2}>{rows.length} cuotas</td><td className="n"><b>{fmt(sum)}</b></td><td /></tr></tfoot>
-                </table>
+          <div className="cuotas">
+            <div className="cuotas-top">
+              <div className="seg" role="tablist" aria-label="Cómo cargar las cuotas">
+                <button type="button" role="tab" aria-selected={mode === "pegar"} className={`segl ${mode === "pegar" ? "on" : ""}`} onClick={() => setMode("pegar")}>Pegar del banco</button>
+                <button type="button" role="tab" aria-selected={mode === "lista"} className={`segl ${mode === "lista" ? "on" : ""}`} onClick={() => setMode("lista")}>Una por una{rows.length ? ` (${rows.length})` : ""}</button>
               </div>
+              <button type="button" className="lnkbtn" onClick={() => setCustom(false)}>Volver a cuotas iguales</button>
+            </div>
+            {mode === "pegar" ? (
+              <>
+                <textarea rows={4} aria-label="Cronograma copiado del banco" value={paste} onChange={(e) => setPaste(e.target.value)} placeholder={"Copiá la tabla de cuotas del homebanking o del PDF y pegala acá.\nEj.: 1   05/12/2026   $ 120.500,00"} />
+                <div className="acts"><button type="button" className="btn sm pri" disabled={!paste.trim()} onClick={readPaste}>Leer cuotas</button><span className="sub">Después las revisás una por una.</span></div>
+              </>
+            ) : (
+              <>
+                {rows.length > 0 ? (
+                  <div className="cuotas-list">
+                    {rows.map((r, i) => (
+                      <div className="cuota-row" key={i}>
+                        <span className="cuota-n">{i + 1}</span>
+                        <input type="date" aria-label={`Vencimiento de la cuota ${i + 1}`} value={r.due} onChange={(e) => setRow(i, "due", e.target.value)} />
+                        <input inputMode="decimal" aria-label={`Importe de la cuota ${i + 1}`} value={r.total} onChange={(e) => setRow(i, "total", e.target.value)} placeholder="0,00" className="cuota-amt" />
+                        <button type="button" className="dots" aria-label={`Quitar la cuota ${i + 1}`} onClick={() => setRows((rs) => rs.filter((_, j) => j !== i))}>×</button>
+                      </div>
+                    ))}
+                    <div className="cuota-tot"><span>{rows.length} cuotas</span><b className="num">{fmt(sum)}</b></div>
+                  </div>
+                ) : <p className="sub" style={{ margin: 0 }}>Todavía no hay cuotas. Agregá la primera o pegá el cronograma del banco.</p>}
+                <div><button type="button" className="btn sm" onClick={() => setRows((rs) => { const last = rs.at(-1); return [...rs, { due: last?.due ? addMonth(last.due) : today, total: last?.total ?? "" }]; })}>+ Agregar cuota</button></div>
+              </>
             )}
-            <div><button type="button" className="btn sm" onClick={() => setRows((rs) => { const last = rs.at(-1); return [...rs, { due: last?.due ? addMonth(last.due) : today, total: last?.total ?? "" }]; })}>+ Agregar cuota</button></div>
             <input type="hidden" name="rows" value={rows.length ? json : ""} />
           </div>
         ) : (
-          <div><button type="button" className="btn sm" onClick={() => setCustom(true)}>Mis cuotas cambian</button>
-            <span className="sub" style={{ marginLeft: 8 }}>Pegá el cronograma o cargalas una por una.</span></div>
+          <button type="button" className="lnkbtn" style={{ alignSelf: "flex-start" }} onClick={() => { setCustom(true); setMode(rows.length ? "lista" : "pegar"); }}>¿Tus cuotas no son todas iguales? Cargalas como en el banco</button>
         )
       )}
 
@@ -143,8 +153,8 @@ export function DebtFormFields({ accounts, today, baseCurrency, d: initial = {},
           )}
           {(withRate || custom) && (
             <>
-              <div className="frow" style={{ gridTemplateColumns: "1fr 1fr 1fr" }}><label className="field"><span>TNA % <Help term="TNA" /></span><input name="tna" inputMode="decimal" defaultValue={d.tna} /></label><label className="field"><span>TEA % <Help term="TEA" /></span><input name="tea" inputMode="decimal" defaultValue={d.tea} /></label><label className="field"><span>CFT % <Help term="CFT" /></span><input name="cft" inputMode="decimal" defaultValue={d.cft} /></label></div>
-              <p className="sub" style={{ margin: 0 }}>Si sabés cuánto pagás por mes, no hacen falta: la cuota manda y la tasa sale de ahí.</p>
+              <div className="frow" style={{ gridTemplateColumns: "1fr 1fr 1fr" }}><label className="field">TNA %<input name="tna" inputMode="decimal" defaultValue={d.tna} /></label><label className="field">TEA %<input name="tea" inputMode="decimal" defaultValue={d.tea} /></label><label className="field">CFT %<input name="cft" inputMode="decimal" defaultValue={d.cft} /></label></div>
+              <p className="sub" style={{ margin: 0 }}>Están en tu contrato. TNA y TEA: la tasa anual del préstamo. CFT: lo que te cuesta en total, con impuestos y seguros. Si ya pusiste cuánto pagás por mes, no hacen falta.</p>
             </>
           )}
           <div className="frow"><label className="field">Fecha del préstamo<input name="startDate" type="date" defaultValue={d.startDate ?? today} /></label>{!free && <label className="field">Cuotas ya pagadas<input name="paidInstallments" inputMode="numeric" placeholder="0" defaultValue={d.paidInstallments} /></label>}</div>

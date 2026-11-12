@@ -1,5 +1,6 @@
 // Datos de una tarjeta, para crearla y para editarla. Lo simple a la vista; lo profesional en "Más detalles".
 import { CURRENCIES, currencyName } from "@/lib/countries";
+import { SecondCurrency } from "./currency2";
 
 export type CardDefaults = { name?: string; issuer?: string; last4?: string; limit?: string; closingDay?: string; dueDay?: string; currency?: string; payAccountId?: string; currency2?: string | null; financeRate?: string; monthlyFee?: string; alertPct?: string; holders?: string };
 
@@ -13,7 +14,7 @@ export function CardFields({ accounts, base, d = {}, edit = false }: { accounts:
       {edit && d.currency2 ? (
         <p className="sub" style={{ margin: 0 }}>También tiene consumos en {currencyName(d.currency2).toLowerCase()} ({d.currency2}).</p>
       ) : (
-        <label className="simtg"><input type="checkbox" name="hasCurrency2" /><span>También tiene consumos en otra moneda <select name="currency2" defaultValue={second} aria-label="Otra moneda" style={{ marginLeft: 6 }}>{CURRENCIES.filter((c) => c.code !== (d.currency ?? base)).map((c) => <option key={c.code} value={c.code}>{c.code}</option>)}</select><br /><span className="sub">Ej.: Netflix o compras en el exterior en dólares. Cada moneda tiene su resumen.</span></span></label>
+        <SecondCurrency initial={second} options={CURRENCIES.filter((c) => c.code !== (d.currency ?? base)).map((c) => ({ code: c.code, name: c.name }))} />
       )}
       <details className="more" open={edit && !!(d.financeRate || d.monthlyFee || d.alertPct || d.holders)}><summary>Más detalles (opcional)</summary>
         <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 8 }}>

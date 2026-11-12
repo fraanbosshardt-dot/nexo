@@ -973,3 +973,40 @@ html[data-big] body{zoom:1.15}
 .sort-cell.dragging{opacity:.75;transform:scale(1.02);z-index:2}.sort-cell.dragging .sort-handle{cursor:grabbing}
 .sortable.grid{user-select:none}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.c2{display:flex;flex-direction:column;gap:10px}.c2-pick{max-width:320px;margin-left:28px}
+
+/* Tarjeta: resumen simple y opciones en mosaico */
+.tsum{display:flex;flex-direction:column;gap:14px;min-width:0}
+.tsum-pay{display:flex;flex-wrap:wrap;gap:12px 32px}
+.tsum-cur{display:flex;flex-direction:column;gap:4px;align-items:flex-start;min-width:150px}
+.tsum-amt{font-size:30px;line-height:1.15}
+.tsum-t{width:100%;border-collapse:collapse;font-size:14px}.tsum-t th,.tsum-t td{padding:8px 0;border-bottom:1px solid var(--line);text-align:left;font-weight:400}.tsum-t thead th{font-size:12px;color:var(--muted);font-weight:500;padding-top:0}.tsum-t .n{text-align:right;padding-left:16px;white-space:nowrap;font-variant-numeric:tabular-nums}.tsum-t tbody td{font-weight:500}
+.steps3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.steps3>div{display:flex;gap:10px;align-items:flex-start}.steps3>div>b{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--surface-2);font-size:13px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.tile{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid var(--line);border-radius:12px;text-decoration:none;color:inherit;background:var(--surface)}
+.tile:hover{background:var(--surface-2)}.tile.on{border-color:var(--ink)}
+.tile b{display:block;font-weight:500;font-size:14px}.tile .sub{display:block;margin:2px 0 0;font-size:12.5px}
+.tile-ic{flex:none;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--surface-2);color:var(--fg)}.tile-ic svg{width:18px;height:18px}
+.dz{border-top:1px solid var(--line);padding-top:14px}
+@media (max-width:640px){.steps3{grid-template-columns:1fr}.tiles{grid-template-columns:1fr 1fr}.tile{flex-direction:column;gap:8px}.tsum-amt{font-size:26px}}
+/* Pagar el resumen: total, mínimo u otro monto */
+.paychs{display:flex;flex-direction:column;gap:8px}
+.paych{display:flex;gap:12px;align-items:center;padding:12px 14px;border:1px solid var(--line-2);border-radius:12px;cursor:pointer;font-weight:400;color:var(--fg)}
+.paych.on{border-color:var(--ink);background:var(--surface-2)}
+.paych input{width:18px;height:18px;accent-color:var(--ink);flex:none}
+.paych b{display:block;font-weight:500;font-size:14.5px}.paych .sub{display:block;margin:2px 0 0;font-size:12.5px}.paych .num{white-space:nowrap}
+.tsum-when{display:block;font-size:12px}
+.tsum-t{table-layout:auto}.tsum-t th{word-break:normal}.tsum-t td.n{width:1%}
+@media (max-width:1100px){.tcard:has(.tsum){grid-template-columns:1fr}.tcard:has(.tsum) .ccard{max-width:300px}}
+
+/* Préstamos: cuotas que no son iguales */
+.cuotas{display:flex;flex-direction:column;gap:12px;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.cuotas-top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}
+.cuotas textarea{width:100%;min-height:96px;padding:10px 12px;border:1px solid var(--line-2);border-radius:8px;background:var(--canvas);color:var(--fg);font:inherit;resize:vertical}
+.cuotas-list{display:flex;flex-direction:column;gap:6px;max-height:380px;overflow:auto}
+.cuota-row{display:grid;grid-template-columns:28px minmax(0,1fr) minmax(0,1fr) 40px;gap:8px;align-items:center}
+.cuota-n{font-size:13px;color:var(--muted);text-align:center}
+.cuota-amt{text-align:right}
+.cuota-tot{display:flex;justify-content:space-between;padding:8px 44px 0 36px;border-top:1px solid var(--line);font-size:14px;color:var(--muted)}.cuota-tot b{color:var(--fg)}
+.lnkbtn{border:0;background:none;padding:0;color:var(--blue);font:inherit;font-size:14px;cursor:pointer;text-align:left}.lnkbtn:hover{text-decoration:underline}
+@media (max-width:640px){.cuotas{padding:12px}.cuota-row{grid-template-columns:18px minmax(0,1.25fr) minmax(0,1fr) 36px;gap:4px}.cuota-row input{padding-inline:8px}.cuota-tot{padding:8px 40px 0 22px}}

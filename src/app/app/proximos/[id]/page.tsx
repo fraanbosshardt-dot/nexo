@@ -12,6 +12,8 @@ import { ActionForm, Submit } from "@/components/forms";
 import { deleteObligationAction, linkToPendingAction, payObligationAction, updateObligationAction } from "@/app/actions/app";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { Help } from "@/components/help";
+import { PayChoice } from "./pay-choice";
+import { symbolOf } from "@/lib/countries";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
@@ -94,12 +96,12 @@ export default async function PayPage({ params, searchParams }: { params: Promis
           <dt>{inc ? "Falta cobrar" : "Falta pagar"}</dt><dd><b>{formatMoney(left, ob.currency)}</b></dd>
           {stmt && <><dt>Pago mínimo</dt><dd>{formatMoney(stmt.minimumAmount, ob.currency)}</dd></>}
         </dl>
-        {stmt && <p className="sub" style={{ marginTop: 0 }}>Podés pagar el total o una parte (como mínimo, el pago mínimo). Lo que no pagues pasa al próximo resumen{stmt.card.financeRate ? `, con un interés de alrededor de ${formatMoney(left.times(Number(stmt.card.financeRate)).dividedBy(1200), ob.currency)} por mes si no pagás nada (TNA ${Number(stmt.card.financeRate).toString().replace(".", ",")}%)` : ". Si cargás la tasa de financiación en la tarjeta, calculamos los intereses"}.</p>}
         {accounts.length ? (
           <ActionForm action={payObligationAction} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <input type="hidden" name="obligationId" value={ob.id} /><input type="hidden" name="kind" value={inc ? "cobro" : "pago"} />
+            {stmt && <PayChoice total={amountText} minimum={new Intl.NumberFormat("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Math.min(Number(stmt.minimumAmount), left.toNumber()))} symbol={symbolOf(ob.currency)} interest={stmt.card.financeRate ? `TNA ${Number(stmt.card.financeRate).toString().replace(".", ",")}%` : null} />}
             <div className="frow">
-              <label className="field">{inc ? "¿Cuánto cobraste?" : "¿Cuánto pagaste?"}<input name="amount" inputMode="decimal" defaultValue={amountText} /></label>
+              {!stmt && <label className="field">{inc ? "¿Cuánto cobraste?" : "¿Cuánto pagaste?"}<input name="amount" inputMode="decimal" defaultValue={amountText} /></label>}
               <label className="field">Fecha<input name="date" type="date" defaultValue={isoDate(today)} /></label>
             </div>
             <label className="field">{inc ? "Entra en" : "Sale de"}<select name="accountId" defaultValue={preferred}>{accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>
