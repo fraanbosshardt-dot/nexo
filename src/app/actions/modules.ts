@@ -423,6 +423,38 @@ export async function createInvestmentAction(_: FormState, fd: FormData): Promis
   redirect(done("/app/inversiones"));
 }
 
+// Inversión por especie (bono, acción, CEDEAR, cripto, FCI): nominales y cuánto pagaste.
+export async function createHoldingAction(_: FormState, fd: FormData): Promise<FormState> {
+  const { user, workspace } = await requireWorkspace();
+  try {
+    const { createHolding } = await import("@/server/wealth");
+    const assetClass = z.enum(["AR_STOCK", "CEDEAR", "BOND", "ON", "LETRA", "US_STOCK", "CRYPTO", "FCI"]).parse(fd.get("assetClass"));
+    await createHolding(getDb(), workspace.id, {
+      assetClass, ticker: str(fd, "ticker"), name: str(fd, "name") || null, quantity: money(fd, "quantity", "la cantidad"), total: money(fd, "total", "cuánto pagaste"),
+      currency: isCurrency(str(fd, "currency")) ? str(fd, "currency") : null, accountId: str(fd, "accountId") || null, date: str(fd, "date") ? date(fd, "date", "la fecha") : todayIn(workspace.timezone), userId: user.id,
+    });
+  } catch (e) { return fail(e); }
+  redirect(done("/app/inversiones?guardada=1"));
+}
+
+export async function holdingTradeAction(_: FormState, fd: FormData): Promise<FormState> {
+  const { user, workspace } = await requireWorkspace();
+  try {
+    const { holdingTrade } = await import("@/server/wealth");
+    await holdingTrade(getDb(), workspace.id, { investmentId: str(fd, "investmentId"), side: fd.get("side") === "SELL" ? "SELL" : "BUY", quantity: money(fd, "quantity", "la cantidad"), total: money(fd, "total", "el importe"), accountId: str(fd, "accountId") || null, date: str(fd, "date") ? date(fd, "date", "la fecha") : todayIn(workspace.timezone), userId: user.id });
+  } catch (e) { return fail(e); }
+  redirect(done("/app/inversiones?operacion=1"));
+}
+
+export async function manualPriceAction(_: FormState, fd: FormData): Promise<FormState> {
+  const { workspace } = await requireWorkspace();
+  try {
+    const { setManualPrice } = await import("@/server/wealth");
+    await setManualPrice(getDb(), workspace.id, str(fd, "investmentId"), money(fd, "price", "el precio"), todayIn(workspace.timezone));
+  } catch (e) { return fail(e); }
+  redirect(done("/app/inversiones?precio=1"));
+}
+
 export async function investmentMoveAction(_: FormState, fd: FormData): Promise<FormState> {
   const { user, workspace } = await requireWorkspace();
   try {

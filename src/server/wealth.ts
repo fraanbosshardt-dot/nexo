@@ -6,6 +6,7 @@ import { debtDetail } from "./debts";
 import { dec, round2, ZERO, type MoneyValue } from "@/lib/money";
 import { period } from "@/lib/dates";
 import type Decimal from "decimal.js";
+import { ASSET_CLASSES, lookupTicker, per100, quoteKey, refreshQuotes, type AssetClass } from "./quotes";
 
 // ---------- Cotizaciones ----------
 
@@ -74,16 +75,90 @@ export async function addValuation(db: Db, ws: string, input: { investmentId?: s
   return db.valuation.create({ data: { assetId: as.id, value: v.toFixed(2), currency: as.currency, date: input.date } });
 }
 
+// ---------- Tenencias por especie (acciones, bonos, CEDEARs, cripto, FCI) ----------
+
+// Comprar una especie: suma nominales. Si sale de una cuenta, la plata baja (no es un gasto: es inversión).
+export async function createHolding(db: Db, ws: string, input: { assetClass: AssetClass; ticker: string; name?: string | null; quantity: MoneyValue; total: MoneyValue; currency?: string | null; accountId?: string | null; date: Date; userId?: string | null }) {
+  const info = await lookupTicker(db, input.assetClass, input.ticker);
+  const currency = info.currency || input.currency || "";
+  if (!currency) throw new UserError("Elegí la moneda del fondo.");
+  const label = ASSET_CLASSES.find((a) => a.key === input.assetClass)!.label;
+  const inv = await db.investment.create({ data: { workspaceId: ws, name: input.name?.trim() || info.ticker, kind: label, currency, ticker: info.ticker, assetClass: input.assetClass, quoteId: info.quoteId } });
+  await holdingTrade(db, ws, { investmentId: inv.id, side: "BUY", quantity: input.quantity, total: input.total, accountId: input.accountId, date: input.date, userId: input.userId });
+  return inv;
+}
+
+export async function holdingTrade(db: Db, ws: string, input: { investmentId: string; side: "BUY" | "SELL"; quantity: MoneyValue; total: MoneyValue; accountId?: string | null; date: Date; userId?: string | null }) {
+  const inv = await db.investment.findFirst({ where: { id: input.investmentId, workspaceId: ws }, include: { movements: true } });
+  if (!inv) throw new UserError("No encontramos esa inversión.");
+  const q = dec(input.quantity), total = round2(input.total);
+  if (!q.gt(0)) throw new UserError("Poné la cantidad (nominales, acciones o unidades).");
+  if (total.lt(0)) throw new UserError("El importe no puede ser negativo.");
+  if (input.side === "SELL") {
+    const have = holdingQty(inv.movements);
+    if (q.gt(have)) throw new UserError(`Tenés ${have.toString()} y querés vender ${q.toString()}. Revisá la cantidad.`);
+  }
+  const acc = input.accountId ? await db.account.findFirst({ where: { id: input.accountId, workspaceId: ws, active: true } }) : null;
+  if (input.accountId && (!acc || acc.type === "CREDIT_CARD")) throw new UserError("Elegí una cuenta de dinero.");
+  if (acc && acc.currency !== inv.currency) throw new UserError(`${inv.ticker ?? inv.name} cotiza en ${inv.currency}: elegí una cuenta en ${inv.currency} o "No mover ninguna cuenta".`);
+  return db.$transaction(async (tx) => {
+    const t = acc && total.gt(0) ? await tx.transaction.create({
+      data: { workspaceId: ws, accountId: acc.id, type: "INVESTMENT", direction: input.side === "BUY" ? "OUT" : "IN", amount: total.toFixed(2), currency: acc.currency, description: `${input.side === "BUY" ? "Compra de" : "Venta de"} ${inv.ticker ?? inv.name}`, effectiveDate: input.date, economicPeriod: period(input.date), createdById: input.userId ?? null },
+    }) : null;
+    return tx.investmentMovement.create({ data: { investmentId: inv.id, kind: input.side, amount: total.toFixed(2), quantity: q.toFixed(8), date: input.date, transactionId: t?.id ?? null } });
+  });
+}
+
+// Precio cargado a mano (para FCI, o si una especie no tiene cotización automática).
+export async function setManualPrice(db: Db, ws: string, investmentId: string, price: MoneyValue, date: Date) {
+  const inv = await db.investment.findFirst({ where: { id: investmentId, workspaceId: ws } });
+  if (!inv) throw new UserError("No encontramos esa inversión.");
+  if (!dec(price).gt(0)) throw new UserError("El precio tiene que ser mayor a cero.");
+  return db.investment.update({ where: { id: inv.id }, data: { manualPrice: dec(price).toFixed(8), manualPriceAt: date } });
+}
+
+type Mv = { kind: string; amount: MoneyValue; quantity: MoneyValue | null; date: Date };
+const holdingQty = (mv: Mv[]) => mv.reduce((s, m) => (m.kind === "BUY" ? s.plus(dec(m.quantity ?? 0)) : m.kind === "SELL" ? s.minus(dec(m.quantity ?? 0)) : s), ZERO);
+// Costo promedio: al vender, el costo baja en proporción a lo vendido; la diferencia con lo cobrado es ganancia realizada.
+function costBasis(mv: Mv[]) {
+  let qty = ZERO, cost = ZERO, realized = ZERO;
+  for (const m of [...mv].sort((a, b) => a.date.getTime() - b.date.getTime())) {
+    const q = dec(m.quantity ?? 0), a = dec(m.amount);
+    if (m.kind === "BUY") { qty = qty.plus(q); cost = cost.plus(a); }
+    else if (m.kind === "SELL" && qty.gt(0)) { const part = cost.times(q.dividedBy(qty)); realized = realized.plus(a.minus(part)); cost = cost.minus(part); qty = qty.minus(q); }
+    else if (m.kind === "YIELD") realized = realized.plus(a);
+  }
+  return { qty, cost: round2(cost), realized: round2(realized) };
+}
+
 export async function investmentsOverview(db: Db, ws: string) {
   const invs = await db.investment.findMany({ where: { workspaceId: ws }, include: { movements: { orderBy: { date: "desc" } }, valuations: { orderBy: { date: "desc" } } }, orderBy: { createdAt: "asc" } });
+  // Cotizaciones de las especies (se actualizan si tienen más de 15 minutos).
+  await refreshQuotes(db, invs).catch(() => undefined);
+  const keys = invs.map((i) => quoteKey(i)).filter((k): k is { source: string; symbol: string } => !!k);
+  const quotes = keys.length ? await db.quote.findMany({ where: { OR: keys } }) : [];
   return invs.map((i) => {
+    if (i.assetClass) {
+      const { qty, cost, realized } = costBasis(i.movements);
+      const k = quoteKey(i);
+      const q = k ? quotes.find((x) => x.source === k.source && x.symbol === k.symbol) : null;
+      const price = q ? dec(q.price) : i.manualPrice ? dec(i.manualPrice) : null;
+      const unit = price ? (per100(i.assetClass) ? price.dividedBy(100) : price) : null;
+      const value = unit ? round2(qty.times(unit)) : cost;
+      const gain = value.minus(cost);
+      return {
+        inv: i, invested: cost, value, gain, pct: cost.gt(0) ? gain.dividedBy(cost).times(100).toNumber() : null,
+        valuedAt: q?.fetchedAt ?? i.manualPriceAt ?? null,
+        holding: { qty, price, per100: per100(i.assetClass), auto: !!q, changePct: q?.changePct != null ? Number(q.changePct) : null, realized, unitLabel: ASSET_CLASSES.find((a) => a.key === i.assetClass)?.unit ?? "unidades" },
+      };
+    }
     const moved = i.movements.reduce((s, m) => (m.kind === "CONTRIBUTION" ? s.plus(dec(m.amount)) : m.kind === "WITHDRAWAL" ? s.minus(dec(m.amount)) : s), ZERO);
     // Sin aportes registrados (se cargó lo que ya tenía con una valuación): lo invertido es la primera valuación, no cero.
     const invested = moved.isZero() && i.valuations.length ? dec(i.valuations[i.valuations.length - 1].value) : moved;
     const last = i.valuations[0];
     const value = last ? dec(last.value) : invested;
     const gain = value.minus(invested);
-    return { inv: i, invested, value, gain, pct: invested.gt(0) ? gain.dividedBy(invested).times(100).toNumber() : null, valuedAt: last?.date ?? null };
+    return { inv: i, invested, value, gain, pct: invested.gt(0) ? gain.dividedBy(invested).times(100).toNumber() : null, valuedAt: last?.date ?? null, holding: null };
   });
 }
 

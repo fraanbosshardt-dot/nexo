@@ -569,6 +569,11 @@ model Investment {
   kind        String // plazo fijo, FCI, CEDEAR, bono, cripto...
   currency    String
   accountId   String?
+  ticker        String? // especie (ej.: AL30, GGAL, AAPL, BTC)
+  assetClass    String? // AR_STOCK | CEDEAR | BOND | ON | LETRA | US_STOCK | CRYPTO | FCI (null: inversión por monto)
+  quoteId       String? // id en la fuente (ej.: "bitcoin" en CoinGecko)
+  manualPrice   Decimal?  @db.Decimal(24, 8) // precio cargado a mano (si no hay cotización automática)
+  manualPriceAt DateTime? @db.Date
   createdAt   DateTime  @default(now())
 
   movements  InvestmentMovement[]
@@ -874,4 +879,17 @@ model ContactMessage {
 
   @@index([status, createdAt])
   @@index([area, createdAt])
+}
+
+// Última cotización conocida de cada especie (se comparte entre todos; se actualiza cada 15 minutos como mucho).
+model Quote {
+  id        String   @id @default(cuid())
+  source    String // data912 | yahoo | coingecko
+  symbol    String
+  price     Decimal  @db.Decimal(24, 8)
+  currency  String
+  changePct Decimal? @db.Decimal(9, 4)
+  fetchedAt DateTime @default(now())
+
+  @@unique([source, symbol])
 }
