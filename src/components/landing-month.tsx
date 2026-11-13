@@ -8,8 +8,8 @@ type Step = { day: number; title: string; text: string; left: number; toast: str
 const STEPS: Step[] = [
   { day: 1, title: "Cobrás el sueldo", text: "Entran $ 1.250.000. Guafra ya resta el alquiler, los servicios y las cuotas que vienen, y te dice lo que de verdad podés gastar.", left: 420000, toast: "Sueldo cobrado · +$ 1.250.000", tone: "pos" },
   { day: 5, title: "Cierra la tarjeta", text: "El resumen trae las cuotas de la heladera y las compras del mes. Ya estaban contadas: no te sorprende nada.", left: 356000, toast: "Visa cerró · $ 312.480, ya contado", tone: "ok" },
-  { day: 12, title: "Te avisa antes", text: "Gastaste más en salidas de lo que venías gastando. A este ritmo, llegás justo al cobro: te avisa ahora, no el día 28.", left: 198000, toast: "Ojo: a este ritmo llegás justo", tone: "warn" },
-  { day: 20, title: "Decidís con datos", text: "En el Simulador probás pasar una compra grande al mes que viene. Ves al toque que así llegás tranquilo.", left: 151000, toast: "Escenario: compra en enero · te alcanza", tone: "ok" },
+  { day: 12, title: "Te avisa antes", text: "Gastaste más en salidas de lo que te habías propuesto. Te avisa que te pasaste del presupuesto ahora, no cuando ya no queda nada.", left: 198000, toast: "Te pasaste del presupuesto de Salidas", tone: "warn" },
+  { day: 20, title: "Decidís con datos", text: "Querés comprar algo grande. Con “¿Puedo comprarlo en cuotas?” probás empezar a pagarlo el mes que viene y ves al toque si te alcanza.", left: 151000, toast: "En 6 cuotas desde enero · te alcanza", tone: "ok" },
   { day: 30, title: "Terminás en verde", text: "Llegás al cobro con plata de sobra y ya sabés cómo viene el mes que viene, con las cuotas y los vencimientos.", left: 38000, toast: "Mes cerrado · te sobraron $ 38.000", tone: "pos" },
 ];
 const START = STEPS[0].left;

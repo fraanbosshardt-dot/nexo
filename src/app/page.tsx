@@ -174,7 +174,7 @@ export default async function Landing() {
         <LandingSky />
         <div className="ws-w lx-hero lx-hero-c">
           <div className="lx-copy">
-            <a className="lx-news" href="#agro"><span>Nuevo</span>Ventas de cereal mes a mes, proyectadas<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg></a>
+            <a className="lx-news" href="#funciones"><span>Nuevo</span>Informes contra el año pasado y escenarios guardados<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg></a>
             <h1 className="ws-h1 lx-h1"><span className="lx-line">Sabé cuánto podés gastar</span> <em className="lx-line">hasta tu próximo cobro.</em></h1>
             <p className="ws-lead">Tus cuentas, tarjetas en cuotas, deudas y vencimientos en un solo lugar, en pesos y en dólares. {N} te dice hoy con cuánta plata llegás a fin de mes.</p>
             <div className="lx-ctas">

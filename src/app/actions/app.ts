@@ -100,7 +100,7 @@ export async function createAccountAction(_: FormState, fd: FormData): Promise<F
   let id: string;
   try {
     const db = getDb();
-    if (plan === "FREE" && (await db.account.count({ where: { workspaceId: workspace.id, active: true } })) >= FREE_LIMITS.accounts) {
+    if (!(await canUse(plan, "ilimitado")) && (await db.account.count({ where: { workspaceId: workspace.id, active: true } })) >= FREE_LIMITS.accounts) {
       throw new UserError(`El plan Gratis incluye ${FREE_LIMITS.accounts} cuentas activas. Desactivá una o pasá a Pro.`);
     }
     const type = z.enum(ACCOUNT_TYPES).parse(fd.get("type"));
@@ -144,10 +144,14 @@ export async function reorderAccountsAction(ids: string[]) {
 }
 
 export async function toggleAccountAction(fd: FormData) {
-  const { workspace } = await requireWorkspace();
+  const { workspace, plan } = await requireWorkspace();
   const id = String(fd.get("id"));
   const db = getDb();
   const a = await db.account.findFirst({ where: { id, workspaceId: workspace.id } });
+  // Reactivar una cuenta también cuenta para el límite de Gratis (si no, se podía pasar de 5 desactivando y reactivando).
+  if (a && !a.active && !(await canUse(plan, "ilimitado")) && (await db.account.count({ where: { workspaceId: workspace.id, active: true } })) >= FREE_LIMITS.accounts) {
+    redirect("/app/cuentas?limite=1");
+  }
   if (a) await db.account.update({ where: { id }, data: { active: !a.active } });
   revalidatePath("/app", "layout");
 }

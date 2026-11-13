@@ -18,7 +18,7 @@ const POINTS: [IconName, string, string][] = [
   ["repeat", "Ventas mes a mes", "Si vendés todos los meses, cargás un monto aproximado y se proyecta. Cuando vendés de verdad, la venta real ocupa ese mes."],
   ["flow", "Flujo de caja con lo que viene", "Lo que está por cobrar suma en lo proyectado: ves con cuánto terminás cada mes, aunque todavía no hayas cobrado."],
   ["fuel", "El campo y la casa juntos", "Gasoil, insumos y arrendamientos en el mismo lugar que el alquiler, los servicios y las tarjetas."],
-  ["clock", "Avisos antes de vencer", "Próximos pagos y cobros ordenados por fecha, con aviso por correo un día antes."],
+  ["clock", "Avisos antes de vencer", "Próximos pagos y cobros ordenados por fecha, con avisos antes de que venzan."],
   ["tag", "Pesos y dólares", "Precios en dólares con la cotización del día, y cuentas en la moneda que uses."],
 ];
 const FAQ: [string, string][] = [

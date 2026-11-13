@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { requireWorkspace } from "@/lib/auth/session";
+import { canUse, requireWorkspace } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
 import { accountBalances } from "@/server/ledger";
 import { formatMoney, ZERO } from "@/lib/money";
@@ -18,7 +18,7 @@ const GROUPS: [string, string[]][] = [["Efectivo", ["CASH"]], ["Bancos", ["SAVIN
 
 export const metadata: Metadata = { title: "Cuentas" };
 
-export default async function Accounts({ searchParams }: { searchParams: Promise<{ nueva?: string }> }) {
+export default async function Accounts({ searchParams }: { searchParams: Promise<{ nueva?: string; limite?: string }> }) {
   const { workspace, plan } = await requireWorkspace();
   const sp = await searchParams;
   const db = getDb();
@@ -38,10 +38,11 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
       </Link>
     );
   };
-  const atLimit = plan === "FREE" && act.length >= FREE_LIMITS.accounts;
+  const atLimit = !(await canUse(plan, "ilimitado")) && act.length >= FREE_LIMITS.accounts;
   return (
     <>
       <PageHead crumb="Mi dinero" title="Cuentas" desc="Tocá una cuenta para ver su detalle. Para cambiar el orden, arrastrala desde ⠿." />
+      {sp.limite && atLimit && <div className="notice a"><span>No pudimos activarla: el plan Gratis incluye {FREE_LIMITS.accounts} cuentas activas. Desactivá otra primero o <a className="lnk" href="/app/configuracion?tab=plan">pasá a Pro</a>.</span></div>}
       {act.length > 0 && (
         <div className="card" style={{ display: "flex", gap: 28, flexWrap: "wrap" }}>
           <Stat label={`En ${currencyName(cur).toLowerCase()}`} value={formatMoney(total((a) => a.type !== "INVESTMENT"), cur)} />

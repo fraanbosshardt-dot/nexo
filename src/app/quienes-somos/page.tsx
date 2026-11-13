@@ -15,7 +15,7 @@ const VALUES: [string, string][] = [
   ["Claro antes que complicado", "Nada de jerga financiera. Si algo necesita explicación, la ponemos al lado, en una línea."],
   ["Tus datos son tuyos", "No nos conectamos a tu banco, no vendemos información y podés llevarte o borrar todo cuando quieras."],
   ["Hecho para la vida real", "Varias monedas, cuotas sin interés, sueldos que cambian, vencimientos que se juntan, ventas de cereal. La realidad de todos los días, no la de un manual."],
-  ["Construido escuchando", "Cada mejora sale de lo que nos piden las personas que lo usan todos los días."],
+  ["Construido escuchando", "Cada mejora sale de lo que nos piden las personas que lo usan."],
 ];
 
 export default function About() {
@@ -48,7 +48,7 @@ export default function About() {
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 16, color: "var(--muted)" }}>
             <p style={{ margin: 0 }}>Sueldos que no siempre llegan el mismo día, compras en cuotas que se pisan, servicios que vencen todos juntos y, en el campo, ventas de cereal que se cobran mes a mes. Las planillas mostraban lo que ya había pasado, pero no respondían la pregunta importante: <b style={{ color: "var(--fg)" }}>¿cuánto puedo gastar hoy sin quedar en rojo?</b></p>
-            <p style={{ margin: 0 }}>Así empezó {BRAND.name}: una herramienta simple, que se usa desde el celular en segundos y que hace las cuentas por vos. Hoy la usan personas y familias que buscan lo mismo: tranquilidad.</p>
+            <p style={{ margin: 0 }}>Así empezó {BRAND.name}: una herramienta simple, que se usa desde el celular en segundos y que hace las cuentas por vos. La pensamos para personas y familias que buscan lo mismo: tranquilidad.</p>
           </div>
         </Reveal>
       </section>
@@ -57,16 +57,6 @@ export default function About() {
         <div className="ws-w ws-sec">
           <div className="ws-head"><p className="ws-eyebrow">Lo que nos guía</p><h2 className="ws-h2">Cuatro ideas que no negociamos.</h2></div>
           <div className="ws-values">{VALUES.map(([t, d]) => <Reveal key={t} className="ws-card"><h3>{t}</h3><p>{d}</p></Reveal>)}</div>
-        </div>
-      </section>
-
-      <section className="ws-w ws-sec">
-        <div className="ws-head"><p className="ws-eyebrow">Datos de la empresa</p><h2 className="ws-h2">Transparentes desde el primer día.</h2></div>
-        <div className="ws-facts">
-          <div><span>Titular</span><b>{BRAND.owner}</b></div>
-          <div><span>CUIT</span><b>{BRAND.cuit}</b></div>
-          <div><span>Atención</span><b>100% en línea</b></div>
-          <div><span>Origen</span><b>Hecho en Argentina</b></div>
         </div>
       </section>
 
