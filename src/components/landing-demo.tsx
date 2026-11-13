@@ -6,11 +6,11 @@ import Link from "next/link";
 const fmt = (n: number) => "$ " + Math.round(n).toLocaleString("es-AR");
 const CUOTAS = [1, 3, 6, 12, 18];
 
-function Range({ label, value, set, min, max, step }: { label: string; value: number; set: (v: number) => void; min: number; max: number; step: number }) {
+function Range({ label, value, set, min, max, step, show = fmt }: { label: string; value: number; set: (v: number) => void; min: number; max: number; step: number; show?: (v: number) => string }) {
   const pct = ((value - min) / (max - min)) * 100;
   return (
     <label className="lx-range">
-      <span><span>{label}</span><b>{fmt(value)}</b></span>
+      <span><span>{label}</span><b>{show(value)}</b></span>
       <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => set(Number(e.target.value))} style={{ "--p": `${pct}%` } as React.CSSProperties} />
     </label>
   );
@@ -54,5 +54,41 @@ export function PriceSwitch({ monthly, yearly }: { monthly: React.ReactNode; yea
       </div>
       {y ? yearly : monthly}
     </>
+  );
+}
+
+// "¿Cuánto te queda?": lo que tenés, menos lo que vence antes del cobro, repartido en los días que faltan.
+export function QuedaDemo() {
+  const [tengo, setTengo] = useState(612900);
+  const [vence, setVence] = useState(428650);
+  const [dias, setDias] = useState(23);
+  const queda = tengo - vence, porDia = queda / dias;
+  const pct = tengo > 0 ? Math.max(0, Math.min(100, (queda / tengo) * 100)) : 0;
+  const tone = queda < 0 ? "no" : pct < 15 ? "justo" : "si";
+  return (
+    <div className="lx-demo">
+      <Range label="Lo que tenés hoy en tus cuentas" value={tengo} set={setTengo} min={50000} max={5000000} step={10000} />
+      <Range label="Lo que vence antes del cobro" value={vence} set={setVence} min={0} max={4000000} step={10000} />
+      <Range label="Días hasta el próximo cobro" value={dias} set={setDias} min={1} max={31} step={1} show={(v) => (v === 1 ? "1 día" : `${v} días`)} />
+      <div className="lx-queda" aria-hidden="true"><i style={{ width: `${pct}%` }} className={tone} /></div>
+      <div className={`lx-verdict ${tone}`} role="status" aria-live="polite">
+        <b>{queda < 0 ? `Te faltan ${fmt(-queda)}` : `Te quedan ${fmt(queda)}`}</b>
+        <span>{queda < 0 ? "Lo que vence es más de lo que tenés: conviene mover algún pago o buscar un ingreso antes." : `Son ${fmt(porDia)} por día hasta el cobro. En Guafra este número se actualiza solo con cada gasto.`}</span>
+      </div>
+      <Link className="lx-more" href="/registro">Calcularlo con mis datos reales →</Link>
+    </div>
+  );
+}
+
+// Las dos pruebas de la portada, en pestañas.
+export function DemoTabs({ titles, children }: { titles: [string, string]; children: [React.ReactNode, React.ReactNode] }) {
+  const [t, setT] = useState(0);
+  return (
+    <div className="lx-demo-tabs">
+      <div className="lx-seg" role="tablist" aria-label="Elegí la prueba">
+        {titles.map((x, k) => <button key={x} type="button" role="tab" aria-selected={t === k} className={t === k ? "on" : ""} onClick={() => setT(k)}>{x}</button>)}
+      </div>
+      <div role="tabpanel">{children[t]}</div>
+    </div>
   );
 }

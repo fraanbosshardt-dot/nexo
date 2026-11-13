@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Reveal } from "@/components/landing-fx";
-import { CuotasDemo, PriceSwitch } from "@/components/landing-demo";
+import { CuotasDemo, DemoTabs, PriceSwitch, QuedaDemo } from "@/components/landing-demo";
+import { LandingSky } from "@/components/landing-sky";
+import { MonthStory } from "@/components/landing-month";
 import { LandingMotion, PhoneTour } from "@/components/landing-motion";
 import { PublicShell } from "@/components/public-shell";
 import { AppCta } from "@/components/app-cta";
@@ -50,12 +52,14 @@ const TOOLS: [string, IconName, string, string][] = [
 
 const STRIP = ["Pesos y dólares", "Tarjetas en cuotas", "Préstamos", "Servicios y alquiler", "Sueldo o cobros variables", "Ventas de cereal", "Objetivos de ahorro"];
 
-const VS: [string, string][] = [
-  ["Cuotas repartidas mes a mes", "A mano"],
-  ["Avisos antes de vencer", "No"],
-  ["Pesos y dólares juntos", "Con fórmulas"],
-  ["Cuánto podés gastar hoy", "No"],
-  ["Desde el celular, en segundos", "Incómodo"],
+// Planilla, app del banco y Guafra (la última columna siempre es "sí").
+const VS: [string, string, string, string][] = [
+  ["Todas tus cuentas y tarjetas juntas", "A mano", "Solo las de ese banco", "Sí"],
+  ["Cuotas repartidas mes a mes", "A mano", "Solo esa tarjeta", "Solas"],
+  ["Cuánto podés gastar hasta el cobro", "No", "No", "Sí"],
+  ["Avisos antes de que un mes quede en rojo", "No", "No", "Sí"],
+  ["Cómo vienen los próximos meses", "Con fórmulas", "No", "Sí"],
+  ["Pesos y dólares juntos", "Con fórmulas", "Por separado", "Sí"],
 ];
 const STEPS: [string, string][] = [
   ["Contanos dónde tenés la plata", "Tu cuenta del banco, la billetera virtual o el efectivo. Solo el saldo: nunca la clave."],
@@ -198,16 +202,17 @@ export default async function Landing() {
       <LandingMotion />
       {ld.map((d, i) => <script key={i} type="application/ld+json" dangerouslySetInnerHTML={jsonLd(d)} />)}
 
-      {/* Portada */}
-      <section className="lx-top">
-        <div className="ws-w lx-hero">
+      {/* Portada: fondo animado y desenfocado (hecho con código), título grande y el celular que asoma abajo */}
+      <section className="lx-top lx-dark">
+        <LandingSky />
+        <div className="ws-w lx-hero lx-hero-c">
           <div className="lx-copy">
             <a className="lx-news" href="#agro"><span>Nuevo</span>Ventas de cereal mes a mes, proyectadas<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg></a>
-            <h1 className="ws-h1 lx-h1">Sabé cuánto podés gastar <em>hasta tu próximo cobro.</em></h1>
+            <h1 className="ws-h1 lx-h1"><span className="lx-line">Sabé cuánto podés gastar</span> <em className="lx-line">hasta tu próximo cobro.</em></h1>
             <p className="ws-lead">Tus cuentas, tarjetas en cuotas, deudas y vencimientos en un solo lugar, en pesos y en dólares. {N} te dice hoy con cuánta plata llegás a fin de mes.</p>
             <div className="lx-ctas">
               <AppCta className="ws-btn pri lx-big lx-shine" label="Empezar gratis" />
-              <a className="ws-btn lx-big" href="#demo">Probalo sin registrarte</a>
+              <a className="ws-btn lx-big lx-ghost" href="#demo">Probalo sin registrarte</a>
             </div>
             <ul className="lx-trust"><li>{CHECK}Gratis para siempre</li><li>{CHECK}Sin tarjeta</li><li>{CHECK}Nunca te pedimos la clave del banco</li></ul>
           </div>
@@ -228,6 +233,14 @@ export default async function Landing() {
         <div className="lx-who">{WHO.map(([ic, t, d], i) => (
           <Reveal key={t} className="lx-who-card" tilt style={{ "--i": i } as React.CSSProperties}><span className="ws-ic"><Icon name={ic} /></span><h3>{t}</h3><p>{d}</p></Reveal>
         ))}</div>
+      </section>
+
+      {/* Un mes con Guafra: se cuenta mientras bajás */}
+      <section className="lx-month-sec" id="un-mes">
+        <div className="ws-w ws-sec">
+          <Reveal className="ws-head"><p className="ws-eyebrow">Un mes con {N}</p><h2 className="ws-h2">Del cobro al próximo cobro, sin sorpresas.</h2><p className="ws-lead">Bajá y mirá cómo te acompaña durante un mes. Datos de ejemplo.</p></Reveal>
+          <MonthStory />
+        </div>
       </section>
 
       {/* Funciones */}
@@ -269,11 +282,11 @@ export default async function Landing() {
       {/* Planilla vs Guafra */}
       <section className="ws-soft">
         <div className="ws-w ws-sec lx-two">
-          <Reveal className="lx-two-copy"><p className="ws-eyebrow">Por qué {N}</p><h2 className="ws-h2">La planilla te muestra el pasado. {N} te muestra lo que viene.</h2><p className="ws-lead">Una planilla depende de que te acuerdes de todo. {N} repite tus pagos fijos, reparte las cuotas y te avisa antes de que un mes quede en rojo.</p></Reveal>
+          <Reveal className="lx-two-copy"><p className="ws-eyebrow">Por qué {N}</p><h2 className="ws-h2">La planilla te muestra el pasado. {N} te muestra lo que viene.</h2><p className="ws-lead">Una planilla depende de que te acuerdes de todo, y la app del banco solo ve lo suyo. {N} junta todo, repite tus pagos fijos, reparte las cuotas y te avisa antes de que un mes quede en rojo.</p></Reveal>
           <Reveal className="lx-vs">
             <table>
-              <thead><tr><th scope="col"><span className="sr-only">Qué</span></th><th scope="col">Planilla</th><th scope="col">{N}</th></tr></thead>
-              <tbody>{VS.map(([t, x], i) => <tr key={t} style={{ "--r": i } as React.CSSProperties}><th scope="row">{t}</th><td>{x}</td><td><span className="lx-yes"><svg viewBox="0 0 24 24" aria-hidden="true"><path pathLength={1} d="M5 12l5 5L20 7" /></svg>{t.startsWith("Cuotas") ? "Solas" : "Sí"}</span></td></tr>)}</tbody>
+              <thead><tr><th scope="col"><span className="sr-only">Qué</span></th><th scope="col">Planilla</th><th scope="col">App del banco</th><th scope="col">{N}</th></tr></thead>
+              <tbody>{VS.map(([t, x, b, g], i) => <tr key={t} style={{ "--r": i } as React.CSSProperties}><th scope="row">{t}</th><td>{x}</td><td>{b}</td><td><span className="lx-yes"><svg viewBox="0 0 24 24" aria-hidden="true"><path pathLength={1} d="M5 12l5 5L20 7" /></svg>{g}</span></td></tr>)}</tbody>
             </table>
           </Reveal>
         </div>
@@ -289,8 +302,8 @@ export default async function Landing() {
       {/* Demo */}
       <section className="lx-demo-sec" id="demo">
         <div className="ws-w ws-sec lx-two">
-          <Reveal className="lx-two-copy"><p className="ws-eyebrow">Probalo ahora</p><h2 className="ws-h2">¿Te alcanza para comprarlo en cuotas?</h2><p className="ws-lead">Mové los valores y mirá la respuesta. Sin registrarte. En {N} esta cuenta se hace sola con tus datos reales.</p></Reveal>
-          <CuotasDemo />
+          <Reveal className="lx-two-copy"><p className="ws-eyebrow">Probalo ahora</p><h2 className="ws-h2">¿Cuánto te queda? ¿Te alcanza en cuotas?</h2><p className="ws-lead">Mové los valores y mirá la respuesta al instante. Sin registrarte. En {N} estas cuentas se hacen solas con tus datos reales.</p></Reveal>
+          <DemoTabs titles={["¿Cuánto te queda?", "¿Te alcanza en cuotas?"]}>{[<QuedaDemo key="q" />, <CuotasDemo key="c" />]}</DemoTabs>
         </div>
       </section>
 
@@ -312,7 +325,7 @@ export default async function Landing() {
             <p className="ws-eyebrow">Para el campo · Pro</p>
             <h2 className="ws-h2">Si vendés cereal todos los meses, {N} ya lo cuenta.</h2>
             <p className="ws-lead">Cargás cuánto pensás vender por mes y lo ves proyectado en tu flujo de caja, aunque todavía no lo hayas cobrado. Cuando liquidás, ponés el monto real.</p>
-            <Link className="lx-link" style={{ color: "#8FB4F5" }} href="/productores">Ver todo para productores →</Link>
+            <Link className="lx-link" style={{ color: "#8EC4A0" }} href="/productores">Ver todo para productores →</Link>
             <ul className="lx-ticks">
               <li>{CHECK}Ventas de soja, maíz, trigo o girasol, mes a mes</li>
               <li>{CHECK}Lo que está por cobrar suma en lo proyectado</li>

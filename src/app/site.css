@@ -1,6 +1,6 @@
 /* Sitio público (landing, Contacto, Quiénes somos, Seguridad, Legales). Usa los colores de globals.css,
    así respeta el modo claro y oscuro. Las franjas oscuras quedan oscuras en los dos modos. */
-.site{--ws-navy:#0B1220;--ws-navy2:#16203A;--ws-navy3:#24304C;--ws-on-navy:#E8EDF5;--ws-navy-muted:#A7B0C0;
+.site{--ws-navy:#0B1813;--ws-navy2:#12261E;--ws-navy3:#1D382D;--ws-on-navy:#E8F1EC;--ws-navy-muted:#A9BDB3;
   --ws-r:28px;font-family:var(--font-inter),Inter,var(--f-body);font-size:16px;line-height:1.55;color:var(--fg);background:var(--bg);overflow-x:clip}
 .site h1,.site h2,.site .ws-display{font-family:var(--font-tight),"Inter Tight",var(--font-inter),sans-serif;font-weight:600;letter-spacing:-.03em;text-wrap:balance}
 .ws-w{max-width:1180px;margin:0 auto;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px))}
@@ -128,7 +128,7 @@
 .ws-foot nav{display:flex;flex-direction:column;gap:10px}
 .ws-foot nav b{color:#fff;font-weight:600;margin-bottom:2px}
 .ws-social{display:flex;gap:8px;flex-wrap:wrap}
-.ws-social a{width:42px;height:42px;border-radius:50%;border:1px solid #2A3550;display:grid;place-items:center;color:var(--ws-on-navy)}
+.ws-social a{width:42px;height:42px;border-radius:50%;border:1px solid #24392F;display:grid;place-items:center;color:var(--ws-on-navy)}
 .ws-social a:hover{background:#16203A}
 .ws-social svg{width:18px;height:18px}
 .ws-foot-legal{display:flex;flex-wrap:wrap;gap:10px}

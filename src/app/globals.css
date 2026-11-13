@@ -41,8 +41,8 @@ img{max-width:100%}
 html,body{height:100%}
 body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
 *{box-sizing:border-box}
-/* Sin animaciones ni transiciones en ninguna pantalla. */
-*,*::before,*::after{animation:none!important;transition:none!important}
+/* Sin animaciones ni transiciones en la app. El sitio público (.site) tiene las suyas, que se apagan con "reducir movimiento". */
+:not(.site):not(.site *),:not(.site *)::before,:not(.site *)::after{animation:none!important;transition:none!important}
 button,input,select,textarea{font:inherit;color:inherit}
 .num,td.n,th.n{font-variant-numeric:tabular-nums}
 a{color:var(--blue);text-decoration:none}
