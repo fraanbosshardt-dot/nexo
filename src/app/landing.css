@@ -684,3 +684,27 @@
   .lx-vs.in tbody tr,.lx-vs.in .lx-yes path,.lx-grain.in .lx-grain-r{animation:none!important}
   .lx-vs .lx-yes path{stroke-dasharray:none!important}
 }
+
+/* Celular: que abra rápido. Sin desenfoques (lo más caro de pintar): los mismos colores con degradés comunes,
+   sin los adornos borrosos, y las secciones de abajo se dibujan recién cuando te acercás. */
+@media (max-width:900px),(pointer:coarse){
+  .lx-sky .ghost{display:none}
+  .lx-sky .blob,.lx-aur span,.lx-show-aur span{filter:none!important;will-change:auto}
+  .lx-sky .b1{background:radial-gradient(closest-side,rgba(47,122,87,.55),transparent)}
+  .lx-sky .b2{background:radial-gradient(closest-side,rgba(142,196,160,.3),transparent)}
+  .lx-sky .b3{background:radial-gradient(closest-side,rgba(22,73,58,.9),transparent)}
+  .lx-sky .b4{background:radial-gradient(closest-side,rgba(93,156,124,.35),transparent)}
+  .lx-sky .blob{opacity:1}
+  .lx-aur span{opacity:1}
+  .lx-aur .a1{background:radial-gradient(closest-side,rgba(142,196,160,.22),transparent)}
+  .lx-aur .a2{background:radial-gradient(closest-side,rgba(93,156,124,.16),transparent)}
+  .lx-aur .a3{background:radial-gradient(closest-side,rgba(22,73,58,.35),transparent)}
+  .lx-aur.dark .a1{background:radial-gradient(closest-side,rgba(47,122,87,.45),transparent)}
+  .lx-aur.dark .a2{background:radial-gradient(closest-side,rgba(22,73,58,.8),transparent)}
+  .lx-aur.dark .a3{background:radial-gradient(closest-side,rgba(93,156,124,.2),transparent)}
+  .lx-aur-grid{display:none}
+  .lx-show-aur{display:none}
+  .lx-show-card{background:radial-gradient(120% 80% at 30% 20%,#1D382D,#0B1813 70%)}
+  .lx-sky .veil{background:radial-gradient(ellipse 80% 60% at 50% 35%,rgba(7,18,14,.25),rgba(7,18,14,.8) 80%)}
+  .site main>section:not(.lx-top):not(.lx-bands):not(#funciones){content-visibility:auto;contain-intrinsic-size:auto 900px}
+}
