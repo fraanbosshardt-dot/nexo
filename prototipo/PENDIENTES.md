@@ -8,7 +8,7 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 ### Funciones para pulir (de a una)
 - [ ] F2. Préstamos: impuesto sobre los intereses (ej. IVA) y seguro sobre el saldo, para que el francés dé igual que el banco.
 - [ ] F3. Flujo de caja cuando los ingresos no se repiten (ver Z8: "Estimar con mi promedio", "Simular un ingreso" o las dos).
-- [ ] F4. Leer resúmenes en PDF de varios bancos y ajustar los formatos que no reconozca (ver P6; necesita resúmenes reales).
+- [ ] F4. Leer resúmenes en PDF de varios bancos y ajustar los formatos que no reconozca (Galicia, Santander, BBVA, Nación, Macro, Mercado Pago; necesita resúmenes reales).
 - [ ] F5. Probar en la pantalla la protección contra cobros y pagos duplicados (ya programada y con pruebas).
 - [ ] F6. Deudas: adelantar cuotas o precancelación parcial (elegir si baja la cuota o el plazo).
 - [ ] F7. Deudas: resumen más claro (intereses totales y pagados, costo real según tus cuotas, qué parte de tus ingresos se va en cuotas, con aviso).
@@ -20,19 +20,22 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 - [ ] R1. Seguridad (falta la parte grande): pasar la política de contenido (CSP) a "nonce" para no permitir scripts en línea (hoy Next los necesita con 'unsafe-inline'). Mejora la protección contra inyección de código.
 - [ ] R2. Seguridad: copias automáticas de la base (ver Z11) y probar una restauración una vez.
 - [ ] R8. Flujo de caja: decidir Z8 (ingresos que no se repiten).
+- [ ] R14. Velocidad: Categorías es la pantalla más pesada (200 KB contra ~50 KB) porque cada categoría trae un selector con todas las demás. Aliviarla sin cambiar cómo se ve.
+- [ ] R15. Bienvenida: en "Ver y ajustar las funciones", decir que las Pro se prueban 14 días gratis sin tarjeta y, si eligió alguna, ofrecer empezar la prueba al terminar (opcional, sin mandar a pagar).
+- [ ] R16. Publicar en Novedades (Panel) lo nuevo: logo, Informes contra el año pasado, escenarios guardados.
 - [ ] R13. Probar en el celular con la pantalla visible: confirmaciones nuevas, sugerencias de especies, deslizar, Presupuestos y Tarjetas (en esta sesión el panel del navegador estaba oculto).
 
 ### Necesitan algo tuyo
-- [ ] Z2. Cargar en Vercel lo que falta: RESEND_API_KEY y EMAIL_FROM (correos). Mercado Pago y CRON_SECRET ya están. Están explicadas en .env.example.
+- [ ] Z2. Correos con Resend: queda para cuando esté guafra.com (Z15). Sin dominio verificado Resend no manda a otras personas. Es lo más urgente: hoy "Olvidé mi contraseña", la confirmación de correo, los avisos y las invitaciones no salen. Va RESEND_API_KEY y EMAIL_FROM=Guafra <avisos@guafra.com> en Vercel.
 - [ ] Z4. Pasar la base de Railway al plan Hobby.
 - [ ] Z5. Cargar los correos de contacto por área y los links de redes en Panel → Ajustes → Contacto y redes.
 - [ ] Z7. Que un abogado revise los legales (términos, privacidad, reembolsos, cookies, arrepentimiento) antes de hacer publicidad, incluido si alcanza con no tener domicilio físico.
-- [ ] Z9. Activar la medición de visitas en Vercel (proyecto → Analytics → Enable). El código ya está puesto; sin activarlo no mide nada.
+- [ ] Z9. Medición de visitas de Vercel: el script ya responde en el sitio publicado; confirmá en Vercel (proyecto → Analytics) que aparezcan visitas.
 - [ ] Z11. Activar copias automáticas de la base en Railway (con el plan Hobby). Hoy se hacen a mano antes de cada cambio.
 - [ ] Z12. Con el dominio nuevo: dar de alta Search Console y enviar /sitemap.xml.
 - [ ] Z8. Decidir cómo mostrar el flujo de caja cuando los ingresos no se repiten: "Estimar con mi promedio", "Simular un ingreso" o las dos.
 - [ ] Z13. Mover la app y la base a la costa este de EE.UU. (Vercel `iad1` y Railway us-east), más cerca de Latinoamérica: ~50-70 ms menos por pedido. Se hace desde Vercel y Railway; avisame y cambio `vercel.json`.
-- [ ] Z15. Dominio para Finan: finan.com, finan.app y finanapp.com están ocupados; getfinan.com, usefinan.com y finanhq.com estaban libres el 11/11/2026. Antes de lanzar, buscar "Finan" en el registro de marcas (INPI y los países donde se venda). Cuando haya dominio: cambiar APP_URL en Vercel y la URL del webhook en Mercado Pago (hoy apunta a nexo-eight-sage.vercel.app).
+- [ ] Z15. Comprar guafra.com (lo comprás vos). Después, juntos: conectarlo en Vercel; en Resend agregar el dominio y cargar sus registros; en Vercel cambiar APP_URL; en Mercado Pago cambiar la URL del webhook y la del sitio (hoy nexo-eight-sage.vercel.app); en el código, la dirección del sitio. Antes de lanzar, buscar "Guafra" en el registro de marcas (INPI).
 - [ ] Z16. Activar los avisos en el celular: correr npm run vapid y cargar VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY y VAPID_SUBJECT (mailto:tu correo) en Vercel. Sin las claves, la opción no aparece.
 
 ### Probar con una persona real
@@ -42,14 +45,14 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 - [ ] T7. Abrir en Excel el archivo de Exportar → Movimientos (Excel) y guardar un reporte en PDF desde el celular y la compu.
 - [ ] T4. Importar un extracto real de Mercado Pago (CSV desde la app o la web de MP) y revisar que entren bien los movimientos.
 - [ ] T5. Recibir los correos nuevos (confirmar correo, contraseña cambiada, ingreso nuevo) cuando esté cargada la clave de Resend.
+- [ ] T10. Ver en la web la tarjeta nueva de Configuración → Plan (en Gratis): en local no se pudo ver porque el cobro no está activado.
+- [ ] T11. Probar el modo mantenimiento en el sitio publicado: prenderlo en el Panel, entrar con una cuenta que no sea del equipo y ver la pantalla completa; después apagarlo.
 - [ ] T1. Ingreso al panel interno con Google, con tu cuenta.
 - [ ] T2. La bienvenida nueva, de punta a punta.
 - [ ] T3. Consultas del sitio: abrirla desde el panel y responder una consulta.
 
 ### Para la próxima vuelta
 - [ ] P7. Publicar en Play Store y App Store (con Capacitor, la misma app empaquetada). Necesita tus cuentas de desarrollador: Google US$25 una vez, Apple US$99 por año.
-- [ ] P6. Probar la lectura de PDF con resúmenes reales de varios bancos (Galicia, Santander, BBVA, Nación, Macro, Mercado Pago) y ajustar los formatos que no reconozca.
-- [ ] P4. Cuando esté publicado: dar de alta el sitio en Google Search Console y enviar el sitemap (/sitemap.xml).
 - [ ] P1. Asistente con IA (Pro): se sacó de la lista de Pro y de Alertas hasta que esté hecho; cuando se arme, volver a sumarlo.
 - [ ] P3. Espacio compartido: ya sin "Beta". Falta el correo automático de invitación (Z2); mientras tanto la app muestra el enlace para pasarlo a mano.
 - [ ] P8. Importar Excel y OFX: ya sin "Beta". Probarlo con un archivo real de un banco.
@@ -61,6 +64,7 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 - [ ] M4. Testimonios de usuarios reales, cuando los haya (nunca inventados).
 
 ## Completado
+- [x] 13/11/2026 — Revisión completa (54 páginas sin errores, Gratis/Pro bien separados también en el servidor, sin dependencias con fallas). Arreglos: mantenimiento en pantalla completa (el equipo del panel sí entra), tarjeta de Configuración → Plan en dos columnas, barra de progreso suave en la bienvenida, barra de la web más blanca, 7 correos que todavía firmaban "Finan", campos sin doble línea, Presupuestos con tarjetas, Informes sin botones "Ver", comparación de la portada con la columna de Guafra en verde. Se borraron las 4 cuentas de prueba (hola@fraguan.com, vetra.store10, visionandtechnologies, itztheiplay).
 - [x] 12/11/2026 — Funciones Pro revisadas: sin "Asistente con IA" (no estaba hecho); "Saldo día a día" y "Exportar a Excel y PDF" sin Beta. Importar Excel/CSV: saltea los títulos que ponen los bancos arriba del encabezado. Flujo a 2-5 años avisa que es una estimación. Simulador: guardar hasta 10 escenarios y volver a abrirlos. Informes: filtro por cuenta y "Contra el año pasado". Soporte Pro: respuesta en 1 día hábil.
 - [x] 12/11/2026 — Logo nuevo de Guafra (la "g" con la curva y las barras) en el encabezado, el ícono del sitio, los íconos de la app instalada, el de iPhone y las imágenes para compartir.
 - [x] 12/11/2026 — Comprar Pro desde la web en un solo camino (/suscribirme): sin sesión → crear cuenta (o ingresar) → Mercado Pago → vuelve a la app; con Pro activo no deja comprar de nuevo; en Gratis va directo a pagar. Precios solo en pesos.
