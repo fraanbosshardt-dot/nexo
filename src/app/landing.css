@@ -556,19 +556,19 @@
 .lx-vs tbody tr{transition:background-color .2s}
 .lx-vs tbody tr:hover{background:color-mix(in srgb,var(--ink) 4%,transparent)}
 .lx-vs thead th{padding-block:18px;font-size:13.5px}
-.lx-vs .lx-vs-g{background:color-mix(in srgb,var(--ink) 9%,transparent);border-top-color:color-mix(in srgb,var(--ink) 14%,transparent)}
-.lx-vs thead th.lx-vs-g{background:var(--ink);color:var(--on-ink);border-radius:0 0 0 0}
-.lx-vs-brand{display:inline-flex;align-items:center;gap:8px;font-family:var(--font-brand),"Fredoka",sans-serif;font-size:18px;font-weight:600;letter-spacing:-.01em;--logo-dark:var(--on-ink)}
+.lx-vs .lx-vs-g{background:var(--ink-soft);border-top-color:color-mix(in srgb,var(--ink) 12%,transparent)}
+.lx-vs thead th.lx-vs-g{background:var(--ink-soft);color:var(--ink-txt)}
+.lx-vs-brand{display:inline-flex;align-items:center;gap:8px;font-family:var(--font-brand),"Fredoka",sans-serif;font-size:18px;font-weight:600;letter-spacing:-.01em;--logo-dark:var(--ink-txt)}
 .lx-vs-mark{width:24px;height:24px;display:inline-block;flex:none}
 .lx-vs-mark svg{width:100%;height:100%;display:block}
 .lx-vs td.lx-vs-g{color:inherit}
-.lx-yes{padding:6px 12px 6px 10px;border-radius:999px;background:var(--ink);color:var(--on-ink);font-size:14px;font-weight:600}
-.lx-yes svg{width:15px;height:15px}
+.lx-vs .lx-yes{gap:8px;color:var(--ink-txt);font-size:14.5px;font-weight:600}
+.lx-vs .lx-yes svg{width:22px;height:22px;padding:4px;border-radius:50%;background:var(--ink);color:var(--on-ink);stroke-width:3}
 .lx-no{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--surface-2);color:var(--faint);font-size:12px;font-weight:700}
 @media (max-width:640px){
   .lx-vs thead th:first-child,.lx-vs tbody th{width:34%}
   .lx-vs th,.lx-vs td{padding:12px 6px;font-size:12.5px}
   .lx-vs tbody th{padding-left:12px;font-size:13px}
   .lx-vs-brand{font-size:14px;gap:5px}.lx-vs-mark{width:18px;height:18px}
-  .lx-yes{padding:4px 8px;font-size:12px;gap:3px}.lx-yes svg{width:12px;height:12px}
+  .lx-vs .lx-yes{font-size:12.5px;gap:5px}.lx-vs .lx-yes svg{width:18px;height:18px;padding:3px}
 }
