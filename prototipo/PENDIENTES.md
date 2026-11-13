@@ -23,22 +23,20 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 - [ ] R13. Probar en el celular con la pantalla visible: confirmaciones nuevas, sugerencias de especies, deslizar, Presupuestos y Tarjetas (en esta sesión el panel del navegador estaba oculto).
 
 ### Necesitan algo tuyo
-- [ ] Z2. Cargar las claves reales en Vercel para activar lo que ya está programado: RESEND_API_KEY y EMAIL_FROM (emails), CRON_SECRET (tarea diaria), MP_ACCESS_TOKEN y MP_WEBHOOK_SECRET (Mercado Pago: el Access Token de producción y la clave secreta de Webhooks de la aplicación Finan). Están explicadas en .env.example.
-- [ ] Z3. Decidir el precio de Pro en pesos (u otra moneda) para Mercado Pago.
+- [ ] Z2. Cargar en Vercel lo que falta: RESEND_API_KEY y EMAIL_FROM (correos). Mercado Pago y CRON_SECRET ya están. Están explicadas en .env.example.
 - [ ] Z4. Pasar la base de Railway al plan Hobby.
 - [ ] Z5. Cargar los correos de contacto por área y los links de redes en Panel → Ajustes → Contacto y redes.
 - [ ] Z7. Que un abogado revise los legales (términos, privacidad, reembolsos, cookies, arrepentimiento) antes de hacer publicidad, incluido si alcanza con no tener domicilio físico.
 - [ ] Z9. Activar la medición de visitas en Vercel (proyecto → Analytics → Enable). El código ya está puesto; sin activarlo no mide nada.
-- [ ] Z10. Cargar el precio de Pro en pesos en Panel → Ajustes → Precio de Pro (por mes y por año). Mientras esté vacío, la web muestra el de dólares.
 - [ ] Z11. Activar copias automáticas de la base en Railway (con el plan Hobby). Hoy se hacen a mano antes de cada cambio.
 - [ ] Z12. Con el dominio nuevo: dar de alta Search Console y enviar /sitemap.xml.
 - [ ] Z8. Decidir cómo mostrar el flujo de caja cuando los ingresos no se repiten: "Estimar con mi promedio", "Simular un ingreso" o las dos.
 - [ ] Z13. Mover la app y la base a la costa este de EE.UU. (Vercel `iad1` y Railway us-east), más cerca de Latinoamérica: ~50-70 ms menos por pedido. Se hace desde Vercel y Railway; avisame y cambio `vercel.json`.
 - [ ] Z15. Dominio para Finan: finan.com, finan.app y finanapp.com están ocupados; getfinan.com, usefinan.com y finanhq.com estaban libres el 11/11/2026. Antes de lanzar, buscar "Finan" en el registro de marcas (INPI y los países donde se venda). Cuando haya dominio: cambiar APP_URL en Vercel y la URL del webhook en Mercado Pago (hoy apunta a nexo-eight-sage.vercel.app).
 - [ ] Z16. Activar los avisos en el celular: correr npm run vapid y cargar VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY y VAPID_SUBJECT (mailto:tu correo) en Vercel. Sin las claves, la opción no aparece.
-- [ ] Z14. Mercado Pago ahora cobra el precio en pesos de Panel → Ajustes → Precio de Pro (el mismo que se muestra). Cargalo ahí; `MP_PRICE_MONTHLY`, `MP_PRICE_YEARLY` y `MP_CURRENCY` ya no se usan y se pueden borrar de Vercel.
 
 ### Probar con una persona real
+- [ ] T9. Suscribirse a Pro con tu cuenta (Configuración → Plan) y ver que el plan pase a Pro solo; después cancelar.
 - [ ] T8. Compartir el espacio con alguien real (invitación por correo, aceptar, solo mirar) y recibir un aviso en el celular (Android e iPhone con la app instalada).
 - [ ] T6. Deslizar un pago en Próximos pagos desde el celular (no se pudo probar con el dedo en la compu).
 - [ ] T7. Abrir en Excel el archivo de Exportar → Movimientos (Excel) y guardar un reporte en PDF desde el celular y la compu.
@@ -61,6 +59,7 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 - [ ] M4. Testimonios de usuarios reales, cuando los haya (nunca inventados).
 
 ## Completado
+- [x] 12/11/2026 — Mercado Pago listo para cobrar Pro: la aplicación se llama Guafra (Suscripciones), credenciales de producción activadas, webhook a /api/pagos/mercadopago con "Planes y suscripciones", MP_ACCESS_TOKEN y MP_WEBHOOK_SECRET cargadas en Vercel y publicadas. Precio de Pro: $ 7.499 por mes y $ 74.990 por año (ya se ve en la web). Falta una suscripción de prueba real (T9).
 - [x] 12/11/2026 — La app pasa a llamarse Guafra: textos, correos, sitio, título de las pestañas, app instalada (nombre e ícono con la G), imagen para compartir y archivos que se descargan. Falta: nombre de la aplicación en Mercado Pago, y el dominio (Z15) cuando esté.
 - [x] 12/11/2026 — Velocidad: la proyección de tarjetas ya no consulta la base mes por mes (Flujo de 51 a 25 consultas, Tarjetas de 40 a 26, Inicio de 100 a 68, Alertas de 85 a 53); los saldos se calculan una sola vez por pantalla; Alertas, Patrimonio e Inversiones piden sus datos en paralelo; 12 índices nuevos para las búsquedas frecuentes; Próximos pagos muestra 3 meses por defecto (de 282 KB a 93 KB) con "Ver los próximos 12 meses". Lo que más ayudaría ahora en producción es Z13 (app y base en la misma región).
 - [x] 12/11/2026 — Mejoras de la revisión: avisos por correo al activar o desactivar el doble factor y cuando alguien se suma a tu espacio (R3); en Inicio, "Este mes todavía pagás" separado en tarjetas, cuotas y otros (R4); en Movimientos, "Elegir varios" para cambiar la categoría o eliminar juntos (R5); en Cuentas, la línea del saldo de los últimos 6 meses (R6); en Próximos pagos, "Pagar varios juntos" desde una cuenta (R7); en Informes, comparar dos meses por categoría (R9); en Alertas, aviso si lo que vence en 10 días no alcanza con la plata de las cuentas (R10); en el Simulador, probar un préstamo (R11); en Configuración → Seguridad, el estado de la cuenta con cerrar las demás sesiones y descargar los datos (R12). Seguridad: encabezados nuevos (aislar la ventana, recursos solo del mismo sitio, forzar HTTPS en todo). Falta R1 completo (nonce), R2 (copias de la base) y R8 (decisión del flujo).
