@@ -8,6 +8,7 @@ import { formatMoney, ZERO } from "@/lib/money";
 import { addMonths, fmtPeriod, period, todayIn } from "@/lib/dates";
 import { PageHead } from "@/components/page";
 import { ProGate } from "@/components/pro";
+import { AutoSelect } from "@/components/auto-select";
 
 export const metadata: Metadata = { title: "Informes" };
 const MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
@@ -46,12 +47,13 @@ export default async function Reports({ searchParams }: { searchParams: Promise<
     <>
       <PageHead crumb="Análisis" title="Informes" desc={`${r.periods.length < 6 ? `Desde ${fmtPeriod(r.periods[0]).toLowerCase()}` : "Los últimos 6 meses"}, en ${cur}${acc ? `, solo ${acc.name}` : ""}.`} actions={<><a className="btn" href="/app/exportar/excel" download>Excel</a><Link className="btn" href="/reporte">Reporte en PDF</Link></>} />
       {accounts.length > 1 && (
-        <form className="cmp-pick" style={{ marginBottom: 12 }}>
-          <select name="cuenta" defaultValue={acc?.id ?? ""} aria-label="Cuenta">
+        <form className="cmp-pick" style={{ marginBottom: 12, justifyContent: "flex-start" }}>
+          <span className="sub">Mostrar</span>
+          <AutoSelect name="cuenta" defaultValue={acc?.id ?? ""} aria-label="Cuenta">
             <option value="">Todas las cuentas</option>
             {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}{a.active ? "" : " (desactivada)"}</option>)}
-          </select>
-          <button className="btn sm" type="submit">Ver</button>
+          </AutoSelect>
+          <button className="sr-only" type="submit">Ver</button>
         </form>
       )}
       {!has ? (
@@ -76,13 +78,13 @@ export default async function Reports({ searchParams }: { searchParams: Promise<
           </div>
           {r.periods.length > 1 && (
             <div className="card">
-              <div className="chead"><h3>Comparar dos meses</h3>
+              <div className="chead"><div><h3>Comparar dos meses</h3><p className="sub">Categoría por categoría.</p></div>
                 <form className="cmp-pick">
                   {keep}
-                  <select name="a" defaultValue={r.periods[ia]} aria-label="Primer mes">{r.periods.map((p) => <option key={p} value={p}>{fmtPeriod(p)}</option>)}</select>
-                  <span className="sub">contra</span>
-                  <select name="b" defaultValue={r.periods[ib]} aria-label="Segundo mes">{r.periods.map((p) => <option key={p} value={p}>{fmtPeriod(p)}</option>)}</select>
-                  <button className="btn sm" type="submit">Comparar</button>
+                  <AutoSelect name="a" defaultValue={r.periods[ia]} aria-label="Primer mes">{r.periods.map((p) => <option key={p} value={p}>{fmtPeriod(p)}</option>)}</AutoSelect>
+                  <span className="sub">vs.</span>
+                  <AutoSelect name="b" defaultValue={r.periods[ib]} aria-label="Segundo mes">{r.periods.map((p) => <option key={p} value={p}>{fmtPeriod(p)}</option>)}</AutoSelect>
+                  <button className="sr-only" type="submit">Comparar</button>
                 </form>
               </div>
               <div className="tw"><table>
@@ -96,12 +98,11 @@ export default async function Reports({ searchParams }: { searchParams: Promise<
             </div>
           )}
           <div className="card">
-            <div className="chead"><h3>Contra el año pasado</h3>
+            <div className="chead"><div><h3>Contra el año pasado</h3><p className="sub">El mismo mes, un año antes.</p></div>
               <form className="cmp-pick">
                 {keep}
-                <select name="mes" defaultValue={ym} aria-label="Mes">{r.periods.map((p) => <option key={p} value={p}>{fmtPeriod(p)}</option>)}</select>
-                <span className="sub">contra {fmtPeriod(addMonths(ym, -12)).toLowerCase()}</span>
-                <button className="btn sm" type="submit">Ver</button>
+                <AutoSelect name="mes" defaultValue={ym} aria-label="Mes a comparar con el año pasado">{r.periods.map((p) => <option key={p} value={p}>{fmtPeriod(p)} vs. {fmtPeriod(addMonths(p, -12)).toLowerCase()}</option>)}</AutoSelect>
+                <button className="sr-only" type="submit">Ver</button>
               </form>
             </div>
             {!prevHas ? <p className="sub" style={{ margin: 0 }}>No hay movimientos en {fmtPeriod(addMonths(ym, -12)).toLowerCase()}. Cuando tengas un año de datos, acá ves si gastás más o menos que el año pasado en el mismo mes.</p> : (
