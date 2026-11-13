@@ -2,7 +2,7 @@
 
 /* Barra de lectura */
 .lx-progress{position:fixed;top:0;left:0;right:0;height:3px;z-index:60;pointer-events:none}
-.lx-progress i{display:block;height:100%;background:linear-gradient(90deg,#16493A,#5B8EF0);transform-origin:left;transform:scaleX(0)}
+.lx-progress i{display:block;height:100%;background:linear-gradient(90deg,#16493A,#5D9C7C);transform-origin:left;transform:scaleX(0)}
 
 /* Aparición en cascada: cada tarjeta entra un poco después que la anterior */
 .site .rv.in{transition-delay:calc(var(--i,0) * 110ms)}
@@ -66,15 +66,15 @@
 .lx-pane{display:flex;flex-direction:column;gap:2px;padding-bottom:12px}
 .lx-pane .lx-list{margin-top:8px}
 .lx-red{color:#B42318}
-.lx-card-vis{margin:8px 12px;padding:18px;border-radius:20px;color:#fff;background:linear-gradient(135deg,#0B1220,#24304C);display:flex;flex-direction:column;gap:4px}
+.lx-card-vis{margin:8px 12px;padding:18px;border-radius:20px;color:#fff;background:linear-gradient(135deg,#0B1813,#1D382D);display:flex;flex-direction:column;gap:4px}
 .lx-card-vis small{font-size:11.5px;opacity:.8}
 .lx-card-vis b{font-family:var(--font-tight),"Inter Tight",sans-serif;font-size:28px;font-weight:600;letter-spacing:-.02em}
 .lx-flow{margin:8px 12px;background:#fff;border-radius:18px;padding:16px 12px 12px;display:flex;flex-direction:column;gap:14px}
 .lx-flow-bars{display:flex;align-items:flex-end;gap:8px;height:190px}
 .lx-flow-bars span{flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:6px}
-.lx-flow-bars i{width:100%;border-radius:6px;background:#C7D8F6}
+.lx-flow-bars i{width:100%;border-radius:6px;background:#C9E3D2}
 .lx-flow-bars i.r{background:#F4A7A0}
-.lx-flow-bars small{font-size:10px;color:#5B6475}
+.lx-flow-bars small{font-size:10px;color:#5B6B63}
 .lx-tour-pane.on .lx-flow-bars i{animation:lx-bar .7s cubic-bezier(.2,.7,.2,1) both;transform-origin:bottom}
 .lx-tour-pane.on .lx-flow-bars span:nth-child(2) i{animation-delay:.06s}
 .lx-tour-pane.on .lx-flow-bars span:nth-child(3) i{animation-delay:.12s}
@@ -89,7 +89,7 @@
   .lx-tour-phone{display:none}
   .lx-tour-steps{display:flex;flex-direction:column;gap:44px}
   .lx-tour-steps li{min-height:0;opacity:1}
-  .lx-tour-inline{display:block;margin-top:10px;width:min(300px,100%);align-self:center;border-radius:30px;padding:9px;background:#0B1220;box-shadow:0 24px 50px rgba(11,18,32,.18)}
+  .lx-tour-inline{display:block;margin-top:10px;width:min(300px,100%);align-self:center;border-radius:30px;padding:9px;background:#0B1813;box-shadow:0 24px 50px rgba(11,18,32,.18)}
   .lx-tour-inline .lx-screen{border-radius:22px;padding-top:12px}
 }
 

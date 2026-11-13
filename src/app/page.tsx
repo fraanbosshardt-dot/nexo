@@ -5,6 +5,7 @@ import { LandingSky } from "@/components/landing-sky";
 import { MonthStory } from "@/components/landing-month";
 import { LandingMotion } from "@/components/landing-motion";
 import { Showcase } from "@/components/landing-show";
+import { FaqList } from "@/components/landing-faq";
 import { PublicShell } from "@/components/public-shell";
 import { AppCta } from "@/components/app-cta";
 import { PLAN_FEATURES } from "@/lib/modules";
@@ -270,10 +271,14 @@ export default async function Landing() {
       </section>
 
       {/* Preguntas */}
-      <section className="ws-w ws-sec lx-faq" id="preguntas">
-        <Reveal className="ws-head c"><h2 className="ws-h2">Preguntas frecuentes</h2></Reveal>
-        <div>{FAQ.map(([q, a], i) => <details key={q} open={i === 0}><summary>{q}<span aria-hidden="true">+</span></summary><p>{a}</p></details>)}</div>
-        <p className="ws-fine" style={{ textAlign: "center", marginTop: 24 }}>¿Otra duda? <Link href="/contacto">Escribinos</Link>.</p>
+      <section className="ws-w ws-sec lx-faq2" id="preguntas">
+        <Reveal className="lx-faq-side">
+          <p className="ws-eyebrow">Preguntas frecuentes</p>
+          <h2 className="ws-h2">Lo que más nos preguntan.</h2>
+          <p className="ws-lead">Si no encontrás lo que buscás, escribinos y te respondemos.</p>
+          <Link className="ws-btn" href="/contacto">Hacer una pregunta</Link>
+        </Reveal>
+        <FaqList items={FAQ} />
       </section>
 
       {/* Cierre */}
