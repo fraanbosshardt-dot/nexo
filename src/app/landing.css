@@ -572,3 +572,12 @@
   .lx-vs-brand{font-size:14px;gap:5px}.lx-vs-mark{width:18px;height:18px}
   .lx-vs .lx-yes{font-size:12.5px;gap:5px}.lx-vs .lx-yes svg{width:18px;height:18px;padding:3px}
 }
+
+/* Precios con la sesión iniciada: tu plan actual */
+.pa-note{max-width:760px;margin:0 auto 18px;padding:12px 16px;border-radius:14px;background:var(--ink-soft);color:var(--ink-txt);font-size:14.5px;text-align:center}
+.pa-go{display:flex;justify-content:center;margin-top:16px}
+.plan-aware[data-plan=pro] [data-plan-cta],.plan-aware[data-plan=pro] .lx-plan.pro .lx-link{display:none!important}
+.plan-aware[data-plan] [data-free-cta]{display:none}
+.plan-aware[data-plan=free] .lx-plan.free{position:relative;border-color:var(--ink);box-shadow:0 0 0 3px var(--ink-soft)}
+.plan-aware[data-plan=pro] .lx-plan.pro h3::after,.plan-aware[data-plan=free] .lx-plan.free h3::after{content:"Tu plan";display:inline-block;margin-left:10px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;vertical-align:middle;background:var(--ink);color:var(--on-ink)}
+.plan-aware[data-plan=pro] .lx-plan.pro h3::after{background:#8EC4A0;color:#07120E}

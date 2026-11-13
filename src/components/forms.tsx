@@ -72,26 +72,33 @@ export function PasswordStrength({ name = "password", id = "su-pass" }: { name?:
   );
 }
 
-// Campo de código de 6 números, con espacio en el medio para leerlo mejor.
-export function OtpInput({ name = "code" }: { name?: string }) {
+// Código de 6 números en 6 casillas. Es un solo campo de verdad (funciona pegar y el autocompletar del celular);
+// las casillas solo lo muestran. autoSubmit: al completar el sexto número se envía solo.
+export function OtpInput({ name = "code", label = "Código de 6 números", autoSubmit = false }: { name?: string; label?: string; autoSubmit?: boolean }) {
   const [v, setV] = useState("");
+  const [focus, setFocus] = useState(false);
   return (
-    <label className="field">
-      Código de 6 números
-      <input
-        name={name}
-        className="otp"
-        inputMode="numeric"
-        autoComplete="one-time-code"
-        maxLength={7}
-        placeholder="000 000"
-        value={v}
-        autoFocus
-        onChange={(e) => {
-          const d = e.target.value.replace(/\D/g, "").slice(0, 6);
-          setV(d.length > 3 ? `${d.slice(0, 3)} ${d.slice(3)}` : d);
-        }}
-      />
+    <label className="otp6">
+      <span className="otp6-lbl">{label}</span>
+      <span className="otp6-boxes">
+        {Array.from({ length: 6 }, (_, i) => <span key={i} aria-hidden="true" className={`otp6-box${v[i] ? " full" : ""}${focus && (i === v.length || (i === 5 && v.length === 6)) ? " cur" : ""}`}>{v[i] ?? ""}</span>)}
+        <input
+          name={name}
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          maxLength={8}
+          value={v}
+          autoFocus
+          aria-label={label}
+          onFocus={() => setFocus(true)}
+          onBlur={() => setFocus(false)}
+          onChange={(e) => {
+            const d = e.target.value.replace(/\D/g, "").slice(0, 6);
+            setV(d);
+            if (autoSubmit && d.length === 6) setTimeout(() => e.target.form?.requestSubmit(), 120);
+          }}
+        />
+      </span>
     </label>
   );
 }

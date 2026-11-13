@@ -11,6 +11,8 @@ type Acc = { id: string; name: string; currency: string };
 export function AddInvestment({ classes, accounts, currencies, base, today }: { classes: Cls[]; accounts: Acc[]; currencies: string[]; base: string; today: string }) {
   const [mode, setMode] = useState<"especie" | "monto">("especie");
   const [cls, setCls] = useState(classes[2]?.key ?? classes[0].key);
+  const [cur, setCur] = useState(base);
+  const crypto = ["BTC", "ETH", "USDT", "USDC", "SOL"].includes(cur);
   const c = classes.find((x) => x.key === cls)!;
   const bond = cls === "BOND" || cls === "ON" || cls === "LETRA";
   return (
@@ -41,8 +43,9 @@ export function AddInvestment({ classes, accounts, currencies, base, today }: { 
         </ActionForm>
       ) : (
         <ActionForm action={createInvestmentAction} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div className="frow"><label className="field">Nombre<input name="name" placeholder="Ej.: Plazo fijo 30 días" /></label><label className="field">Tipo<select name="kind">{["Plazo fijo", "Caución", "Cuenta remunerada", "Dólares", "Otra"].map((k) => <option key={k}>{k}</option>)}</select></label></div>
-          <div className="frow"><label className="field">Moneda<select name="currency" defaultValue={base}>{currencies.map((x) => <option key={x}>{x}</option>)}</select></label><label className="field">Cuánto pusiste<input name="amount" inputMode="decimal" placeholder="0,00" /></label></div>
+          <div className="frow"><label className="field">Nombre (opcional)<input name="name" placeholder="Ej.: Plazo fijo 30 días" /></label><label className="field">Tipo<select name="kind">{["Plazo fijo", "Caución", "Cuenta remunerada", "Dólares", "Otra"].map((k) => <option key={k}>{k}</option>)}</select></label></div>
+          <div className="frow"><label className="field">Moneda<select name="currency" value={cur} onChange={(e) => setCur(e.target.value)}>{currencies.map((x) => <option key={x}>{x}</option>)}</select></label><label className="field">Cuánto pusiste<input name="amount" inputMode="decimal" placeholder="0,00" /></label></div>
+          {crypto && <div className="notice a"><span>¿Es una cripto que compraste? Cargala en <button type="button" className="lnk" onClick={() => { setMode("especie"); setCls("CRYPTO"); }}>Bonos, acciones, cripto, FCI</button>: así sabemos cuántas tenés y el precio se actualiza solo.</span></div>}
           <label className="field">¿De dónde sale?<select name="accountId" defaultValue=""><option value="">Ya lo tenía invertido (no sale de ninguna cuenta)</option>{accounts.map((a) => <option key={a.id} value={a.id}>{a.name} ({a.currency})</option>)}</select></label>
           <div className="stm-foot"><span className="sub">Después actualizás cuánto vale cuando quieras.</span><Submit>Crear inversión</Submit></div>
         </ActionForm>

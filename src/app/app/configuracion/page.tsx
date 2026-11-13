@@ -87,27 +87,62 @@ export default async function Settings({ searchParams }: { searchParams: Promise
             <div className="sec-item ok"><span className="sec-dot" aria-hidden="true">↓</span><span><b>Tus datos</b><span className="sub">Llevátelos cuando quieras</span></span><a className="btn sm" href="/app/configuracion/mis-datos" style={{ marginLeft: "auto" }}>Descargar todo</a></div>
           </div>
         </div>
-        <div className="card">
-          <div className="chead"><div><h3>Verificación en dos pasos</h3><p className="sub">Además de la contraseña, te pide un código de Google Authenticator al entrar.</p></div>{user.totpEnabledAt && <span className="pill g">Activa</span>}</div>
+        <div className={`card tf-card ${user.totpEnabledAt ? "on" : ""}`}>
           {user.totpEnabledAt ? (
-            <ActionForm action={disable2faAction} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <p className="sub">Activa desde el {fmtDate(user.totpEnabledAt)}. Para desactivarla, escribí un código de la app.</p>
-              <OtpInput />
-              <div><Submit className="btn">Desactivar</Submit></div>
-            </ActionForm>
-          ) : qr ? (
-            <ActionForm action={confirm2faAction} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <p className="sub">1. Abrí Google Authenticator y tocá “+”. 2. Escaneá el código o cargá la clave. 3. Escribí el código de 6 números.</p>
-              <div className="tf-box">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={qr.qr} alt="Código QR para Google Authenticator" width={160} height={160} className="qr" style={{ width: 160, height: 160 }} />
-                <div><div className="sub">Clave</div><b className="num sel" style={{ wordBreak: "break-all" }}>{qr.secret.replace(/(.{4})/g, "$1 ").trim()}</b></div>
+            <div className="tf-hero">
+              <div className="tf-art" aria-hidden="true">
+                <div className="tf-phone">
+                  <span className="tf-app">Guafra</span>
+                  <b className="tf-code">532 143</b>
+                  <span className="tf-ring"><i /></span>
+                </div>
+                <span className="tf-badge ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12l5 5L20 7" /></svg></span>
               </div>
-              <OtpInput />
-              <div><Submit>Activar</Submit></div>
+              <div className="tf-body">
+                <span className="pill g">Activa desde el {fmtDate(user.totpEnabledAt)}</span>
+                <h3>Tu cuenta está protegida</h3>
+                <p>Cuando entres desde un dispositivo nuevo, además de la contraseña te pedimos el código de la app. Aunque alguien sepa tu contraseña, no puede entrar.</p>
+                <details className="tf-off">
+                  <summary>Desactivar la verificación</summary>
+                  <ActionForm action={disable2faAction} className="tf-off-body">
+                    <p><b>Tu cuenta va a quedar menos protegida.</b> Sin la verificación, alcanza con tu contraseña para entrar. Te avisamos por correo cuando se desactiva.</p>
+                    <OtpInput label="Para confirmar, escribí el código de la app" />
+                    <div><Submit className="btn danger">Desactivar la verificación</Submit></div>
+                  </ActionForm>
+                </details>
+              </div>
+            </div>
+          ) : qr ? (
+            <ActionForm action={confirm2faAction} className="tf-setup">
+              <div className="tf-head"><h3>Activá la verificación en dos pasos</h3><p className="sub">Son tres pasos y tarda un minuto.</p></div>
+              <ol className="tf-steps3">
+                <li><span className="tf-n">1</span><b>Instalá una app de códigos</b><small>Google Authenticator, Microsoft Authenticator o la que ya uses.</small></li>
+                <li><span className="tf-n">2</span><b>Escaneá este código</b><small>En la app tocá “+” y elegí escanear.</small>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img className="tf-qrimg" src={qr.qr} alt="Código QR para la app de códigos" width={156} height={156} />
+                  <details className="tf-keyd"><summary>¿No podés escanear? Cargá la clave</summary><code className="sel">{qr.secret.replace(/(.{4})/g, "$1 ").trim()}</code></details>
+                </li>
+                <li><span className="tf-n">3</span><b>Escribí el código</b><small>El que se ve ahora en la app (cambia cada 30 segundos).</small><OtpInput label="Código de 6 números" /><Submit>Activar</Submit></li>
+              </ol>
             </ActionForm>
           ) : (
-            <form action={start2faAction}><button className="btn pri" type="submit">Configurar</button></form>
+            <div className="tf-hero">
+              <div className="tf-art" aria-hidden="true">
+                <div className="tf-phone">
+                  <span className="tf-app">Guafra</span>
+                  <b className="tf-code">532 143</b>
+                  <span className="tf-ring"><i /></span>
+                </div>
+                <span className="tf-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" /></svg></span>
+              </div>
+              <div className="tf-body">
+                <span className="pill a">Recomendada</span>
+                <h3>Protegé tu cuenta con un código del celular</h3>
+                <p>Además de la contraseña, al entrar desde un dispositivo nuevo te pedimos un código que solo ves vos en tu celular.</p>
+                <ul className="tf-list"><li><Icon name="check" />Funciona sin internet en el celular.</li><li><Icon name="check" />Lo configurás en un minuto.</li><li><Icon name="check" />Te avisamos por correo si alguien la desactiva.</li></ul>
+                <form action={start2faAction}><button className="btn pri" type="submit">Activar la verificación</button></form>
+              </div>
+            </div>
           )}
         </div>
         <div className="card">

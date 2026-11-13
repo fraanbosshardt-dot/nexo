@@ -42,11 +42,11 @@ export default async function Categories({ searchParams }: { searchParams: Promi
               {subs.length > 0 && <div className="chips">{subs.map((s) => <span className="tag" key={s.id}>{s.name}</span>)}</div>}
               <div className="cat-acts">
               <details className="cat-del cat-edit">
-                <summary>Editar</summary>
+                <summary><span className="sm-o">Editar</span><span className="sm-c">Cerrar ✕</span></summary>
                 <CategoryEdit items={[{ id: p.id, name: p.name, parentId: null, hasChildren: subs.length > 0 }, ...subs.map((x) => ({ id: x.id, name: x.name, parentId: x.parentId, hasChildren: false }))]} parents={parents.map((x) => ({ id: x.id, name: x.name }))} />
               </details>
               <details className="cat-del">
-                <summary>Borrar</summary>
+                <summary><span className="sm-o">Borrar</span><span className="sm-c">Cerrar ✕</span></summary>
                 <ActionForm action={deleteCategoryAction} style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 10 }}>
                   <input type="hidden" name="kind" value={kind} />
                   <label className="field">Qué querés borrar<select name="id" defaultValue={p.id}>

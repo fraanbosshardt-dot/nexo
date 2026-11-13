@@ -41,8 +41,9 @@ export async function saveManualRate(db: Db, ws: string, from: string, to: strin
 // ---------- Inversiones ----------
 
 export async function createInvestment(db: Db, ws: string, input: { name: string; kind: string; currency: string }) {
-  if (!input.name.trim()) throw new UserError("Poné un nombre a la inversión.");
-  return db.investment.create({ data: { workspaceId: ws, name: input.name.trim(), kind: input.kind, currency: input.currency } });
+  // Si no le pusiste nombre, se arma solo con el tipo y la moneda (ej.: "Dólares (USD)", "Inversión en BTC").
+  const name = input.name.trim() || (input.kind && input.kind !== "Otra" ? `${input.kind} (${input.currency})` : `Inversión en ${input.currency}`);
+  return db.investment.create({ data: { workspaceId: ws, name: name.slice(0, 80), kind: input.kind, currency: input.currency } });
 }
 
 // Aporte (sale dinero de una cuenta) o retiro (entra dinero). No es gasto ni ingreso: es un movimiento de inversión.

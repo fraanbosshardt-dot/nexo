@@ -7,6 +7,7 @@ import { LandingMotion } from "@/components/landing-motion";
 import { Showcase } from "@/components/landing-show";
 import { FaqList } from "@/components/landing-faq";
 import { LogoMark } from "@/components/logo-mark";
+import { PlanAware } from "@/components/plan-aware";
 import { Aurora, ScrollFx } from "@/components/landing-scrollfx";
 import { PublicShell } from "@/components/public-shell";
 import { AppCta } from "@/components/app-cta";
@@ -141,20 +142,20 @@ export default async function Landing() {
   const pm = priceLabel(ps, "monthly"), py = priceLabel(ps, "yearly");
   const free = PLAN_FEATURES.filter((f) => f.plan === "free");
   const pro = PLAN_FEATURES.filter((f) => f.plan === "pro");
-  const plans = (price: string, period: string) => (
+  const plans = (price: string, period: string, cycle: "mensual" | "anual") => (
     <div className="lx-plans">
-      <div className="lx-plan" style={{ "--i": 0 } as React.CSSProperties}>
+      <div className="lx-plan free" style={{ "--i": 0 } as React.CSSProperties}>
         <div><h3>Gratis</h3><p>Para ordenar tu plata del día a día.</p></div>
         <div className="lx-price"><b>$ 0</b><span>para siempre</span></div>
-        <Link className="ws-btn" href="/registro">Crear cuenta gratis</Link>
+        <Link className="ws-btn" href="/registro" data-free-cta="">Crear cuenta gratis</Link>
         <ul>{free.map((f) => <li key={f.name}>{CHECK}{f.name}</li>)}</ul>
       </div>
       <div className="lx-plan pro" style={{ "--i": 1 } as React.CSSProperties}>
         <span className="lx-reco">Recomendado</span>
         <div><h3>Pro</h3><p>Para planificar todo el año.</p></div>
         {pm.amount > 0 ? <div className="lx-price"><b>{price}</b><span>por {period}</span></div> : <div className="lx-price"><b style={{ fontSize: 28 }}>{price}</b></div>}
-        <a className="ws-btn pri lx-shine" href="/suscribirme?ciclo=mensual">Suscribirme a Pro</a>
-        {py.amount > 0 && <a className="lx-link" href="/suscribirme?ciclo=anual" style={{ textAlign: "center", fontSize: 14 }}>o pagá el año: {py.text}</a>}
+        <a className="ws-btn pri lx-shine" href={`/suscribirme?ciclo=${cycle}`} data-plan-cta="">Suscribirme a Pro{cycle === "anual" ? " por año" : ""}</a>
+        {cycle === "mensual" && py.amount > 0 && <a className="lx-link" href="/suscribirme?ciclo=anual" style={{ textAlign: "center", fontSize: 14 }}>o pagá el año: {py.text}</a>}
         <ul><li>{CHECK}Todo lo de Gratis</li>{pro.map((f) => <li key={f.name}>{CHECK}<span>{f.name}{f.beta && <> <span className="lx-beta">Beta</span></>}</span></li>)}</ul>
       </div>
     </div>
@@ -284,7 +285,7 @@ export default async function Landing() {
         <Aurora />
         <div className="ws-w ws-sec lx-pricing">
           <Reveal className="ws-head c"><p className="ws-eyebrow">Precios</p><h2 className="ws-h2">Empezá gratis. Pasate a Pro cuando lo necesites.</h2></Reveal>
-          <PriceSwitch monthly={plans(pm.text, "mes")} yearly={plans(py.text, "año")} />
+          <PlanAware><PriceSwitch monthly={plans(pm.text, "mes", "mensual")} yearly={plans(py.text, "año", "anual")} /></PlanAware>
           <p className="ws-fine" style={{ textAlign: "center" }}>Cancelás cuando quieras y tenés 10 días para arrepentirte con <Link href="/reembolsos">devolución total</Link>.</p>
         </div>
       </section>
