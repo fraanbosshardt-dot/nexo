@@ -72,7 +72,7 @@ export default async function Investments({ searchParams }: { searchParams: Prom
 
       {holdings.length > 0 && (
         <div className="card">
-          <div className="chead"><h3>Tus especies</h3><span className="sub">Precios de data912 (Argentina), Yahoo (exterior) y CoinGecko (cripto)</span></div>
+          <div className="chead"><h3>Tus especies</h3></div>
           <div className="inv-list">{holdings.map((i) => {
             const h = i.holding!;
             const fm = (v: Parameters<typeof formatMoney>[0], o?: Parameters<typeof formatMoney>[2]) => formatMoney(v, i.inv.currency, o);
