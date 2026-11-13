@@ -85,8 +85,16 @@ export async function requireWorkspace(opts: { allowNotOnboarded?: boolean } = {
 
 // Después de ingresar: si estaba aceptando una invitación, vuelve a ella; si no, al destino de siempre.
 export async function landingPath(fallback: string) {
-  const t = (await cookies()).get("nexo_invite")?.value;
-  return t && /^[\w-]{20,64}$/.test(t) ? `/invitacion/${t}` : fallback;
+  const jar = await cookies();
+  const t = jar.get("nexo_invite")?.value;
+  if (t && /^[\w-]{20,64}$/.test(t)) return `/invitacion/${t}`;
+  // Venía a comprar Pro desde el sitio: después de crear la cuenta o ingresar, sigue a pagar.
+  const after = jar.get("nexo_after")?.value;
+  if (after && /^\/suscribirme\?ciclo=(mensual|anual)$/.test(after)) {
+    try { jar.delete("nexo_after"); } catch { /* en una página no se puede borrar: vence sola */ }
+    return after;
+  }
+  return fallback;
 }
 
 // Lo que solo puede hacer el dueño del espacio (compartirlo, el plan).

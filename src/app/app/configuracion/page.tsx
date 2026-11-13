@@ -24,7 +24,7 @@ export const metadata: Metadata = { title: "Configuración" };
 
 const TABS = [["general", "General"], ["funciones", "Funciones"], ["compartir", "Compartir"], ["seguridad", "Seguridad"], ["plan", "Plan"], ["datos", "Tus datos"]] as const;
 
-export default async function Settings({ searchParams }: { searchParams: Promise<{ tab?: string; pago?: string; cancelado?: string; cupon?: string; soloduenio?: string }> }) {
+export default async function Settings({ searchParams }: { searchParams: Promise<{ tab?: string; pago?: string; cancelado?: string; cupon?: string; soloduenio?: string; yatenes?: string }> }) {
   const { user, workspace, modules, plan, session, membership } = await requireWorkspace();
   const sp = await searchParams;
   const asked = sp.tab;
@@ -153,6 +153,7 @@ export default async function Settings({ searchParams }: { searchParams: Promise
     body = (
       <>
         {sp.pago && <div className="notice g">Gracias. En cuanto Mercado Pago confirme el pago, tu plan pasa a Pro.</div>}
+        {sp.yatenes && <div className="notice g">Ya tenés Pro activo, no hace falta pagarlo de nuevo.</div>}
         {sp.cancelado && <div className="notice">{endsAt ? `Cancelaste Pro. No se te cobra más y lo seguís usando hasta el ${fmtDate(endsAt)}; después pasás a Gratis con todos tus datos.` : "Cancelaste Pro. Seguís con todo lo de Gratis y tus datos quedan."}</div>}
         <div className="card">
           <div className="chead"><div><h3>Tu plan: {plan === "PRO" ? "Pro" : "Gratis"}</h3><p className="sub">{trial ? `Prueba gratis hasta el ${fmtDate(sub!.trialEndsAt!)}.` : endsAt ? `${sub!.status === "CANCELED" ? "Cancelado" : "Pago pendiente en Mercado Pago"}: tenés Pro hasta el ${fmtDate(endsAt)}.` : paidPro ? `Pagás con Mercado Pago, ${sub!.billingCycle === "yearly" ? "por año" : "por mes"}.` : plan === "PRO" ? "Pro activado por Guafra." : "Tenés casi todo incluido, sin costo."}</p></div></div>

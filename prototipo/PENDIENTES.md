@@ -36,7 +36,7 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 - [ ] Z16. Activar los avisos en el celular: correr npm run vapid y cargar VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY y VAPID_SUBJECT (mailto:tu correo) en Vercel. Sin las claves, la opción no aparece.
 
 ### Probar con una persona real
-- [ ] T9. Suscribirse a Pro con tu cuenta (Configuración → Plan) y ver que el plan pase a Pro solo; después cancelar.
+- [ ] T9. Suscribirse a Pro desde la web (botón "Suscribirme a Pro" de la página principal) o desde Configuración → Plan y ver que el plan pase a Pro solo; después cancelar.
 - [ ] T8. Compartir el espacio con alguien real (invitación por correo, aceptar, solo mirar) y recibir un aviso en el celular (Android e iPhone con la app instalada).
 - [ ] T6. Deslizar un pago en Próximos pagos desde el celular (no se pudo probar con el dedo en la compu).
 - [ ] T7. Abrir en Excel el archivo de Exportar → Movimientos (Excel) y guardar un reporte en PDF desde el celular y la compu.
@@ -59,6 +59,7 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 - [ ] M4. Testimonios de usuarios reales, cuando los haya (nunca inventados).
 
 ## Completado
+- [x] 12/11/2026 — Comprar Pro desde la web en un solo camino (/suscribirme): sin sesión → crear cuenta (o ingresar) → Mercado Pago → vuelve a la app; con Pro activo no deja comprar de nuevo; en Gratis va directo a pagar. Precios solo en pesos.
 - [x] 12/11/2026 — Mercado Pago listo para cobrar Pro: la aplicación se llama Guafra (Suscripciones), credenciales de producción activadas, webhook a /api/pagos/mercadopago con "Planes y suscripciones", MP_ACCESS_TOKEN y MP_WEBHOOK_SECRET cargadas en Vercel y publicadas. Precio de Pro: $ 7.499 por mes y $ 74.990 por año (ya se ve en la web). Falta una suscripción de prueba real (T9).
 - [x] 12/11/2026 — La app pasa a llamarse Guafra: textos, correos, sitio, título de las pestañas, app instalada (nombre e ícono con la G), imagen para compartir y archivos que se descargan. Falta: nombre de la aplicación en Mercado Pago, y el dominio (Z15) cuando esté.
 - [x] 12/11/2026 — Velocidad: la proyección de tarjetas ya no consulta la base mes por mes (Flujo de 51 a 25 consultas, Tarjetas de 40 a 26, Inicio de 100 a 68, Alertas de 85 a 53); los saldos se calculan una sola vez por pantalla; Alertas, Patrimonio e Inversiones piden sus datos en paralelo; 12 índices nuevos para las búsquedas frecuentes; Próximos pagos muestra 3 meses por defecto (de 282 KB a 93 KB) con "Ver los próximos 12 meses". Lo que más ayudaría ahora en producción es Z13 (app y base en la misma región).

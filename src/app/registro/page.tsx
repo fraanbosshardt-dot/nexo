@@ -13,13 +13,14 @@ export const metadata: Metadata = {
   alternates: { canonical: "/registro" },
 };
 
-export default async function SignupPage({ searchParams }: { searchParams: Promise<{ google?: string }> }) {
-  const { google } = await searchParams;
+export default async function SignupPage({ searchParams }: { searchParams: Promise<{ google?: string; pro?: string }> }) {
+  const { google, pro } = await searchParams;
   if (await getSession()) redirect("/app");
   return (
     <AuthShell>
       <h1>Creá tu cuenta</h1>
       <p className="sub">¿Ya tenés cuenta? <Link className="lnk" href="/ingresar">Iniciá sesión</Link></p>
+      {pro && <p className="notice b" role="status" style={{ margin: "0 0 4px" }}>Creá tu cuenta (o ingresá si ya tenés) y seguís directo a pagar Pro con Mercado Pago.</p>}
       <GoogleNotice code={google} />
       <GoogleButton desde="registro" />
       <ActionForm action={signupAction} >

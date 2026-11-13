@@ -180,7 +180,8 @@ export default async function Landing() {
         <span className="lx-reco">Recomendado</span>
         <div><h3>Pro</h3><p>Para planificar todo el año.</p></div>
         <div className="lx-price"><b>{price}</b><span>por {period}</span></div>
-        <Link className="ws-btn pri lx-shine" href="/registro">Probar Pro 14 días gratis</Link>
+        <a className="ws-btn pri lx-shine" href="/suscribirme?ciclo=mensual">Suscribirme a Pro</a>
+        <a className="lx-link" href="/suscribirme?ciclo=anual" style={{ textAlign: "center", fontSize: 14 }}>o pagá el año: {py.text}</a>
         <ul><li>{CHECK}Todo lo de Gratis</li>{pro.map((f) => <li key={f.name}>{CHECK}<span>{f.name}{f.beta && <> <span className="lx-beta">Beta</span></>}</span></li>)}</ul>
       </div>
     </div>
