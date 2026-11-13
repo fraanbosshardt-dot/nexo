@@ -184,6 +184,8 @@ export default async function Settings({ searchParams }: { searchParams: Promise
     const { SITE } = await import("@/lib/seo");
     const [refCode, refStats] = await Promise.all([ensureReferralCode(getDb(), user.id), referralStats(getDb(), user.id)]);
     const trial = sub?.status === "TRIALING" && sub.trialEndsAt && sub.trialEndsAt > new Date();
+    const trialLeft = trial ? Math.max(1, Math.ceil((sub!.trialEndsAt!.getTime() - Date.now()) / 864e5)) : 0;
+    const savePct = bill.monthly > 0 ? Math.round((1 - bill.yearly / (bill.monthly * 12)) * 100) : 0;
     // Cancelada o con el pago pendiente: Pro sigue hasta el fin de lo ya pagado.
     const endsAt = plan === "PRO" && sub && sub.status !== "ACTIVE" && sub.status !== "TRIALING" ? sub.currentPeriodEnd : null;
     body = (
@@ -194,13 +196,23 @@ export default async function Settings({ searchParams }: { searchParams: Promise
         <div className="card">
           <div className="chead"><div><h3>Tu plan: {plan === "PRO" ? "Pro" : "Gratis"}</h3><p className="sub">{trial ? `Prueba gratis hasta el ${fmtDate(sub!.trialEndsAt!)}.` : endsAt ? `${sub!.status === "CANCELED" ? "Cancelado" : "Pago pendiente en Mercado Pago"}: tenés Pro hasta el ${fmtDate(endsAt)}.` : paidPro ? `Pagás con Mercado Pago, ${sub!.billingCycle === "yearly" ? "por año" : "por mes"}.` : plan === "PRO" ? "Pro activado por Guafra." : "Tenés casi todo incluido, sin costo."}</p></div></div>
           {paidPro ? (
+            <div className="plan-paid">
+              {sub!.billingCycle === "monthly" && bill.enabled ? (
+                <form action={checkoutAction} className="plan-upg">
+                  <input type="hidden" name="cycle" value="yearly" />
+                  <div><b>Pasate al plan anual{savePct > 0 ? ` y ahorrá ${savePct} %` : ""}</b><p>{formatMoney(String(bill.yearly), bill.currency)} por año (equivale a {formatMoney(String(Math.round(Number(bill.yearly) / 12)), bill.currency)} por mes). Empieza cuando termina el mes que ya pagaste{sub!.currentPeriodEnd ? `, el ${fmtDate(sub!.currentPeriodEnd)}` : ""}: sin cobro doble.</p></div>
+                  <button className="btn pri" type="submit">Pasarme al anual</button>
+                </form>
+              ) : sub!.currentPeriodEnd ? <p className="sub" style={{ margin: 0 }}>Se renueva el {fmtDate(sub!.currentPeriodEnd)}.</p> : null}
             <form action={cancelPlanAction}><ConfirmSubmit className="btn" question={sub!.currentPeriodEnd ? `¿Cancelar Pro? No se te cobra más y lo seguís usando hasta el ${fmtDate(sub!.currentPeriodEnd)}.` : "¿Cancelar Pro? Dejás de pagar y volvés al plan Gratis."} yes="Sí, cancelar">Cancelar Pro</ConfirmSubmit></form>
+            </div>
           ) : bill.enabled && (plan !== "PRO" || trial) ? (
             // En Gratis: a la izquierda qué suma Pro; a la derecha el precio (por mes o por año) y los botones.
             <div className="plan-up">
               <div className="plan-why">
                 <h4>{trial ? "Seguí con Pro cuando termine la prueba" : "Pasate a Pro"}</h4>
-                {trial && <p className="plan-note">Tu prueba termina el {fmtDate(sub!.trialEndsAt!)}. Si te suscribís, no perdés nada de esto:</p>}
+                {trial && <div className="plan-trialbar"><span>Te {trialLeft === 1 ? "queda 1 día" : `quedan ${trialLeft} días`} de prueba</span><i><i style={{ width: `${Math.min(100, (trialLeft / 14) * 100)}%` }} /></i></div>}
+                {trial && <p className="plan-note">Si te suscribís, no perdés nada de esto:</p>}
                 <ul>{PLAN_FEATURES.filter((f) => f.plan === "pro").slice(0, 5).map((f) => <li key={f.name}><Icon name="check" />{f.name}</li>)}</ul>
               </div>
               <div className="plan-box">
@@ -208,15 +220,15 @@ export default async function Settings({ searchParams }: { searchParams: Promise
                   {sp.cupon && <p className="auth-err" role="alert">{sp.cupon}</p>}
                   <div className="plan-cycle" role="radiogroup" aria-label="Cómo querés pagar">
                     <label><input type="radio" name="cycle" value="monthly" defaultChecked /><span>Por mes</span></label>
-                    <label><input type="radio" name="cycle" value="yearly" /><span>Por año <em>2 meses gratis</em></span></label>
+                    <label><input type="radio" name="cycle" value="yearly" /><span>Por año{savePct > 0 && <em>−{savePct} %</em>}</span></label>
                   </div>
                   <div className="plan-price m"><b>{formatMoney(String(bill.monthly), bill.currency)}</b><span>por mes</span></div>
-                  <div className="plan-price y"><b>{formatMoney(String(bill.yearly), bill.currency)}</b><span>por año · {formatMoney(String(Math.round(Number(bill.yearly) / 12)), bill.currency)} por mes</span></div>
+                  <div className="plan-price y"><b>{formatMoney(String(bill.yearly), bill.currency)}</b><span>por año</span><small>Equivale a {formatMoney(String(Math.round(Number(bill.yearly) / 12)), bill.currency)} por mes</small></div>
                   <button className="btn pri plan-cta" type="submit">{trial ? "Suscribirme a Pro" : "Pasar a Pro"}</button>
                   <details className="plan-coupon" open={!!sp.cupon}><summary>¿Tenés un cupón?</summary><input name="coupon" autoComplete="off" placeholder="Ej.: BIENVENIDA" aria-label="Cupón" /></details>
                 </form>
                 {!sub?.trialEndsAt && <form action={startTrialAction}><button className="btn plan-trial" type="submit">Probar 14 días gratis</button></form>}
-                <p className="plan-fine">{trial ? "El primer cobro es al suscribirte. " : ""}Pagás con Mercado Pago y cancelás cuando quieras.</p>
+                <p className="plan-fine">{trial ? `No te cobramos nada hasta el ${fmtDate(sub!.trialEndsAt!)}.` : "Cancelás cuando quieras · Pagás con Mercado Pago"}</p>
               </div>
             </div>
           ) : plan !== "PRO" ? (

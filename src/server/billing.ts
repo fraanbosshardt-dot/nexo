@@ -28,7 +28,8 @@ type Preapproval = { id: string; status: "pending" | "authorized" | "paused" | "
 // La referencia externa lleva el espacio y, si hay, el cupón: "espacio|CUPON".
 export const splitRef = (ref: string | undefined) => { const [ws, coupon] = (ref ?? "").split("|"); return { ws: ws || null, coupon: coupon || null }; };
 
-export async function startCheckout(db: Db, ws: string, payerEmail: string, cycle: "monthly" | "yearly", backUrl: string, discount?: { code: string; percentOff: number }) {
+// startDate: el primer cobro queda para esa fecha (fin de la prueba, o fin del mes ya pagado al pasarse a anual).
+export async function startCheckout(db: Db, ws: string, payerEmail: string, cycle: "monthly" | "yearly", backUrl: string, discount?: { code: string; percentOff: number }, startDate?: Date | null) {
   const c = await billingConfig(db);
   const base = cycle === "yearly" ? c.yearly : c.monthly;
   const amount = discount ? Math.round(base * (100 - discount.percentOff)) / 100 : base;
@@ -40,7 +41,7 @@ export async function startCheckout(db: Db, ws: string, payerEmail: string, cycl
       external_reference: discount ? `${ws}|${discount.code}` : ws,
       payer_email: payerEmail,
       back_url: backUrl,
-      auto_recurring: { frequency: cycle === "yearly" ? 12 : 1, frequency_type: "months", transaction_amount: amount, currency_id: c.currency },
+      auto_recurring: { frequency: cycle === "yearly" ? 12 : 1, frequency_type: "months", transaction_amount: amount, currency_id: c.currency, ...(startDate && startDate.getTime() > Date.now() + 3600_000 ? { start_date: startDate.toISOString() } : {}) },
     }),
   });
   if (!p.init_point) throw new UserError("Mercado Pago no devolvió el enlace de pago.");
@@ -73,6 +74,14 @@ export async function applyNotification(db: Db, type: string, id: string) {
     if (!ws || !(await db.workspace.findUnique({ where: { id: ws } }))) return;
     const active = p.status === "authorized";
     const before = await db.subscription.findUnique({ where: { workspaceId: ws } });
+    // Aviso de una suscripción vieja (por ejemplo, la mensual que se canceló al pasarse a anual): no pisa la actual.
+    if (before?.providerRef && before.providerRef !== p.id && !active) return;
+    // Se pasó a otra suscripción (de mensual a anual): la anterior se cancela en Mercado Pago, sin cobro doble.
+    if (active && before?.providerRef && before.providerRef !== p.id && before.status === "ACTIVE" && before.provider === "mercadopago") {
+      await mp(`/preapproval/${before.providerRef}`, { method: "PUT", body: JSON.stringify({ status: "cancelled" }) }).catch((e) => console.error("[mp] cancelar la anterior", e));
+    }
+    // Se suscribió durante la prueba: si después cancela antes del primer cobro, conserva Pro hasta el fin de la prueba.
+    const keepUntil = active && before?.trialEndsAt && before.trialEndsAt > new Date() && (!before.currentPeriodEnd || before.currentPeriodEnd < before.trialEndsAt) ? before.trialEndsAt : undefined;
     // El cupón cuenta un uso solo la primera vez que esa suscripción queda activa.
     if (active && coupon && !(before?.providerRef === p.id && before.status === "ACTIVE")) {
       await db.coupon.updateMany({ where: { code: coupon }, data: { uses: { increment: 1 } } });
@@ -82,7 +91,7 @@ export async function applyNotification(db: Db, type: string, id: string) {
       where: { workspaceId: ws },
       create: { workspaceId: ws, plan: active ? "PRO" : "FREE", status: active ? "ACTIVE" : p.status === "cancelled" ? "CANCELED" : "PAST_DUE", provider: "mercadopago", providerRef: p.id, billingCycle: cycle, couponCode: coupon },
       // Cancelada o pausada: el plan queda en Pro y effectivePlan lo corta al terminar el período pagado.
-      update: { plan: active ? "PRO" : undefined, status: active ? "ACTIVE" : p.status === "cancelled" ? "CANCELED" : "PAST_DUE", provider: "mercadopago", providerRef: p.id, billingCycle: cycle, trialEndsAt: active ? null : undefined, couponCode: coupon ?? undefined, canceledAt: p.status === "cancelled" ? new Date() : undefined },
+      update: { plan: active ? "PRO" : undefined, status: active ? "ACTIVE" : p.status === "cancelled" ? "CANCELED" : "PAST_DUE", provider: "mercadopago", providerRef: p.id, billingCycle: cycle, trialEndsAt: active ? null : undefined, currentPeriodEnd: keepUntil, couponCode: coupon ?? undefined, canceledAt: p.status === "cancelled" ? new Date() : undefined },
     });
   }
   if (type === "subscription_authorized_payment") {

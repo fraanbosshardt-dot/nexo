@@ -1322,3 +1322,19 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):focus,select:focu
   .tw .pill{font-size:11.5px;padding:0 6px;height:20px}
   .tw td b{font-weight:600}
 }
+
+/* Tarjeta del plan, ordenada: selector parejo, precio limpio, días de prueba y pasar a anual */
+.plan-cycle span{flex-direction:row;gap:6px;min-height:42px}
+.plan-cycle em{font-style:normal;font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;background:var(--green-soft);color:var(--green)}
+.plan-cycle input:checked+span em{background:color-mix(in srgb,var(--on-ink) 22%,transparent);color:inherit;opacity:1}
+.plan-price{align-items:baseline}
+.plan-price b{font-size:32px}
+.plan-price small{flex-basis:100%;font-size:12.5px;color:var(--muted)}
+.plan-fine{white-space:normal;line-height:1.4}
+.plan-trialbar{display:flex;flex-direction:column;gap:6px;margin:-2px 0 12px;font-size:13px;color:var(--muted)}
+.plan-trialbar>i{display:block;height:6px;border-radius:999px;background:var(--surface-2);overflow:hidden;max-width:320px}
+.plan-trialbar>i>i{display:block;height:100%;border-radius:999px;background:var(--ink)}
+.plan-paid{display:flex;flex-direction:column;align-items:flex-start;gap:14px}
+.plan-upg{display:flex;flex-wrap:wrap;gap:14px 20px;align-items:center;justify-content:space-between;width:100%;padding:16px 18px;border-radius:16px;background:var(--ink-soft)}
+.plan-upg b{display:block;font-size:15px;color:var(--ink-txt)}
+.plan-upg p{margin:4px 0 0;font-size:13.5px;color:var(--muted);max-width:56ch}

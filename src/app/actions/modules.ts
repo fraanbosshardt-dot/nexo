@@ -687,7 +687,14 @@ export async function checkoutAction(fd: FormData) {
     if (!c.ok) redirect(`/app/configuracion?tab=plan&cupon=${encodeURIComponent(c.error)}`);
     discount = { code: c.coupon.code, percentOff: c.coupon.percentOff };
   }
-  const link = await startCheckout(getDb(), workspace.id, user.email, cycle, `${appUrl()}/app/configuracion?tab=plan&pago=1`, discount);
+  const sub = await getDb().subscription.findUnique({ where: { workspaceId: workspace.id } });
+  const now = new Date();
+  const paid = sub?.provider === "mercadopago" && sub.status === "ACTIVE" && sub.plan === "PRO" && !!sub.providerRef;
+  // Con Pro pago solo se puede pasar de mensual a anual (no se compra dos veces lo mismo).
+  if (paid && !(sub!.billingCycle === "monthly" && cycle === "yearly")) redirect("/app/configuracion?tab=plan&yatenes=1");
+  const trialEnd = sub?.status === "TRIALING" && sub.trialEndsAt && sub.trialEndsAt > now ? sub.trialEndsAt : null;
+  const startDate = paid ? (sub!.currentPeriodEnd && sub!.currentPeriodEnd > now ? sub!.currentPeriodEnd : null) : trialEnd;
+  const link = await startCheckout(getDb(), workspace.id, user.email, cycle, `${appUrl()}/app/configuracion?tab=plan&pago=1`, discount, startDate);
   await audit("billing.checkout_started", { userId: user.id, workspaceId: workspace.id, meta: { cycle, coupon: discount?.code } });
   redirect(link);
 }

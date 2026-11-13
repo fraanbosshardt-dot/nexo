@@ -33,7 +33,8 @@ export async function GET(req: Request) {
   const db = getDb();
   if (!(await billingConfig(db)).enabled) redirect("/app/configuracion?tab=plan");
   const { appUrl } = await import("@/lib/email");
-  const link = await startCheckout(db, m.workspace.id, s.user.email, anual ? "yearly" : "monthly", `${appUrl()}/app/configuracion?tab=plan&pago=1`);
+  const trialEnd = sub?.status === "TRIALING" && sub.trialEndsAt && sub.trialEndsAt > new Date() ? sub.trialEndsAt : null;
+  const link = await startCheckout(db, m.workspace.id, s.user.email, anual ? "yearly" : "monthly", `${appUrl()}/app/configuracion?tab=plan&pago=1`, undefined, trialEnd);
   const { audit } = await import("@/lib/auth/session");
   await audit("billing.checkout_started", { userId: s.user.id, workspaceId: m.workspace.id, meta: { cycle: anual ? "yearly" : "monthly", from: "sitio" } });
   redirect(link);
