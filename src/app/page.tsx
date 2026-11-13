@@ -6,6 +6,7 @@ import { MonthStory } from "@/components/landing-month";
 import { LandingMotion } from "@/components/landing-motion";
 import { Showcase } from "@/components/landing-show";
 import { FaqList } from "@/components/landing-faq";
+import { Aurora, ScrollFx } from "@/components/landing-scrollfx";
 import { PublicShell } from "@/components/public-shell";
 import { AppCta } from "@/components/app-cta";
 import { PLAN_FEATURES } from "@/lib/modules";
@@ -150,9 +151,9 @@ export default async function Landing() {
       <div className="lx-plan pro" style={{ "--i": 1 } as React.CSSProperties}>
         <span className="lx-reco">Recomendado</span>
         <div><h3>Pro</h3><p>Para planificar todo el año.</p></div>
-        <div className="lx-price"><b>{price}</b><span>por {period}</span></div>
+        {pm.amount > 0 ? <div className="lx-price"><b>{price}</b><span>por {period}</span></div> : <div className="lx-price"><b style={{ fontSize: 28 }}>{price}</b></div>}
         <a className="ws-btn pri lx-shine" href="/suscribirme?ciclo=mensual">Suscribirme a Pro</a>
-        <a className="lx-link" href="/suscribirme?ciclo=anual" style={{ textAlign: "center", fontSize: 14 }}>o pagá el año: {py.text}</a>
+        {py.amount > 0 && <a className="lx-link" href="/suscribirme?ciclo=anual" style={{ textAlign: "center", fontSize: 14 }}>o pagá el año: {py.text}</a>}
         <ul><li>{CHECK}Todo lo de Gratis</li>{pro.map((f) => <li key={f.name}>{CHECK}<span>{f.name}{f.beta && <> <span className="lx-beta">Beta</span></>}</span></li>)}</ul>
       </div>
     </div>
@@ -167,10 +168,11 @@ export default async function Landing() {
     // Igual para todos (sale de caché); "Ir a la app" se decide en el navegador.
     <PublicShell>
       <LandingMotion />
+      <ScrollFx />
       {ld.map((d, i) => <script key={i} type="application/ld+json" dangerouslySetInnerHTML={jsonLd(d)} />)}
 
       {/* Portada: fondo animado y desenfocado (hecho con código), título grande y el celular que asoma abajo */}
-      <section className="lx-top lx-dark">
+      <section className="lx-top lx-dark" data-sfx="">
         <LandingSky />
         <div className="ws-w lx-hero lx-hero-c">
           <div className="lx-copy">
@@ -187,21 +189,34 @@ export default async function Landing() {
         </div>
       </section>
 
-      <section className="lx-strip" aria-label="Qué podés ordenar">
-        <div className="ws-w"><div className="lx-strip-track">
-          <span>Todo en un lugar:</span>{STRIP.map((t) => <em key={t}>{t}</em>)}
-          <span className="dup" aria-hidden="true">Todo en un lugar:</span>{STRIP.map((t) => <em key={"d" + t} className="dup" aria-hidden="true">{t}</em>)}
-        </div></div>
+      {/* Todo en un lugar: dos cintas cruzadas que se mueven siempre, para lados opuestos (y se aceleran con el scroll) */}
+      <section className="lx-bands" aria-label="Todo en un lugar" data-sfx="">
+        <div className="lx-band b1">
+          <div className="lx-band-track">{[0, 1].map((d) => <div key={d} className="lx-band-set" aria-hidden={d === 1 || undefined}>{STRIP.map((t) => <span key={t}>{t}<em aria-hidden="true">✦</em></span>)}</div>)}</div>
+        </div>
+        <div className="lx-band b2" aria-hidden="true">
+          <div className="lx-band-track">{[0, 1].map((d) => <div key={d} className="lx-band-set">{["Todo en un lugar", ...STRIP].reverse().map((t) => <span key={t}>{t}<em>●</em></span>)}</div>)}</div>
+        </div>
       </section>
 
       {/* Funciones: una tarjeta grande con la app desenfocada atrás */}
-      <section className="ws-w ws-sec" id="funciones">
+      <section className="lx-fx" id="funciones" data-sfx="">
+        <Aurora grid />
+        <div className="ws-w ws-sec">
         <Reveal className="ws-head c"><p className="ws-eyebrow">Funciones</p><h2 className="ws-h2">Todo lo que hoy anotás a mano, pero que se calcula solo.</h2></Reveal>
         <Showcase items={TOUR} screens={[<ScreenHome key="h" />, <ScreenCards key="c" />, <ScreenNext key="n" />, <ScreenFlow key="f" />]} />
+        </div>
+      </section>
+
+      {/* Franja gigante: dos renglones que se corren para lados opuestos mientras bajás */}
+      <section className="lx-mega" data-sfx="" aria-hidden="true">
+        <div className="lx-mega-row r1">{Array.from({ length: 3 }, (_, k) => <span key={k}>Tu plata, clara <em>✦</em> Sin planillas <em>✦</em> Sin sorpresas <em>✦</em> </span>)}</div>
+        <div className="lx-mega-row r2">{Array.from({ length: 3 }, (_, k) => <span key={k}>Cuotas <em>✦</em> Tarjetas <em>✦</em> Vencimientos <em>✦</em> Ahorro <em>✦</em> Dólares <em>✦</em> </span>)}</div>
       </section>
 
       {/* Un mes con Guafra: se cuenta mientras bajás */}
-      <section className="lx-month-sec" id="como">
+      <section className="lx-month-sec lx-fx" id="como" data-sfx="">
+        <Aurora />
         <div className="ws-w ws-sec">
           <Reveal className="ws-head"><p className="ws-eyebrow">Un mes con {N}</p><h2 className="ws-h2">Del cobro al próximo cobro, sin sorpresas.</h2><p className="ws-lead">Bajá y mirá cómo te acompaña durante un mes. Datos de ejemplo.</p></Reveal>
           <MonthStory />
@@ -209,7 +224,8 @@ export default async function Landing() {
       </section>
 
       {/* Demo */}
-      <section className="lx-demo-sec" id="demo">
+      <section className="lx-demo-sec lx-fx" id="demo" data-sfx="">
+        <Aurora grid />
         <div className="ws-w ws-sec lx-two">
           <Reveal className="lx-two-copy"><p className="ws-eyebrow">Probalo ahora</p><h2 className="ws-h2">¿Cuánto te queda? ¿Te alcanza en cuotas?</h2><p className="ws-lead">Mové los valores y mirá la respuesta al instante. Sin registrarte. En {N} estas cuentas se hacen solas con tus datos reales.</p></Reveal>
           <DemoTabs titles={["¿Cuánto te queda?", "¿Te alcanza en cuotas?"]}>{[<QuedaDemo key="q" />, <CuotasDemo key="c" />]}</DemoTabs>
@@ -230,7 +246,8 @@ export default async function Landing() {
       </section>
 
       {/* Para el campo */}
-      <section className="ws-navy" id="agro">
+      <section className="ws-navy lx-fx" id="agro" data-sfx="">
+        <Aurora tone="dark" />
         <div className="ws-w ws-sec lx-two">
           <Reveal className="lx-two-copy">
             <p className="ws-eyebrow">Para el campo · Pro</p>
@@ -262,7 +279,8 @@ export default async function Landing() {
       </section>
 
       {/* Precios */}
-      <section className="ws-soft" id="planes">
+      <section className="ws-soft lx-fx" id="planes" data-sfx="">
+        <Aurora />
         <div className="ws-w ws-sec lx-pricing">
           <Reveal className="ws-head c"><p className="ws-eyebrow">Precios</p><h2 className="ws-h2">Empezá gratis. Pasate a Pro cuando lo necesites.</h2></Reveal>
           <PriceSwitch monthly={plans(pm.text, "mes")} yearly={plans(py.text, "año")} />
@@ -282,7 +300,7 @@ export default async function Landing() {
       </section>
 
       {/* Cierre */}
-      <section className="ws-w lx-final-wrap">
+      <section className="ws-w lx-final-wrap" data-sfx="">
         <Reveal className="lx-final">
           <div><h2 className="ws-h2">Ordená tu plata hoy. Es gratis.</h2><p>Cinco minutos para empezar. Sin tarjeta.</p></div>
           <AppCta className="ws-btn lx-big lx-shine" label="Crear mi cuenta" />

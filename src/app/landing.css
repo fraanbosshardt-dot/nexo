@@ -241,15 +241,17 @@
 .ws-foot .lp-brand b{color:#fff!important}
 
 /* Barra de arriba: una pastilla de vidrio blanco desenfocado que flota (nunca una franja entera).
-   En modo claro, blanco esmerilado con letras oscuras; en modo oscuro, apenas blanca con letras claras.
+   Siempre blanca (también en modo oscuro), con el botón para cambiar entre claro y oscuro.
    En la portada queda encima del fondo animado. */
-.site .lp-nav{--nb:rgba(255,255,255,.58);--nl:rgba(255,255,255,.7);--nt:#3D4D45;--nth:#0B1813;--nhov:rgba(11,24,19,.06);--np:#16493A;--npt:#fff;--logo-dark:#16493A;
+.site .lp-nav{--nb:rgba(255,255,255,.82);--nl:rgba(255,255,255,.9);--nt:#3D4D45;--nth:#0B1813;--nhov:rgba(11,24,19,.06);--np:#16493A;--npt:#fff;--logo-dark:#16493A;
   background:transparent!important;box-shadow:none!important;border:0!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;padding:12px 12px 0;pointer-events:none}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .site .lp-nav{--nb:rgba(255,255,255,.13);--nl:rgba(255,255,255,.2);--nt:rgba(232,241,236,.8);--nth:#fff;--nhov:rgba(255,255,255,.08);--np:#8EC4A0;--npt:#07120E;--logo-dark:#DCEFE2}}
-:root[data-theme="dark"] .site .lp-nav{--nb:rgba(255,255,255,.13);--nl:rgba(255,255,255,.2);--nt:rgba(232,241,236,.8);--nth:#fff;--nhov:rgba(255,255,255,.08);--np:#8EC4A0;--npt:#07120E;--logo-dark:#DCEFE2}
 .site:has(.lx-dark) .lp-nav{margin-bottom:-68px}
 .site .lp-nav .lp-navin{pointer-events:auto;height:56px;max-width:1160px;margin-inline:auto;padding:0 10px 0 18px;border-radius:999px;background:var(--nb);-webkit-backdrop-filter:saturate(170%) blur(20px);backdrop-filter:saturate(170%) blur(20px);border:1px solid var(--nl);box-shadow:0 10px 30px rgba(4,12,9,.12),inset 0 1px 0 rgba(255,255,255,.35)}
-@supports not (backdrop-filter:blur(1px)){.site .lp-nav .lp-navin{background:var(--bg)}}
+@supports not (backdrop-filter:blur(1px)){.site .lp-nav .lp-navin{background:#fff}}
+.site .lp-nav .ibtn{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;border:1px solid rgba(11,24,19,.12);background:transparent;color:#16493A;cursor:pointer;transition:background-color .2s,transform .3s}
+.site .lp-nav .ibtn:hover{background:rgba(11,24,19,.06);transform:rotate(-15deg)}
+.site .lp-nav .ibtn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.site .lp-nav .lp-cta-top{align-items:center}
 .site .lp-nav .lp-links a{color:var(--nt)}
 .site .lp-nav .lp-links a:hover{color:var(--nth);background:var(--nhov)}
 .site .lp-nav .lp-cta-top .btn{min-height:38px}
@@ -388,9 +390,9 @@
 
 /* ---------- Pruebas en pestañas y "¿Cuánto te queda?" ---------- */
 .lx-demo-tabs{display:flex;flex-direction:column;gap:14px;min-width:0}
-.lx-seg{align-self:flex-start;display:inline-flex;gap:4px;padding:4px;border-radius:999px;background:var(--bg);border:1px solid var(--line)}
-.lx-seg button{border:0;background:none;padding:9px 16px;border-radius:999px;font:inherit;font-size:14.5px;font-weight:500;color:var(--muted);cursor:pointer}
-.lx-seg button.on{background:var(--ink);color:var(--on-ink)}
+.lx-demo-tabs .lx-seg{align-self:flex-start;display:inline-flex;gap:4px;padding:4px;border-radius:999px;background:var(--bg);border:1px solid var(--line)}
+.lx-demo-tabs .lx-seg button{border:0;background:none;padding:9px 16px;border-radius:999px;font:inherit;font-size:14.5px;font-weight:500;color:var(--muted);cursor:pointer}
+.lx-demo-tabs .lx-seg button.on{background:var(--ink);color:var(--on-ink)}
 .lx-queda{height:10px;border-radius:6px;background:var(--surface-2);overflow:hidden}
 .lx-queda i{display:block;height:100%;border-radius:6px;background:var(--green);transition:width .35s cubic-bezier(.2,.7,.2,1)}
 .lx-queda i.justo{background:var(--amber)}
@@ -401,15 +403,18 @@
 .site:has(.lx-dark) .lx-hero-c{padding-top:calc(68px + clamp(40px,7vw,104px))}
 
 /* ---------- Funciones: tarjeta grande con la app desenfocada atrás ---------- */
-.lx-show{display:flex;flex-direction:column;align-items:center;gap:18px}
+.lx-show-scroll{position:relative;height:calc(100vh + var(--n) * 70vh)}
+.lx-show{position:sticky;top:84px;display:flex;flex-direction:column;align-items:center;gap:18px}
 .lx-show-tabs{display:inline-flex;flex-wrap:wrap;justify-content:center;gap:4px;padding:4px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line)}
 .lx-show-tabs button{position:relative;overflow:hidden;border:0;background:none;padding:10px 18px;border-radius:999px;font:inherit;font-size:15px;font-weight:500;color:var(--muted);cursor:pointer}
 .lx-show-tabs button.on{background:var(--bg);color:var(--fg);box-shadow:var(--shadow)}
-.lx-show-timer{position:absolute;left:18px;right:18px;bottom:5px;height:2px;border-radius:2px;background:var(--ink);transform-origin:left;animation:lx-timer 5.5s linear both}
+.lx-show-timer{position:absolute;left:18px;right:18px;bottom:5px;height:2px;border-radius:2px;background:var(--ink);transform-origin:left;transition:transform .12s linear}
+.lx-show-tabs button.done{color:var(--fg)}
+.lx-show-tabs button:not(.on) .lx-show-timer{opacity:.35}
 @keyframes lx-timer{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 /* Atrás, los celulares enteros y apenas desenfocados (se llega a ver la app); adelante, el texto, siempre legible.
    No cambia al pasar el mouse ni al tocar: solo se desliza al cambiar de pestaña. */
-.lx-show-card{--pw:320px;--gap:64px;position:relative;width:100%;height:clamp(500px,54vw,680px);border-radius:32px;overflow:hidden;background:#0B1813;isolation:isolate}
+.lx-show-card{--pw:320px;--gap:64px;position:relative;width:100%;height:min(clamp(500px,54vw,680px), calc(100vh - 170px));border-radius:32px;overflow:hidden;background:#0B1813;isolation:isolate}
 .lx-show-bg{position:absolute;top:28px;bottom:28px;left:50%;display:flex;gap:var(--gap);transform:translateX(calc(-1 * (var(--k) * (var(--pw) + var(--gap)) + var(--pw) / 2)));transition:transform .9s cubic-bezier(.65,0,.25,1)}
 .lx-show-pane{flex:0 0 var(--pw);height:100%;padding:16px 0;border-radius:34px;background:var(--bg);color:var(--fg);overflow:hidden;border:6px solid #1D382D;filter:blur(3.5px);opacity:.35;transition:opacity .7s ease}
 .lx-show-pane.on{opacity:.62}
@@ -449,7 +454,94 @@
 @media (max-width:900px){.lx-faq2{grid-template-columns:minmax(0,1fr)}.lx-faq-side{position:static}.lx-faq-a p{padding-left:22px}}
 @media (prefers-reduced-motion:reduce){.lx-faq-item,.lx-faq-ic,.lx-faq-a,.lx-faq-a p{transition:none!important}}
 
+/* ==========================================================================
+   Movimiento con scroll y fondos vivos. --p va de 0 (la sección entra por abajo) a 1 (sale por arriba).
+   ========================================================================== */
+.site{--g1:#16493A;--g2:#5D9C7C;--g3:#8EC4A0}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .site{--g1:#8EC4A0;--g2:#DCEFE2;--g3:#5D9C7C}}
+:root[data-theme="dark"] .site{--g1:#8EC4A0;--g2:#DCEFE2;--g3:#5D9C7C}
+@property --ang{syntax:"<angle>";inherits:false;initial-value:0deg}
+@keyframes lx-spin{to{rotate:360deg}}
+@keyframes lx-flow{to{background-position:200% center}}
+@keyframes lx-ang{to{--ang:360deg}}
+@keyframes lx-bob{from{translate:0 -10px}to{translate:0 10px}}
+@keyframes lx-sweep{0%{transform:translateX(-110%)}55%,100%{transform:translateX(110%)}}
+
+/* Portada: las manchas y la app desenfocada se separan en capas al bajar; el texto sube más lento */
+.lx-sky .blob{translate:0 calc((var(--p,.45) - .45) * 260px)}
+.lx-sky .ghost{translate:0 calc((var(--p,.45) - .45) * -420px)}
+.lx-hero-c .lx-copy{translate:0 calc((var(--p,.45) - .45) * 180px);opacity:calc(1 - max(0, var(--p,.45) - .55) * 3)}
+.lx-dark .lx-h1 em{background:linear-gradient(90deg,#8EC4A0,#DCEFE2,#5D9C7C,#8EC4A0);background-size:200% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:lx-rise .9s .15s cubic-bezier(.2,.7,.2,1) both,lx-flow 6s 1s linear infinite}
+
+/* Fondos de sección: manchas de color que se mueven solas + grilla que se desliza con el scroll */
+.lx-fx{position:relative;isolation:isolate;overflow:clip}
+.lx-fx>:not(.lx-aur){position:relative;z-index:1}
+.lx-aur{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.lx-aur span{position:absolute;border-radius:50%;filter:blur(90px);will-change:transform}
+.lx-aur .a1{width:560px;height:560px;left:-12%;top:4%;background:#8EC4A0;opacity:.28;animation:lx-drift1 24s ease-in-out infinite alternate;translate:0 calc((var(--p,.5) - .5) * -220px)}
+.lx-aur .a2{width:480px;height:480px;right:-10%;top:38%;background:#5D9C7C;opacity:.2;animation:lx-drift2 28s ease-in-out infinite alternate;translate:0 calc((var(--p,.5) - .5) * 180px)}
+.lx-aur .a3{width:640px;height:520px;left:34%;bottom:-30%;background:#DCEFE2;opacity:.55;animation:lx-drift3 32s ease-in-out infinite alternate;translate:0 calc((var(--p,.5) - .5) * -120px)}
+.lx-aur.dark .a1{background:#2F7A57;opacity:.45}.lx-aur.dark .a2{background:#16493A;opacity:.9}.lx-aur.dark .a3{background:#5D9C7C;opacity:.22}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .lx-aur:not(.dark) span{opacity:.16}:root:not([data-theme="light"]) .lx-aur:not(.dark) .a3{background:#16493A;opacity:.5}}
+:root[data-theme="dark"] .lx-aur:not(.dark) span{opacity:.16}
+:root[data-theme="dark"] .lx-aur:not(.dark) .a3{background:#16493A;opacity:.5}
+.lx-aur-grid{position:absolute;inset:-60px;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:52px 52px;-webkit-mask-image:radial-gradient(ellipse 70% 60% at 50% 40%,#000 25%,transparent 75%);mask-image:radial-gradient(ellipse 70% 60% at 50% 40%,#000 25%,transparent 75%);opacity:.7;translate:0 calc(var(--p,.5) * -104px)}
+
+/* Funciones: la tarjeta crece al entrar; atrás, luces que giran y un brillo que barre;
+   los celulares en 3D se inclinan con el scroll y flotan */
+.lx-show-card{scale:clamp(.9, calc(.8 + var(--p,.5) * .4), 1);perspective:1600px;box-shadow:0 40px 100px rgba(7,18,14,.28)}
+.lx-show-aur{position:absolute;inset:-35%;z-index:0;pointer-events:none;animation:lx-spin 40s linear infinite}
+.lx-show-aur span{position:absolute;border-radius:50%;filter:blur(70px)}
+.lx-show-aur span:nth-child(1){width:46%;height:46%;left:8%;top:12%;background:#2F7A57;opacity:.6}
+.lx-show-aur span:nth-child(2){width:38%;height:38%;right:10%;top:30%;background:#8EC4A0;opacity:.25}
+.lx-show-aur span:nth-child(3){width:50%;height:40%;left:30%;bottom:6%;background:#16493A;opacity:.9}
+.lx-show-bg{z-index:0;transform-style:preserve-3d;translate:0 calc((.5 - var(--p,.5)) * 90px)}
+.lx-show-pane{transform:rotateY(calc((var(--i) - var(--k)) * -16deg)) rotateX(calc((var(--p,.5) - .5) * 18deg));transition:opacity .7s ease,transform .9s cubic-bezier(.65,0,.25,1);animation:lx-bob 5s ease-in-out infinite alternate;animation-delay:calc(var(--i) * -1.3s);box-shadow:0 30px 60px rgba(0,0,0,.35)}
+.lx-show-shine{position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(110deg,transparent 35%,rgba(220,239,226,.09) 50%,transparent 65%);animation:lx-sweep 7s ease-in-out infinite}
+
+/* Franja gigante: dos renglones que se corren para lados opuestos con el scroll */
+.lx-mega{padding:clamp(40px,6vw,88px) 0;overflow:hidden;display:flex;flex-direction:column;gap:6px;user-select:none}
+.lx-mega-row{white-space:nowrap;width:max-content;font-family:var(--font-tight),"Inter Tight",sans-serif;font-weight:700;font-size:clamp(52px,9.5vw,136px);letter-spacing:-.045em;line-height:1.02}
+.lx-mega-row em{font-style:normal;display:inline-block;margin:0 .25em;font-size:.5em;vertical-align:middle;color:var(--g3);animation:lx-spin 9s linear infinite}
+.lx-mega-row.r1{translate:calc(var(--p,.5) * -45%) 0;background:linear-gradient(90deg,var(--g1),var(--g3),var(--g2),var(--g1));background-size:200% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:lx-flow 10s linear infinite}
+.lx-mega-row.r1 em{-webkit-text-fill-color:var(--g3)}
+.lx-mega-row.r2{translate:calc(-45% + var(--p,.5) * 40%) 0;color:transparent;-webkit-text-stroke:1.5px color-mix(in srgb,var(--fg) 28%,transparent)}
+.lx-mega-row.r2 em{-webkit-text-stroke:0;color:var(--g3)}
+
+/* Un mes: la tarjeta se inclina apenas con el scroll */
+.lx-month-card{rotate:calc((var(--p,.5) - .5) * -3deg)}
+
+/* Precios: el plan Pro con un borde de luz que gira */
+.lx-plan.pro{position:relative;isolation:isolate}
+.lx-plan.pro::before{content:"";position:absolute;inset:-2px;z-index:-1;border-radius:inherit;background:conic-gradient(from var(--ang),#8EC4A0,transparent 25%,#5D9C7C 50%,transparent 75%,#8EC4A0);animation:lx-ang 6s linear infinite}
+.lx-plan.pro::after{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;background:var(--ws-navy)}
+
+/* Cierre: una aurora que gira detrás del llamado final */
+.lx-final::before{content:"";position:absolute;inset:-60%;background:conic-gradient(from 0deg,transparent,rgba(142,196,160,.4),transparent 35%,rgba(220,239,226,.18),transparent 65%,rgba(93,156,124,.35),transparent);animation:lx-spin 16s linear infinite;pointer-events:none}
+.lx-final>*{position:relative;z-index:1}
+.lx-final{scale:clamp(.94, calc(.86 + var(--p,.5) * .3), 1)}
+
+/* Todo en un lugar: dos cintas cruzadas, una oscura y una clara, que se mueven siempre para lados opuestos */
+.lx-bands{position:relative;padding:clamp(48px,6vw,80px) 0;overflow:clip;isolation:isolate}
+.lx-band{position:relative;width:112%;margin-left:-6%;overflow:hidden;padding:18px 0}
+.lx-band.b1{z-index:2;rotate:-2.5deg;background:#16493A;color:#fff;box-shadow:0 18px 40px rgba(7,18,14,.22);translate:calc((var(--p,.5) - .5) * -140px) 0}
+.lx-band.b2{z-index:1;rotate:2.5deg;margin-top:-14px;background:#8EC4A0;color:#07120E;translate:calc((var(--p,.5) - .5) * 140px) 0}
+.lx-band-track{display:flex;width:max-content;animation:lx-band 32s linear infinite}
+.lx-band.b2 .lx-band-track{animation-duration:40s;animation-direction:reverse}
+.lx-band:hover .lx-band-track{animation-play-state:paused}
+.lx-band-set{display:flex;flex-shrink:0}
+.lx-band span{display:flex;align-items:center;gap:30px;padding-right:30px;white-space:nowrap;font-family:var(--font-tight),"Inter Tight",sans-serif;font-weight:600;font-size:clamp(20px,2.6vw,32px);letter-spacing:-.02em;line-height:1.1}
+.lx-band em{font-style:normal;display:inline-block;font-size:.7em}
+.lx-band.b1 em{color:#8EC4A0;animation:lx-spin 8s linear infinite}
+.lx-band.b2 em{color:#16493A;font-size:.45em}
+@keyframes lx-band{to{transform:translateX(-50%)}}
+
 @media (prefers-reduced-motion:reduce){
+  .lx-band-track,.lx-band em{animation:none!important}
+  .lx-band{translate:none!important}
   .lx-sky *,.lx-dark .lx-line,.lx-dark .ws-lead,.lx-hero-c .lx-ctas,.lx-hero-c .lx-phone-wrap,.lx-month-toast,.lx-show-txt,.lx-show-timer{animation:none!important}
   .lx-month-steps li,.lx-show-bg,.lx-show-pane,.lx-show-txt{transition:none}
+  .lx-aur span,.lx-show-aur,.lx-show-shine,.lx-show-pane,.lx-mega-row,.lx-mega-row em,.lx-plan.pro::before,.lx-final::before,.lx-dark .lx-h1 em{animation:none!important}
+  .lx-sky .blob,.lx-sky .ghost,.lx-hero-c .lx-copy,.lx-aur span,.lx-aur-grid,.lx-show-bg,.lx-mega-row,.lx-show-card,.lx-final,.lx-month-card{translate:none!important;scale:none!important;rotate:none!important;opacity:1}
+  .lx-mega-row.r2{translate:-20% 0!important}
 }

@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Brand } from "./brand";
 import { useHasSession } from "./app-cta";
+import { ThemeButton } from "./theme";
 
 const LINKS: [string, string][] = [["funciones", "Funciones"], ["como", "Cómo funciona"], ["agro", "Para el campo"], ["planes", "Precios"], ["preguntas", "Preguntas"]];
 
@@ -40,7 +41,7 @@ export function PublicNav({ logged: loggedServer }: { logged: boolean }) {
         <nav className="lp-links" aria-label="Secciones">
           {LINKS.map(([id, label]) => <Link key={id} href={`/#${id}`} onClick={go(id)} scroll={false}>{label}</Link>)}
         </nav>
-        <div className="lp-cta-top">{logged ? <Link className="btn pri" href="/app">Ir a la app</Link> : <><Link className="btn ghost" href="/ingresar">Ingresar</Link><Link className="btn pri" href="/registro">Crear cuenta</Link></>}</div>
+        <div className="lp-cta-top"><ThemeButton />{logged ? <Link className="btn pri" href="/app">Ir a la app</Link> : <><Link className="btn ghost" href="/ingresar">Ingresar</Link><Link className="btn pri" href="/registro">Crear cuenta</Link></>}</div>
       </div>
     </header>
   );
