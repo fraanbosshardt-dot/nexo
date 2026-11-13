@@ -2,7 +2,7 @@
 
 /* Barra de lectura */
 .lx-progress{position:fixed;top:0;left:0;right:0;height:3px;z-index:60;pointer-events:none}
-.lx-progress i{display:block;height:100%;background:linear-gradient(90deg,#1A5FD0,#5B8EF0);transform-origin:left;transform:scaleX(0)}
+.lx-progress i{display:block;height:100%;background:linear-gradient(90deg,#16493A,#5B8EF0);transform-origin:left;transform:scaleX(0)}
 
 /* Aparición en cascada: cada tarjeta entra un poco después que la anterior */
 .site .rv.in{transition-delay:calc(var(--i,0) * 110ms)}
@@ -17,13 +17,13 @@
 /* Tarjetas que se inclinan con el mouse, con un brillo que sigue al puntero */
 [data-tilt]{position:relative;transform-style:preserve-3d;will-change:transform}
 [data-tilt].tilt{transition:transform .15s ease-out,box-shadow .25s!important}
-[data-tilt]::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .3s;background:radial-gradient(420px circle at var(--mx,50%) var(--my,50%),rgba(26,95,208,.10),transparent 45%)}
+[data-tilt]::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .3s;background:radial-gradient(420px circle at var(--mx,50%) var(--my,50%),rgba(22,73,58,.10),transparent 45%)}
 [data-tilt]:hover::after{opacity:1}
 
 /* Botones con un reflejo que los cruza cada tanto */
 .lx-shine{position:relative;overflow:hidden;isolation:isolate}
 .lx-shine::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.5) 50%,transparent 70%);transform:translateX(-130%);animation:lx-shine 5s 2s ease-in-out infinite}
-.lx-final .lx-shine::after{background:linear-gradient(110deg,transparent 30%,rgba(26,95,208,.22) 50%,transparent 70%)}
+.lx-final .lx-shine::after{background:linear-gradient(110deg,transparent 30%,rgba(22,73,58,.22) 50%,transparent 70%)}
 @keyframes lx-shine{0%{transform:translateX(-130%)}28%,100%{transform:translateX(130%)}}
 
 /* Tabla planilla vs app: filas de a una y tilde que se dibuja */
@@ -37,7 +37,7 @@
 
 /* Pasos: una línea que se completa mientras bajás */
 .lx-track{height:4px;border-radius:2px;background:var(--line);margin:0 0 24px;overflow:hidden}
-.lx-track i{display:block;height:100%;border-radius:2px;background:#1A5FD0;transform-origin:left;transform:scaleX(var(--prog,1))}
+.lx-track i{display:block;height:100%;border-radius:2px;background:#16493A;transform-origin:left;transform:scaleX(var(--prog,1))}
 .lx-steps li>span{transition:color .4s}
 .lx-track[data-step="0"]+.lx-steps li:nth-child(n+2)>span,.lx-track[data-step="1"]+.lx-steps li:nth-child(n+3)>span{color:var(--line-2)}
 
@@ -55,7 +55,7 @@
 .lx-tour-pane.on{opacity:1;transform:none}
 .lx-tour-dots{display:flex;gap:8px}
 .lx-tour-dots i{width:8px;height:8px;border-radius:999px;background:var(--line-2);transition:width .3s,background .3s}
-.lx-tour-dots i.on{width:26px;background:#1A5FD0}
+.lx-tour-dots i.on{width:26px;background:#16493A}
 .lx-tour-steps{list-style:none;margin:0;padding:0}
 .lx-tour-steps li{min-height:62vh;display:flex;flex-direction:column;justify-content:center;gap:12px;opacity:.32;transition:opacity .4s}
 .lx-tour-steps li.on{opacity:1}

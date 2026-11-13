@@ -113,7 +113,7 @@ export function Onboarding({ firstName, uses, modules, guessCountry, detected }:
   return (
     <div className="nx obx">
       <header className="obx-top">
-        <span className="lp-brand"><LogoMark /><b>Guafra</b></span>
+        <span className="lp-brand"><LogoMark /><b className="wordmark">guafra</b></span>
       </header>
       <ActionForm action={finishOnboardingAction}>
         <div className="obx-wrap">

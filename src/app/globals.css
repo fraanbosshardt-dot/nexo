@@ -8,14 +8,14 @@ body{margin:0;font-size:14px}
 img{max-width:100%}
 [hidden]{display:none!important}
 
-/* Paleta: neutros grises, un solo azul para acciones y selección, verde solo para positivo, rojo solo para negativo o vencido. */
+/* Paleta: neutros grises, el verde oscuro del logo para acciones y selección, verde más vivo solo para positivo, rojo solo para negativo o vencido. */
 :root{
   --bg:#FFFFFF; --surface:#FFFFFF; --surface-2:#F1F3F4; --canvas:#F6F8FC; --line:#E0E2E6; --line-2:#C4C7C5;
   --fg:#1F1F1F; --muted:#5F6368; --faint:#80868B;
-  --ink:#1A5FD0; --ink-h:#164FAE; --on-ink:#FFFFFF; --ink-soft:#D9E6FB; --ink-txt:#0B3A85;
-  --green:#137333; --green-soft:#E6F4EA; --red:#C5221F; --red-soft:#FCE8E6; --amber:#A35200; --amber-soft:#FEF0D8;
-  --blue:#1A5FD0; --blue-soft:#D9E6FB; --slate:#5F6368; --slate-soft:#F1F3F4;
-  --c1:#1A5FD0; --c2:#5F6368; --c3:#80868B; --c4:#9AA0A6; --c5:#BDC1C6; --c6:#7A8CA8; --c7:#DADCE0;
+  --ink:#16493A; --ink-h:#0F3A2D; --on-ink:#FFFFFF; --ink-soft:#DDEEE3; --ink-txt:#0F3A2D;
+  --green:#1E8E3E; --green-soft:#E6F4EA; --red:#C5221F; --red-soft:#FCE8E6; --amber:#A35200; --amber-soft:#FEF0D8;
+  --blue:#16493A; --blue-soft:#DDEEE3; --slate:#5F6368; --slate-soft:#F1F3F4;
+  --c1:#16493A; --c2:#5F6368; --c3:#80868B; --c4:#9AA0A6; --c5:#BDC1C6; --c6:#7A8CA8; --c7:#DADCE0;
   --shadow:0 1px 2px rgba(60,64,67,.3),0 1px 3px 1px rgba(60,64,67,.15);
   --shadow-l:0 1px 3px rgba(60,64,67,.3),0 4px 8px 3px rgba(60,64,67,.15);
   --f-body:var(--font-roboto),"Roboto",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
@@ -25,18 +25,18 @@ img{max-width:100%}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#1B1C1F; --surface:#1B1C1F; --surface-2:#2A2B2F; --canvas:#131416; --line:#3A3C40; --line-2:#5A5D61;
   --fg:#E3E3E3; --muted:#C4C7C5; --faint:#9AA0A6;
-  --ink:#A8C7FA; --ink-h:#C2D7FB; --on-ink:#0A2A66; --ink-soft:#233A63; --ink-txt:#D3E3FD;
+  --ink:#8EC4A0; --ink-h:#A9D5B7; --on-ink:#0E2E24; --ink-soft:#24392F; --ink-txt:#CFE8D6;
   --green:#6DD58C; --green-soft:#1E3524; --red:#F2B8B5; --red-soft:#4A2422; --amber:#FDD663; --amber-soft:#3F3413;
-  --blue:#A8C7FA; --blue-soft:#233A63; --slate:#C4C7C5; --slate-soft:#2A2B2F;
-  --c1:#A8C7FA; --c2:#C4C7C5; --c3:#9AA0A6; --c4:#80868B; --c5:#5F6368; --c6:#7A8CA8; --c7:#3A3C40;
+  --blue:#8EC4A0; --blue-soft:#24392F; --slate:#C4C7C5; --slate-soft:#2A2B2F;
+  --c1:#8EC4A0; --c2:#C4C7C5; --c3:#9AA0A6; --c4:#80868B; --c5:#5F6368; --c6:#7A8CA8; --c7:#3A3C40;
   --shadow:0 1px 2px rgba(0,0,0,.5),0 1px 3px 1px rgba(0,0,0,.3); --shadow-l:0 1px 3px rgba(0,0,0,.5),0 4px 8px 3px rgba(0,0,0,.35); color-scheme:dark;}}
 :root[data-theme="dark"]{
   --bg:#1B1C1F; --surface:#1B1C1F; --surface-2:#2A2B2F; --canvas:#131416; --line:#3A3C40; --line-2:#5A5D61;
   --fg:#E3E3E3; --muted:#C4C7C5; --faint:#9AA0A6;
-  --ink:#A8C7FA; --ink-h:#C2D7FB; --on-ink:#0A2A66; --ink-soft:#233A63; --ink-txt:#D3E3FD;
+  --ink:#8EC4A0; --ink-h:#A9D5B7; --on-ink:#0E2E24; --ink-soft:#24392F; --ink-txt:#CFE8D6;
   --green:#6DD58C; --green-soft:#1E3524; --red:#F2B8B5; --red-soft:#4A2422; --amber:#FDD663; --amber-soft:#3F3413;
-  --blue:#A8C7FA; --blue-soft:#233A63; --slate:#C4C7C5; --slate-soft:#2A2B2F;
-  --c1:#A8C7FA; --c2:#C4C7C5; --c3:#9AA0A6; --c4:#80868B; --c5:#5F6368; --c6:#7A8CA8; --c7:#3A3C40;
+  --blue:#8EC4A0; --blue-soft:#24392F; --slate:#C4C7C5; --slate-soft:#2A2B2F;
+  --c1:#8EC4A0; --c2:#C4C7C5; --c3:#9AA0A6; --c4:#80868B; --c5:#5F6368; --c6:#7A8CA8; --c7:#3A3C40;
   --shadow:0 1px 2px rgba(0,0,0,.5),0 1px 3px 1px rgba(0,0,0,.3); --shadow-l:0 1px 3px rgba(0,0,0,.5),0 4px 8px 3px rgba(0,0,0,.35); color-scheme:dark;}
 html,body{height:100%}
 body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
@@ -1118,3 +1118,9 @@ html[data-big] body{zoom:1.15}
 
 span.brand-mark.logo{background:transparent!important;padding:0;overflow:hidden}
 .brand-mark.logo svg{width:100%;height:100%;display:block}
+
+/* Logo y nombre: el verde del logo; en modo oscuro (y en el pie oscuro de la web) un verde clarito para que se lea. */
+:root{--logo-dark:#16493A}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--logo-dark:#DCEFE2}}
+:root[data-theme="dark"],.ws-foot{--logo-dark:#DCEFE2}
+b.wordmark{font-family:var(--font-brand),"Fredoka",var(--f-display)!important;font-weight:600!important;letter-spacing:-.01em!important;color:var(--logo-dark)!important;font-size:22px!important;line-height:1}

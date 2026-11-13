@@ -1,18 +1,18 @@
 /* Diseño nuevo (sobrio, tipo calendario de escritorio). Por ahora solo en registro, ingreso, verificación y bienvenida: todo vive dentro de .nx. */
 .nx{
   --nx-bg:#FFFFFF; --nx-canvas:#F6F8FC; --nx-sunk:#F1F3F4; --nx-ink:#1F1F1F; --nx-ink2:#444746; --nx-ink3:#5F6368;
-  --nx-line:#E0E2E6; --nx-line2:#C4C7C5; --nx-accent:#1A5FD0; --nx-accent-h:#164FAE; --nx-on-accent:#FFFFFF; --nx-accent-soft:#D9E6FB; --nx-accent-ink:#0B3A85;
+  --nx-line:#E0E2E6; --nx-line2:#C4C7C5; --nx-accent:#16493A; --nx-accent-h:#0F3A2D; --nx-on-accent:#FFFFFF; --nx-accent-soft:#DDEEE3; --nx-accent-ink:#0F3A2D;
   --nx-pos:#137333; --nx-neg:#C5221F; --nx-neg-soft:#FCE8E6; --nx-warn:#A35200;
   --nx-shadow-s:0 1px 2px rgba(60,64,67,.3),0 1px 3px 1px rgba(60,64,67,.15);
   font-family:var(--font-roboto),system-ui,-apple-system,"Segoe UI",Arial,sans-serif;font-size:14px;line-height:1.45;color:var(--nx-ink);background:var(--nx-bg);font-variant-numeric:tabular-nums;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .nx{
   --nx-bg:#1B1C1F; --nx-canvas:#131416; --nx-sunk:#2A2B2F; --nx-ink:#E3E3E3; --nx-ink2:#C4C7C5; --nx-ink3:#9AA0A6; --nx-line:#3A3C40; --nx-line2:#5A5D61;
-  --nx-accent:#A8C7FA; --nx-accent-h:#C2D7FB; --nx-on-accent:#0A2A66; --nx-accent-soft:#233A63; --nx-accent-ink:#D3E3FD; --nx-pos:#6DD58C; --nx-neg:#F2B8B5; --nx-neg-soft:#4A2422; --nx-warn:#FDD663;
+  --nx-accent:#8EC4A0; --nx-accent-h:#A9D5B7; --nx-on-accent:#0E2E24; --nx-accent-soft:#24392F; --nx-accent-ink:#CFE8D6; --nx-pos:#6DD58C; --nx-neg:#F2B8B5; --nx-neg-soft:#4A2422; --nx-warn:#FDD663;
   --nx-shadow-s:0 1px 2px rgba(0,0,0,.5),0 1px 3px 1px rgba(0,0,0,.3)}}
 :root[data-theme="dark"] .nx{
   --nx-bg:#1B1C1F; --nx-canvas:#131416; --nx-sunk:#2A2B2F; --nx-ink:#E3E3E3; --nx-ink2:#C4C7C5; --nx-ink3:#9AA0A6; --nx-line:#3A3C40; --nx-line2:#5A5D61;
-  --nx-accent:#A8C7FA; --nx-accent-h:#C2D7FB; --nx-on-accent:#0A2A66; --nx-accent-soft:#233A63; --nx-accent-ink:#D3E3FD; --nx-pos:#6DD58C; --nx-neg:#F2B8B5; --nx-neg-soft:#4A2422; --nx-warn:#FDD663;
+  --nx-accent:#8EC4A0; --nx-accent-h:#A9D5B7; --nx-on-accent:#0E2E24; --nx-accent-soft:#24392F; --nx-accent-ink:#CFE8D6; --nx-pos:#6DD58C; --nx-neg:#F2B8B5; --nx-neg-soft:#4A2422; --nx-warn:#FDD663;
   --nx-shadow-s:0 1px 2px rgba(0,0,0,.5),0 1px 3px 1px rgba(0,0,0,.3)}
 .nx *{animation:none!important;transition:none!important}
 .nx h1,.nx h2,.nx h3{font-family:inherit;font-weight:400;margin:0;color:var(--nx-ink);letter-spacing:0;line-height:1.25;text-wrap:balance}
@@ -348,16 +348,16 @@
   .nx .obx-body .chip,.nx .obx-body .obx-body button.chip{min-height:42px}
   /* Panel derecho */
   .nx .obx-preview{position:sticky;top:0;height:100vh;box-sizing:border-box;align-self:start;border-radius:0;margin:0;padding:clamp(48px,6vh,96px) clamp(40px,4vw,80px);justify-content:center;gap:22px;color:#fff;
-    background:radial-gradient(700px 500px at 85% 10%,rgba(143,180,245,.35),transparent 60%),linear-gradient(160deg,#1A5FD0 0%,#0E3E96 55%,#0B1220 100%)}
+    background:radial-gradient(700px 500px at 85% 10%,rgba(143,180,245,.35),transparent 60%),linear-gradient(160deg,#16493A 0%,#0E3E96 55%,#0B1220 100%)}
   .nx .obx-pv-lbl{display:none}
   .nx .obx-pv-head{display:flex;flex-direction:column;gap:8px}
   .nx .obx-pv-head h2{margin:0;font-size:clamp(28px,2.4vw,38px);font-weight:500;letter-spacing:-.02em;line-height:1.1;color:#fff}
-  .nx .obx-pv-head p{margin:0;font-size:16px;color:#D9E6FB;max-width:34ch}
+  .nx .obx-pv-head p{margin:0;font-size:16px;color:#DDEEE3;max-width:34ch}
   .nx .obx-phone{width:100%;max-width:400px;padding:26px;border-radius:30px;gap:8px;box-shadow:0 40px 80px rgba(0,0,0,.35),0 0 0 10px rgba(255,255,255,.08)}
   .nx .obx-phone-hi{display:flex}
   .nx .obx-big{font-size:44px;font-weight:500;letter-spacing:-.02em}
   .nx .obx-rows div{font-size:14.5px;padding:11px 0}
-  .nx .obx-feats{color:#D9E6FB;font-size:14.5px;max-width:400px}
+  .nx .obx-feats{color:#DDEEE3;font-size:14.5px;max-width:400px}
   .nx .obx-trust{display:flex;flex-direction:column;gap:10px;list-style:none;margin:6px 0 0;padding:0}
   .nx .obx-trust li{display:flex;align-items:center;gap:10px;font-size:15px;color:#E8EDF5}
   .nx .obx-trust svg{width:18px;height:18px;color:#8FB4F5;flex:none}
