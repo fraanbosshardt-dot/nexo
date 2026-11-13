@@ -181,7 +181,7 @@ export async function adminReplyTicketAction(_: FormState, fd: FormData): Promis
   const mail = await sendEmail({
     to: t.user.email,
     subject: `Respuesta a tu consulta: ${t.subject}`,
-    text: `Hola ${t.user.name.split(" ")[0]}:\n\n${reply}\n\nTu consulta: "${t.subject}"\nPodés verla en ${appUrl()}/app/ayuda\n\nFinan`,
+    text: `Hola ${t.user.name.split(" ")[0]}:\n\n${reply}\n\nTu consulta: "${t.subject}"\nPodés verla en ${appUrl()}/app/ayuda\n\nGuafra`,
   });
   await adminAudit(a, "admin.ticket_answered", { entity: "ticket", entityId: id, meta: { emailed: mail.sent } });
   refresh();
@@ -263,7 +263,7 @@ export async function adminSendCampaignAction(_: FormState, fd: FormData): Promi
   if (users.length > 500) return { error: `Son ${users.length} personas: por ahora el máximo por envío es 500. Elegí un grupo más chico.` };
   let sent = 0, failed = 0;
   for (const u of users) {
-    const r = await sendEmail({ to: u.email, subject, text: `Hola ${u.name.split(" ")[0]}:\n\n${body}\n\n—\nFinan · Si no querés recibir correos, apagalos en ${appUrl()}/app/configuracion` });
+    const r = await sendEmail({ to: u.email, subject, text: `Hola ${u.name.split(" ")[0]}:\n\n${body}\n\n—\nGuafra · Si no querés recibir correos, apagalos en ${appUrl()}/app/configuracion` });
     if (r.sent) sent++; else failed++;
   }
   await db.emailCampaign.create({ data: { subject, body, audience, sent, failed, createdBy: a.email } });

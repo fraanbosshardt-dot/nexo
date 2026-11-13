@@ -32,7 +32,7 @@ export async function sendVerifyEmail(user: { id: string; email: string; name: s
   return sendEmail({
     to: user.email,
     subject: "Confirmá tu correo en Guafra",
-    text: `Hola ${user.name.split(" ")[0]}:\n\nPara confirmar que este correo es tuyo, entrá a este enlace (vence en ${DAYS} días):\n${appUrl()}/verificar-correo/${verifyToken(user.id, user.email)}\n\nSi no creaste una cuenta en Guafra, ignorá este correo.\n\nFinan`,
+    text: `Hola ${user.name.split(" ")[0]}:\n\nPara confirmar que este correo es tuyo, entrá a este enlace (vence en ${DAYS} días):\n${appUrl()}/verificar-correo/${verifyToken(user.id, user.email)}\n\nSi no creaste una cuenta en Guafra, ignorá este correo.\n\nGuafra`,
   });
 }
 
@@ -41,7 +41,7 @@ export async function sendPasswordChanged(user: { email: string; name: string })
   return sendEmail({
     to: user.email,
     subject: "Cambiaste tu contraseña de Guafra",
-    text: `Hola ${user.name.split(" ")[0]}:\n\nLa contraseña de tu cuenta se cambió recién y cerramos todas las sesiones abiertas.\n\nSi no fuiste vos, entrá a ${appUrl()}/recuperar para elegir una nueva y escribinos desde Ayuda.\n\nFinan`,
+    text: `Hola ${user.name.split(" ")[0]}:\n\nLa contraseña de tu cuenta se cambió recién y cerramos todas las sesiones abiertas.\n\nSi no fuiste vos, entrá a ${appUrl()}/recuperar para elegir una nueva y escribinos desde Ayuda.\n\nGuafra`,
   });
 }
 
@@ -76,7 +76,7 @@ export async function notifyNewDevice(db: PrismaClient, user: { id: string; emai
   await sendEmail({
     to: user.email,
     subject: "Ingreso nuevo a tu cuenta de Guafra",
-    text: `Hola ${user.name.split(" ")[0]}:\n\nAlguien entró a tu cuenta desde un dispositivo que no habías usado:\n• Cuándo: ${when}\n• Dispositivo: ${describeAgent(userAgent)}${ip ? `\n• Conexión: ${ip}` : ""}\n\nSi fuiste vos, no hagas nada. Si no, cambiá la contraseña en ${appUrl()}/recuperar y activá la verificación en dos pasos en Configuración.\n\nFinan`,
+    text: `Hola ${user.name.split(" ")[0]}:\n\nAlguien entró a tu cuenta desde un dispositivo que no habías usado:\n• Cuándo: ${when}\n• Dispositivo: ${describeAgent(userAgent)}${ip ? `\n• Conexión: ${ip}` : ""}\n\nSi fuiste vos, no hagas nada. Si no, cambiá la contraseña en ${appUrl()}/recuperar y activá la verificación en dos pasos en Configuración.\n\nGuafra`,
   });
 }
 

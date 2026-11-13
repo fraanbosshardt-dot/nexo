@@ -290,8 +290,8 @@
 .nx .obx-track-now{font-size:13px;color:var(--nx-ink3)}
 .nx .obx-track-now b{color:var(--nx-accent-ink);font-weight:600}
 .nx .obx-track ol{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
-.nx .obx-track li{display:flex;flex-direction:column;gap:7px;min-width:0;font-size:12.5px;color:var(--nx-ink3)}
-.nx .obx-track li>button{display:flex;flex-direction:column;gap:7px;background:none;border:0;padding:0;margin:0;font:inherit;color:inherit;text-align:left;cursor:pointer;min-width:0}
+.nx .obx-track li{display:flex;align-items:center;gap:8px;min-width:0;font-size:12.5px;color:var(--nx-ink3)}
+.nx .obx-track li>button{display:flex;align-items:center;gap:8px;background:none;border:0;padding:0;margin:0;font:inherit;color:inherit;text-align:left;cursor:pointer;min-width:0}
 .nx .obx-track i{display:block;height:6px;border-radius:999px;background:var(--nx-line);position:relative;overflow:hidden}
 .nx .obx-track i::after{content:"";position:absolute;inset:0;border-radius:999px;background:var(--nx-accent);transform:scaleX(0);transform-origin:left;transition:transform .45s cubic-bezier(.2,.7,.2,1)}
 .nx .obx-track li.done i::after,.nx .obx-track li.on i::after{transform:scaleX(1)}
@@ -371,3 +371,17 @@
   .nx .obx-phone{max-width:440px}
 }
 @media (min-width:901px){.nx .obx-body .chips{gap:10px}.nx .obx-body .chips .chip{min-height:48px;padding:0 18px;font-size:15px;border-radius:999px}.nx .obx-body .chips .chip-sel{min-height:48px;border-radius:999px}}
+
+/* Bienvenida: una sola barra que corre suave del paso anterior al actual, con un punto de luz en la punta */
+.nx .obx-prog{position:relative;height:8px;border-radius:999px;background:var(--nx-line);overflow:visible}
+.nx .obx-prog i{position:absolute;left:0;top:0;bottom:0;width:var(--to);border-radius:999px;background:linear-gradient(90deg,#5D9C7C,var(--nx-accent))}
+.nx .obx-prog i::after{content:"";position:absolute;right:-2px;top:50%;width:14px;height:14px;margin-top:-7px;border-radius:50%;background:var(--nx-accent);box-shadow:0 0 0 4px color-mix(in srgb,var(--nx-accent) 22%,transparent)}
+@media (prefers-reduced-motion:no-preference){
+  .nx .obx-prog i{animation:obxProg .7s cubic-bezier(.65,0,.25,1) both!important}
+  .nx .obx-prog i::after{animation:obxGlow 1.8s .7s ease-in-out infinite!important}
+}
+@keyframes obxProg{from{width:var(--from)}to{width:var(--to)}}
+@keyframes obxGlow{0%,100%{box-shadow:0 0 0 4px color-mix(in srgb,var(--nx-accent) 22%,transparent)}50%{box-shadow:0 0 0 8px color-mix(in srgb,var(--nx-accent) 8%,transparent)}}
+.nx .obx-track em{flex:none;display:grid;place-items:center;width:20px;height:20px;border-radius:50%;font-style:normal;font-size:11px;font-weight:700;background:var(--nx-line);color:var(--nx-ink3)}
+.nx .obx-track li.on em{background:var(--nx-accent);color:var(--nx-on-accent)}
+.nx .obx-track li.done em{background:var(--nx-accent-soft);color:var(--nx-accent-ink)}

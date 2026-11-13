@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { requireWorkspace } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
+import { Icon } from "@/components/icons";
 import { MODULES, PLAN_FEATURES } from "@/lib/modules";
 import { formatMoney } from "@/lib/money";
 import { billingConfig } from "@/server/billing";
@@ -160,18 +161,32 @@ export default async function Settings({ searchParams }: { searchParams: Promise
           {paidPro ? (
             <form action={cancelPlanAction}><ConfirmSubmit className="btn" question={sub!.currentPeriodEnd ? `¿Cancelar Pro? No se te cobra más y lo seguís usando hasta el ${fmtDate(sub!.currentPeriodEnd)}.` : "¿Cancelar Pro? Dejás de pagar y volvés al plan Gratis."} yes="Sí, cancelar">Cancelar Pro</ConfirmSubmit></form>
           ) : bill.enabled ? (
-            <form action={checkoutAction} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {sp.cupon && <p className="auth-err" role="alert">{sp.cupon}</p>}
-              <label className="field" style={{ maxWidth: 260 }}>¿Tenés un cupón? (opcional)<input name="coupon" autoComplete="off" placeholder="Ej.: BIENVENIDA" style={{ textTransform: "uppercase" }} /></label>
-              <div className="acts">
-                <button className="btn pri" type="submit" name="cycle" value="monthly">Pasar a Pro · {formatMoney(String(bill.monthly), bill.currency)} por mes</button>
-                <button className="btn" type="submit" name="cycle" value="yearly">Pagar por año · {formatMoney(String(bill.yearly), bill.currency)}</button>
+            // En Gratis: a la izquierda qué suma Pro; a la derecha el precio (por mes o por año) y los botones.
+            <div className="plan-up">
+              <div className="plan-why">
+                <h4>Pasate a Pro</h4>
+                <ul>{PLAN_FEATURES.filter((f) => f.plan === "pro").slice(0, 5).map((f) => <li key={f.name}><Icon name="check" />{f.name}</li>)}</ul>
               </div>
-            </form>
+              <div className="plan-box">
+                <form action={checkoutAction} className="plan-buy">
+                  {sp.cupon && <p className="auth-err" role="alert">{sp.cupon}</p>}
+                  <div className="plan-cycle" role="radiogroup" aria-label="Cómo querés pagar">
+                    <label><input type="radio" name="cycle" value="monthly" defaultChecked /><span>Por mes</span></label>
+                    <label><input type="radio" name="cycle" value="yearly" /><span>Por año <em>2 meses gratis</em></span></label>
+                  </div>
+                  <div className="plan-price m"><b>{formatMoney(String(bill.monthly), bill.currency)}</b><span>por mes</span></div>
+                  <div className="plan-price y"><b>{formatMoney(String(bill.yearly), bill.currency)}</b><span>por año · {formatMoney(String(Math.round(Number(bill.yearly) / 12)), bill.currency)} por mes</span></div>
+                  <button className="btn pri plan-cta" type="submit">Pasar a Pro</button>
+                  <details className="plan-coupon" open={!!sp.cupon}><summary>¿Tenés un cupón?</summary><input name="coupon" autoComplete="off" placeholder="Ej.: BIENVENIDA" aria-label="Cupón" /></details>
+                </form>
+                {!sub?.trialEndsAt && <form action={startTrialAction}><button className="btn plan-trial" type="submit">Probar 14 días gratis</button></form>}
+                <p className="plan-fine">Pagás con Mercado Pago. Cancelás cuando quieras.</p>
+              </div>
+            </div>
           ) : plan !== "PRO" ? (
             <p className="sub">Pro cuesta {priceLabel(ps, "monthly").text} por mes o {priceLabel(ps, "yearly").text} por año. El cobro con Mercado Pago se activa pronto; mientras tanto podés usar la prueba gratis.</p>
           ) : null}
-          {!paidPro && !sub?.trialEndsAt && plan !== "PRO" && <form action={startTrialAction} style={{ marginTop: 12 }}><button className="btn ghost" type="submit">Probar Pro gratis 14 días</button></form>}
+          {!paidPro && !bill.enabled && !sub?.trialEndsAt && plan !== "PRO" && <form action={startTrialAction} style={{ marginTop: 12 }}><button className="btn ghost" type="submit">Probar Pro gratis 14 días</button></form>}
         </div>
         <div className="card">
           <div className="chead"><div><h3>Invitá y ganá Pro</h3><p className="sub">Cuando alguien se registra con tu link y termina la bienvenida, ustedes dos reciben {REFERRAL_DAYS} días de Pro.</p></div>{refStats.rewarded > 0 && <span className="pill g">{refStats.rewarded} {refStats.rewarded === 1 ? "invitación" : "invitaciones"}</span>}</div>

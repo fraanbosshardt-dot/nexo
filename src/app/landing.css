@@ -243,10 +243,10 @@
 /* Barra de arriba: una pastilla de vidrio blanco desenfocado que flota (nunca una franja entera).
    Siempre blanca (también en modo oscuro), con el botón para cambiar entre claro y oscuro.
    En la portada queda encima del fondo animado. */
-.site .lp-nav{--nb:rgba(255,255,255,.82);--nl:rgba(255,255,255,.9);--nt:#3D4D45;--nth:#0B1813;--nhov:rgba(11,24,19,.06);--np:#16493A;--npt:#fff;--logo-dark:#16493A;
+.site .lp-nav{--nb:rgba(255,255,255,.95);--nl:rgba(255,255,255,1);--nt:#3D4D45;--nth:#0B1813;--nhov:rgba(11,24,19,.06);--np:#16493A;--npt:#fff;--logo-dark:#16493A;
   background:transparent!important;box-shadow:none!important;border:0!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;padding:12px 12px 0;pointer-events:none}
-.site:has(.lx-dark) .lp-nav{margin-bottom:-68px}
-.site .lp-nav .lp-navin{pointer-events:auto;height:56px;max-width:1160px;margin-inline:auto;padding:0 10px 0 18px;border-radius:999px;background:var(--nb);-webkit-backdrop-filter:saturate(170%) blur(20px);backdrop-filter:saturate(170%) blur(20px);border:1px solid var(--nl);box-shadow:0 10px 30px rgba(4,12,9,.12),inset 0 1px 0 rgba(255,255,255,.35)}
+.site:has(.lx-dark) .lp-nav{margin-bottom:-72px}
+.site .lp-nav .lp-navin{pointer-events:auto;height:60px;max-width:1320px;margin-inline:auto;padding:0 10px 0 18px;border-radius:999px;background:var(--nb);-webkit-backdrop-filter:saturate(170%) blur(20px);backdrop-filter:saturate(170%) blur(20px);border:1px solid var(--nl);box-shadow:0 12px 34px rgba(4,12,9,.2),0 1px 2px rgba(4,12,9,.08)}
 @supports not (backdrop-filter:blur(1px)){.site .lp-nav .lp-navin{background:#fff}}
 .site .lp-nav .ibtn{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;border:1px solid rgba(11,24,19,.12);background:transparent;color:#16493A;cursor:pointer;transition:background-color .2s,transform .3s}
 .site .lp-nav .ibtn:hover{background:rgba(11,24,19,.06);transform:rotate(-15deg)}
@@ -400,7 +400,7 @@
 @media (max-width:640px){.lx-vs th,.lx-vs td{padding:12px 8px;font-size:13px}}
 
 /* La portada arranca debajo de la barra flotante */
-.site:has(.lx-dark) .lx-hero-c{padding-top:calc(68px + clamp(40px,7vw,104px))}
+.site:has(.lx-dark) .lx-hero-c{padding-top:calc(72px + clamp(40px,7vw,104px))}
 
 /* ---------- Funciones: tarjeta grande con la app desenfocada atrás ---------- */
 .lx-show-scroll{position:relative;height:calc(100vh + var(--n) * 70vh)}

@@ -15,6 +15,7 @@ import { ActionForm, Submit } from "@/components/forms";
 import { BigTextSync } from "@/components/big-text";
 import { switchWorkspaceAction } from "@/app/actions/sharing";
 import { resendVerifyAction } from "@/app/actions/app";
+import { LogoMark } from "@/components/logo-mark";
 
 // La app es privada: nunca se indexa.
 export const metadata: Metadata = { robots: { index: false, follow: false } };
@@ -24,6 +25,21 @@ export const dynamic = "force-dynamic";
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, workspace, modules, plan, membership } = await requireWorkspace();
   const db = getDb();
+  // Mantenimiento (Panel → Sistema): una pantalla completa en vez de la app. El equipo del panel sí entra, para revisar.
+  const [sys, role] = await Promise.all([systemSettings(db), roleFor(db, user.email)]);
+  if (sys.maintenance && !role) {
+    return (
+      <main className="maint" role="main">
+        <div className="maint-box">
+          <LogoMark className="maint-logo" />
+          <h1>Volvemos enseguida</h1>
+          <p>{sys.maintenanceMsg}</p>
+          <span className="maint-pulse" aria-hidden="true"><i /><i /><i /></span>
+          <form action={logoutAction}><button className="btn" type="submit">Cerrar sesión</button></form>
+        </div>
+      </main>
+    );
+  }
   const today = todayIn(workspace.timezone);
   // Pendientes de reglas recurrentes y resúmenes de tarjeta ya cerrados: se generan solos y sin duplicar.
   // Pendientes de reglas y resúmenes cerrados: se recalculan al cambiar el día o cada 15 minutos, no en cada página.
@@ -36,10 +52,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     if (modules.cereal) await coverOlderSales(db, workspace.id, today);
     await db.workspace.update({ where: { id: workspace.id }, data: { housekeptAt: new Date() } });
   }
-  const [overdue, role, sys, ann] = await Promise.all([
+  const [overdue, ann] = await Promise.all([
     db.obligation.count({ where: { workspaceId: workspace.id, status: { in: ["PENDING", "PARTIAL"] }, dueDate: { lt: today } } }),
-    roleFor(db, user.email),
-    systemSettings(db),
     announcement(db),
   ]);
   const notice = announcementFor(ann, plan);
@@ -73,12 +87,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </ActionForm>
         </div>
       )}
-      {sys.maintenance ? (
-        <div className="empty" style={{ padding: "48px 24px" }}>
-          <h2 style={{ margin: "0 0 8px", fontWeight: 400 }}>Volvemos enseguida</h2>
-          <p style={{ margin: 0 }}>{sys.maintenanceMsg}</p>
-        </div>
-      ) : children}
+      {sys.maintenance && <div className="notice a app-ann" role="status"><Icon name="info" /><span>Modo mantenimiento activo: las personas ven la pantalla de “Volvemos enseguida”. Vos entrás porque sos del equipo.</span></div>}
+      {children}
     </Shell></>
   );
 }

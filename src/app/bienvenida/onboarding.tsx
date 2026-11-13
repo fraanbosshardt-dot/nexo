@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ActionForm, Submit } from "@/components/forms";
 import { Icon, type IconName } from "@/components/icons";
 import { finishOnboardingAction } from "@/app/actions/app";
@@ -30,6 +30,10 @@ function nextPayday(day: number) {
 
 export function Onboarding({ firstName, uses, modules, guessCountry, detected }: { firstName: string; uses: Use[]; modules: Mod[]; guessCountry: string; detected: boolean }) {
   const [step, setStep] = useState(0);
+  // La barra de progreso corre desde el paso anterior hasta el actual (no salta).
+  const prevStep = useRef(0);
+  const fromPct = ((prevStep.current + 1) / 4) * 100;
+  useEffect(() => { prevStep.current = step; }, [step]);
   const [err, setErr] = useState("");
   const [bad, setBad] = useState("");
   const fail = (msg: string, field: string) => { setErr(msg); setBad(field); setTimeout(() => (document.getElementById(field) as HTMLElement | null)?.focus(), 0); };
@@ -126,12 +130,13 @@ export function Onboarding({ firstName, uses, modules, guessCountry, detected }:
           <main key={step} className="obx-body obx-step" onKeyDown={(e) => { if (e.key === "Enter" && step < 3 && (e.target as HTMLElement).tagName === "INPUT") { e.preventDefault(); next(); } }}>
             <nav className="obx-track" aria-label="Pasos de la bienvenida">
               <span className="obx-track-now">Paso {step + 1} de {STEPS.length} · <b>{STEPS[step]}</b></span>
+              <div className="obx-prog" aria-hidden="true" style={{ "--from": `${fromPct}%`, "--to": `${((step + 1) / STEPS.length) * 100}%` } as React.CSSProperties}><i /></div>
               <ol>
                 {STEPS.map((s, i) => (
                   <li key={s} className={i === step ? "on" : i < step ? "done" : ""} aria-current={i === step ? "step" : undefined}>
                     {i < step
-                      ? <button type="button" onClick={() => go(i)} aria-label={`Volver a ${s}`}><i /><span>{s}</span></button>
-                      : <><i /><span>{s}</span></>}
+                      ? <button type="button" onClick={() => go(i)} aria-label={`Volver a ${s}`}><em aria-hidden="true">✓</em><span>{s}</span></button>
+                      : <><em aria-hidden="true">{i + 1}</em><span>{s}</span></>}
                   </li>
                 ))}
               </ol>
