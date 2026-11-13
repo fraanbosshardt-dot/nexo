@@ -588,3 +588,35 @@
 .lx-show-tabs button.on{background:color-mix(in srgb,var(--ink) 16%,var(--bg));color:var(--ink-txt);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ink) 28%,transparent)}
 .lx-show-tabs button.done{color:var(--muted)}
 .lx-show-tabs button:not(.on):hover{color:var(--fg)}
+
+/* ==========================================================================
+   Celular (o pantallas táctiles): los mismos colores y diseño, pero sin los efectos caros
+   (desenfoques animados, 3D, bordes que giran, degradés en movimiento). Así no se traba.
+   ========================================================================== */
+@media (max-width:900px),(pointer:coarse){
+  .lx-sky .blob{filter:blur(42px);animation:none!important;translate:none!important;will-change:auto}
+  .lx-sky .ghost{animation:none!important;translate:none!important;filter:blur(5px)}
+  .lx-sky .g2,.lx-sky .g4{display:none}
+  .lx-hero-c .lx-copy{translate:none!important;opacity:1!important}
+  .lx-dark .lx-h1 em{animation:lx-rise .9s .15s cubic-bezier(.2,.7,.2,1) both!important}
+  .lx-hero-c .lx-news,.lx-dark .lx-ghost{-webkit-backdrop-filter:none;backdrop-filter:none}
+  .lx-aur span{animation:none!important;translate:none!important;filter:blur(54px);will-change:auto}
+  .lx-aur-grid{translate:none!important}
+  .lx-show-aur{animation:none!important}
+  .lx-show-shine{display:none}
+  .lx-show-card{scale:none!important;perspective:none;box-shadow:none}
+  .lx-show-bg{translate:none!important;transform-style:flat}
+  .lx-show-pane{animation:none!important;transform:none!important;filter:none;box-shadow:none;opacity:.22}
+  .lx-show-pane.on{opacity:.34}
+  .lx-mega-row.r1,.lx-mega-row em,.lx-band.b1 em{animation:none!important}
+  .lx-band{translate:none!important}
+  .lx-plan.pro::before{animation:none!important}
+  .lx-final::before{animation:none!important}
+  .lx-final{scale:none!important}
+  .lx-month-card{rotate:none!important}
+  .site .lp-nav .lp-navin{-webkit-backdrop-filter:none;backdrop-filter:none;background:rgba(255,255,255,.97)}
+  /* Lo que aparece al bajar: más rápido y con menos recorrido */
+  .lp .rv.pre{transform:translateY(12px)}
+  .lp .rv.in{transition:opacity .35s ease,transform .35s ease!important}
+  .site .rv.in{transition-delay:0s}
+}

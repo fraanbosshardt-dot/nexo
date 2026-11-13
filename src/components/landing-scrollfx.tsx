@@ -5,7 +5,8 @@ import { useEffect } from "react";
 
 export function ScrollFx() {
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    // En el celular no se mueve nada con el scroll (es lo que más traba): queda quieto y fluido.
+    if (window.matchMedia("(prefers-reduced-motion: reduce), (max-width: 900px), (pointer: coarse)").matches) return;
     const els = [...document.querySelectorAll<HTMLElement>("[data-sfx]")];
     if (!els.length) return;
     let raf = 0;

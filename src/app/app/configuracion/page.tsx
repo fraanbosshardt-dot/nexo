@@ -217,7 +217,6 @@ export default async function Settings({ searchParams }: { searchParams: Promise
               </div>
               <div className="plan-box">
                 <form action={checkoutAction} className="plan-buy">
-                  {sp.cupon && <p className="auth-err" role="alert">{sp.cupon}</p>}
                   <div className="plan-cycle" role="radiogroup" aria-label="Cómo querés pagar">
                     <label><input type="radio" name="cycle" value="monthly" defaultChecked /><span>Por mes</span></label>
                     <label><input type="radio" name="cycle" value="yearly" /><span>Por año{savePct > 0 && <em>−{savePct} %</em>}</span></label>
@@ -225,7 +224,6 @@ export default async function Settings({ searchParams }: { searchParams: Promise
                   <div className="plan-price m"><b>{formatMoney(String(bill.monthly), bill.currency)}</b><span>por mes</span></div>
                   <div className="plan-price y"><b>{formatMoney(String(bill.yearly), bill.currency)}</b><span>por año</span><small>Equivale a {formatMoney(String(Math.round(Number(bill.yearly) / 12)), bill.currency)} por mes</small></div>
                   <button className="btn pri plan-cta" type="submit">{trial ? "Suscribirme a Pro" : "Pasar a Pro"}</button>
-                  <details className="plan-coupon" open={!!sp.cupon}><summary>¿Tenés un cupón?</summary><input name="coupon" autoComplete="off" placeholder="Ej.: BIENVENIDA" aria-label="Cupón" /></details>
                 </form>
                 {!sub?.trialEndsAt && <form action={startTrialAction}><button className="btn plan-trial" type="submit">Probar 14 días gratis</button></form>}
                 <p className="plan-fine">{trial ? `No te cobramos nada hasta el ${fmtDate(sub!.trialEndsAt!)}.` : "Cancelás cuando quieras · Pagás con Mercado Pago"}</p>
