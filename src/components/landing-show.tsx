@@ -11,8 +11,12 @@ export function Showcase({ items, screens }: { items: Item[]; screens: React.Rea
   const [t, setT] = useState(0); // avance dentro de la pestaña actual (0 a 1)
   const wrap = useRef<HTMLDivElement>(null);
   const n = items.length;
+  const [mobile, setMobile] = useState(false);
+  const touch = useRef<number | null>(null);
+  useEffect(() => { const mq = window.matchMedia("(max-width: 900px), (pointer: coarse)"); const on = () => setMobile(mq.matches); on(); mq.addEventListener("change", on); return () => mq.removeEventListener("change", on); }, []);
 
   useEffect(() => {
+    if (mobile) return; // en el celular cambia con el dedo, no con el scroll
     let raf = 0;
     const frame = () => {
       raf = 0;
@@ -30,10 +34,11 @@ export function Showcase({ items, screens }: { items: Item[]; screens: React.Rea
     window.addEventListener("scroll", on, { passive: true });
     window.addEventListener("resize", on);
     return () => { window.removeEventListener("scroll", on); window.removeEventListener("resize", on); cancelAnimationFrame(raf); };
-  }, [n]);
+  }, [n, mobile]);
 
   // Tocar una pestaña: baja (o sube) hasta la mitad de su tramo.
   const go = (k: number) => {
+    if (mobile) { setI(k); setT(0); return; }
     const el = wrap.current;
     if (!el) return;
     const top = el.getBoundingClientRect().top + window.scrollY;
@@ -44,7 +49,7 @@ export function Showcase({ items, screens }: { items: Item[]; screens: React.Rea
 
   const it = items[i];
   return (
-    <div className="lx-show-scroll" ref={wrap} style={{ "--n": n } as React.CSSProperties}>
+    <div className={`lx-show-scroll ${mobile ? "swipe" : ""}`} ref={wrap} style={{ "--n": n } as React.CSSProperties}>
       <div className="lx-show">
         <div className="lx-show-tabs" role="tablist" aria-label="Funciones">
           {items.map((x, k) => (
@@ -53,13 +58,16 @@ export function Showcase({ items, screens }: { items: Item[]; screens: React.Rea
             </button>
           ))}
         </div>
-        <div className="lx-show-card" data-sfx="" role="tabpanel">
+        <div className="lx-show-card" data-sfx="" role="tabpanel"
+          onTouchStart={(e) => { touch.current = e.touches[0].clientX; }}
+          onTouchEnd={(e) => { const x0 = touch.current; touch.current = null; if (x0 == null) return; const dx = e.changedTouches[0].clientX - x0; if (Math.abs(dx) > 40) setI((k) => Math.min(n - 1, Math.max(0, k + (dx < 0 ? 1 : -1)))); }}>
           {/* Fondo vivo: manchas de luz que giran y un barrido de brillo */}
           <div className="lx-show-aur" aria-hidden="true"><span /><span /><span /></div>
           <i className="lx-show-shine" aria-hidden="true" />
           <div className="lx-show-bg" aria-hidden="true" style={{ "--k": i } as React.CSSProperties}>
             {screens.map((s, k) => <div key={k} className={`lx-show-pane ${k === i ? "on" : ""}`} style={{ "--i": k } as React.CSSProperties}>{s}</div>)}
           </div>
+          {mobile && <div className="lx-show-dots" aria-hidden="true">{items.map((_, k) => <i key={k} className={k === i ? "on" : ""} />)}</div>}
           <div key={i} className="lx-show-txt">
             <span>{it.tag}</span>
             <h3>{it.title}</h3>

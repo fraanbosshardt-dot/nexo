@@ -60,7 +60,7 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 - [ ] P14. Facturas de AFIP para los cobros de Pro.
 
 ### Sitio: marketing y SEO (etapa 3)
-- [ ] L1. Portada en el celular: las animaciones se ven lentas y feas, y el diseño no queda bien. Analizar con el celular en la mano (y una medición de rendimiento): 1) Funciones: en vez de la tarjeta fija que cambia con el scroll (hace la página muy larga), un carrusel que se desliza con el dedo; 2) portada más corta, sin el celular grande abajo; 3) sin animaciones al aparecer cada bloque; 4) revisar cada sección en 360 px (letras, espacios, botones); 5) menos secciones en el celular.
+- [ ] L1. Portada en el celular: se rehízo (portada corta, Funciones como carrusel, Un mes como lista, sin bloques que esperan una animación, comparación y precios prolijos). Falta probarla en un celular de verdad y ajustar lo que quede.
 - [ ] M2. Newsletter.
 - [ ] M4. Testimonios de usuarios reales, cuando los haya (nunca inventados).
 

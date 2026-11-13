@@ -77,7 +77,7 @@ export function MonthStory() {
       <ol className="lx-month-steps">
         {STEPS.map((p, k) => (
           <li key={p.day} data-i={k} ref={(el) => { refs.current[k] = el; }} className={k === i ? "on" : ""}>
-            <span className="lx-month-day">Día {p.day}</span>
+            <span className="lx-month-day">Día {p.day}<b className="lx-month-left">Te queda {fmt(p.left)}</b></span>
             <h3>{p.title}</h3>
             <p>{p.text}</p>
           </li>

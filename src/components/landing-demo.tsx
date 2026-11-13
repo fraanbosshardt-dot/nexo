@@ -50,7 +50,7 @@ export function PriceSwitch({ monthly, yearly }: { monthly: React.ReactNode; yea
     <>
       <div className="lx-seg" role="group" aria-label="Forma de pago">
         <button type="button" aria-pressed={!y} className={!y ? "on" : ""} onClick={() => setY(false)}>Por mes</button>
-        <button type="button" aria-pressed={y} className={y ? "on" : ""} onClick={() => setY(true)}>Por año · 2 meses gratis</button>
+        <button type="button" aria-pressed={y} className={y ? "on" : ""} onClick={() => setY(true)}>Por año <em className="lx-seg-save">2 meses gratis</em></button>
       </div>
       {y ? yearly : monthly}
     </>
