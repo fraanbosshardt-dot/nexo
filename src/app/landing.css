@@ -545,3 +545,30 @@
   .lx-sky .blob,.lx-sky .ghost,.lx-hero-c .lx-copy,.lx-aur span,.lx-aur-grid,.lx-show-bg,.lx-mega-row,.lx-show-card,.lx-final,.lx-month-card{translate:none!important;scale:none!important;rotate:none!important;opacity:1}
   .lx-mega-row.r2{translate:-20% 0!important}
 }
+
+/* Comparación: la columna de Guafra resaltada en verde, con el logo arriba y respuestas en pastilla */
+.lx-vs{border-radius:28px;box-shadow:0 24px 60px rgba(11,24,19,.07)}
+.lx-vs table{table-layout:fixed;font-size:14.5px}
+.lx-vs thead th:first-child,.lx-vs tbody th{width:36%}
+.lx-vs th,.lx-vs td{padding:16px 14px;vertical-align:middle;line-height:1.35}
+.lx-vs tbody th{padding-left:24px;font-size:15px;font-weight:500;color:var(--fg)}
+.lx-vs td{color:var(--muted);font-weight:400}
+.lx-vs tbody tr{transition:background-color .2s}
+.lx-vs tbody tr:hover{background:color-mix(in srgb,var(--ink) 4%,transparent)}
+.lx-vs thead th{padding-block:18px;font-size:13.5px}
+.lx-vs .lx-vs-g{background:color-mix(in srgb,var(--ink) 9%,transparent);border-top-color:color-mix(in srgb,var(--ink) 14%,transparent)}
+.lx-vs thead th.lx-vs-g{background:var(--ink);color:var(--on-ink);border-radius:0 0 0 0}
+.lx-vs-brand{display:inline-flex;align-items:center;gap:8px;font-family:var(--font-brand),"Fredoka",sans-serif;font-size:18px;font-weight:600;letter-spacing:-.01em;--logo-dark:var(--on-ink)}
+.lx-vs-mark{width:24px;height:24px;display:inline-block;flex:none}
+.lx-vs-mark svg{width:100%;height:100%;display:block}
+.lx-vs td.lx-vs-g{color:inherit}
+.lx-yes{padding:6px 12px 6px 10px;border-radius:999px;background:var(--ink);color:var(--on-ink);font-size:14px;font-weight:600}
+.lx-yes svg{width:15px;height:15px}
+.lx-no{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--surface-2);color:var(--faint);font-size:12px;font-weight:700}
+@media (max-width:640px){
+  .lx-vs thead th:first-child,.lx-vs tbody th{width:34%}
+  .lx-vs th,.lx-vs td{padding:12px 6px;font-size:12.5px}
+  .lx-vs tbody th{padding-left:12px;font-size:13px}
+  .lx-vs-brand{font-size:14px;gap:5px}.lx-vs-mark{width:18px;height:18px}
+  .lx-yes{padding:4px 8px;font-size:12px;gap:3px}.lx-yes svg{width:12px;height:12px}
+}

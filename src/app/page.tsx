@@ -6,6 +6,7 @@ import { MonthStory } from "@/components/landing-month";
 import { LandingMotion } from "@/components/landing-motion";
 import { Showcase } from "@/components/landing-show";
 import { FaqList } from "@/components/landing-faq";
+import { LogoMark } from "@/components/logo-mark";
 import { Aurora, ScrollFx } from "@/components/landing-scrollfx";
 import { PublicShell } from "@/components/public-shell";
 import { AppCta } from "@/components/app-cta";
@@ -238,8 +239,8 @@ export default async function Landing() {
           <Reveal className="lx-two-copy"><p className="ws-eyebrow">Por qué {N}</p><h2 className="ws-h2">La planilla te muestra el pasado. {N} te muestra lo que viene.</h2><p className="ws-lead">Una planilla depende de que te acuerdes de todo, y la app del banco solo ve lo suyo. {N} junta todo, repite tus pagos fijos, reparte las cuotas y te avisa antes de que un mes quede en rojo.</p></Reveal>
           <Reveal className="lx-vs">
             <table>
-              <thead><tr><th scope="col"><span className="sr-only">Qué</span></th><th scope="col">Planilla</th><th scope="col">App del banco</th><th scope="col">{N}</th></tr></thead>
-              <tbody>{VS.map(([t, x, b, g], i) => <tr key={t} style={{ "--r": i } as React.CSSProperties}><th scope="row">{t}</th><td>{x}</td><td>{b}</td><td><span className="lx-yes"><svg viewBox="0 0 24 24" aria-hidden="true"><path pathLength={1} d="M5 12l5 5L20 7" /></svg>{g}</span></td></tr>)}</tbody>
+              <thead><tr><th scope="col"><span className="sr-only">Qué</span></th><th scope="col">Planilla</th><th scope="col">App del banco</th><th scope="col" className="lx-vs-g"><span className="lx-vs-brand"><LogoMark className="lx-vs-mark" /><span>{N.toLowerCase()}</span></span></th></tr></thead>
+              <tbody>{VS.map(([t, x, b, g], i) => <tr key={t} style={{ "--r": i } as React.CSSProperties}><th scope="row">{t}</th><td>{x === "No" ? <span className="lx-no">✕<span className="sr-only">No</span></span> : x}</td><td>{b === "No" ? <span className="lx-no">✕<span className="sr-only">No</span></span> : b}</td><td className="lx-vs-g"><span className="lx-yes"><svg viewBox="0 0 24 24" aria-hidden="true"><path pathLength={1} d="M5 12l5 5L20 7" /></svg>{g}</span></td></tr>)}</tbody>
             </table>
           </Reveal>
         </div>
