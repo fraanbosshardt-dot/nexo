@@ -7,7 +7,29 @@ import { allocate, dec, round2, ZERO, type MoneyValue } from "@/lib/money";
 import { period } from "@/lib/dates";
 import type Decimal from "decimal.js";
 
-export type ScheduleRow = { k: number; due: Date; capital: Decimal; interest: Decimal; total: Decimal; balance: Decimal };
+export type ScheduleRow = { k: number; due: Date; capital: Decimal; interest: Decimal; total: Decimal; balance: Decimal; vat?: Decimal; insurance?: Decimal };
+
+// Lo que el banco suma a la cuota pura: IVA sobre el interés, seguro sobre el saldo y cargos fijos.
+export type DebtExtras = { vatPct?: MoneyValue | null; insurancePct?: MoneyValue | null; insuranceFixed?: MoneyValue | null };
+export function withExtras(rows: ScheduleRow[], principal: MoneyValue, x: DebtExtras = {}): ScheduleRow[] {
+  const vat = x.vatPct ? dec(x.vatPct).dividedBy(100) : ZERO;
+  const ins = x.insurancePct ? dec(x.insurancePct).dividedBy(100) : ZERO;
+  const fixed = x.insuranceFixed ? round2(x.insuranceFixed) : ZERO;
+  if (vat.isZero() && ins.isZero() && fixed.isZero()) return rows;
+  let before = round2(principal);
+  return rows.map((r) => {
+    const v = round2(r.interest.times(vat));
+    const i = round2(before.times(ins)).plus(fixed);
+    before = r.balance;
+    return { ...r, vat: v, insurance: i, total: r.total.plus(v).plus(i) };
+  });
+}
+
+// Costo financiero total anual (efectivo) de un cronograma: la tasa que iguala lo prestado con todo lo que se paga.
+export function cftOf(principal: MoneyValue, totals: number[]): number {
+  const i = rateForPayments(dec(principal).toNumber(), totals);
+  return (Math.pow(1 + i, 12) - 1) * 100;
+}
 
 const addMonths = (d: Date, k: number) => {
   const y = d.getUTCFullYear(), m = d.getUTCMonth() + k, day = d.getUTCDate();
@@ -55,7 +77,7 @@ export function buildCustomSchedule(principal: MoneyValue, list: { due: Date; to
   });
 }
 
-export function buildSchedule(input: { system: AmortizationSystem; principal: MoneyValue; installments: number; tna?: MoneyValue | null; installmentAmount?: MoneyValue | null; firstDue: Date }): ScheduleRow[] {
+export function buildSchedule(input: { system: AmortizationSystem; principal: MoneyValue; installments: number; tna?: MoneyValue | null; installmentAmount?: MoneyValue | null; firstDue: Date; extras?: DebtExtras }): ScheduleRow[] {
   const P = round2(input.principal), n = input.installments;
   if (input.system === "MANUAL" || input.system === "NONE") return [];
   if (!Number.isInteger(n) || n < 1 || n > 480) throw new UserError("La cantidad de cuotas va de 1 a 480.");
@@ -97,7 +119,7 @@ export function buildSchedule(input: { system: AmortizationSystem; principal: Mo
   } else {
     throw new UserError("Poné cuánto pagás por mes (la cuota) o la TNA.");
   }
-  return rows;
+  return withExtras(rows, P, input.extras);
 }
 
 export type DebtInput = {
@@ -116,16 +138,26 @@ export type DebtInput = {
   accountId?: string | null; // si el dinero entró en una cuenta
   paidInstallments?: number; // cuotas ya pagadas antes de cargarla en Guafra
   rows?: { due: Date; total: MoneyValue }[] | null; // cuotas a medida (cuando no son todas iguales)
+  vatPct?: MoneyValue | null; // IVA sobre los intereses
+  insurancePct?: MoneyValue | null; // seguro: % mensual sobre el saldo
+  insuranceFixed?: MoneyValue | null; // otros cargos fijos por cuota
   notes?: string | null;
   userId?: string | null;
 };
 
-function scheduleFor(P: Decimal, input: Pick<DebtInput, "system" | "installments" | "tna" | "installmentAmount" | "firstDue" | "startDate" | "rows">) {
+function scheduleFor(P: Decimal, input: Pick<DebtInput, "system" | "installments" | "tna" | "installmentAmount" | "firstDue" | "startDate" | "rows" | "vatPct" | "insurancePct" | "insuranceFixed">) {
   if (input.rows?.length) return buildCustomSchedule(P, input.rows);
   if (input.system === "MANUAL") throw new UserError("Cargá las cuotas: pegá el cronograma o agregalas una por una.");
   if (input.system === "NONE") return [];
-  return buildSchedule({ system: input.system, principal: P, installments: input.installments ?? 0, tna: input.tna, installmentAmount: input.installmentAmount, firstDue: input.firstDue ?? addMonths(input.startDate, 1) });
+  return buildSchedule({ system: input.system, principal: P, installments: input.installments ?? 0, tna: input.tna, installmentAmount: input.installmentAmount, firstDue: input.firstDue ?? addMonths(input.startDate, 1), extras: input });
 }
+
+// Los cargos se guardan solo si el cronograma los usa (con cuotas a medida, el total ya los trae).
+const extrasData = (input: DebtExtras, custom: boolean) => custom ? { vatPct: null, insurancePct: null, insuranceFixed: null } : {
+  vatPct: input.vatPct != null && dec(input.vatPct).gt(0) ? dec(input.vatPct).toFixed(2) : null,
+  insurancePct: input.insurancePct != null && dec(input.insurancePct).gt(0) ? dec(input.insurancePct).toFixed(4) : null,
+  insuranceFixed: input.insuranceFixed != null && dec(input.insuranceFixed).gt(0) ? round2(input.insuranceFixed).toFixed(2) : null,
+};
 
 export async function createDebt(db: Db, ws: string, input: DebtInput) {
   if (!input.creditor.trim()) throw new UserError("Indicá a quién le debés.");
@@ -147,6 +179,7 @@ export async function createDebt(db: Db, ws: string, input: DebtInput) {
         tea: input.tea != null ? dec(input.tea).toFixed(4) : null,
         cft: input.cft != null ? dec(input.cft).toFixed(4) : null,
         installmentAmount: input.installmentAmount != null ? round2(input.installmentAmount).toFixed(2) : null,
+        ...extrasData(input, !!input.rows?.length),
         startDate: input.startDate,
         installments: rows.length || null,
         accountId: input.accountId ?? null,
@@ -173,7 +206,7 @@ async function writeSchedule(tx: Tx, ws: string, debt: { id: string; creditor: s
       : await tx.obligation.create({
           data: { workspaceId: ws, direction: "PAYABLE", description: `${debt.creditor} — cuota ${r.k}/${rows.length}`, amount: r.total.toFixed(2), currency: debt.currency, dueDate: r.due, economicPeriod: period(r.due), sourceType: "debt", sourceId: debt.id },
         });
-    await tx.debtInstallment.create({ data: { debtId: debt.id, number: r.k, dueDate: r.due, capital: r.capital.toFixed(2), interest: r.interest.toFixed(2), total: r.total.toFixed(2), balanceAfter: r.balance.toFixed(2), obligationId: ob?.id ?? null } });
+    await tx.debtInstallment.create({ data: { debtId: debt.id, number: r.k, dueDate: r.due, capital: r.capital.toFixed(2), interest: r.interest.toFixed(2), vat: (r.vat ?? ZERO).toFixed(2), insurance: (r.insurance ?? ZERO).toFixed(2), total: r.total.toFixed(2), balanceAfter: r.balance.toFixed(2), obligationId: ob?.id ?? null } });
   }
 }
 
@@ -238,6 +271,7 @@ export async function updateDebt(db: Db, ws: string, id: string, input: DebtEdit
         ...names, principal: P.toFixed(2), system: input.rows?.length ? "MANUAL" : input.system,
         tna: input.tna != null ? dec(input.tna).toFixed(4) : null, tea: input.tea != null ? dec(input.tea).toFixed(4) : null, cft: input.cft != null ? dec(input.cft).toFixed(4) : null,
         installmentAmount: input.installmentAmount != null ? round2(input.installmentAmount).toFixed(2) : null,
+        ...extrasData(input, !!input.rows?.length),
         startDate: input.startDate, installments: rows.length || null, status: "ACTIVE", cancelledAt: null,
       },
     });

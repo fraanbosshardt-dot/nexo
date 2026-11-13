@@ -393,6 +393,9 @@ model Debt {
   startDate         DateTime           @db.Date
   installments      Int?
   installmentAmount Decimal?           @db.Decimal(18, 2) // cuota informada, si no hay tasa
+  vatPct            Decimal?           @db.Decimal(5, 2) // IVA sobre los intereses (ej. 21)
+  insurancePct      Decimal?           @db.Decimal(7, 4) // seguro: % mensual sobre el saldo
+  insuranceFixed    Decimal?           @db.Decimal(18, 2) // otros cargos fijos por cuota
   accountId         String? // cuenta donde entró el dinero (opcional)
   status            String             @default("ACTIVE") // ACTIVE | PAID | CANCELLED
   cancelledAt       DateTime?
@@ -415,6 +418,8 @@ model DebtInstallment {
   interest     Decimal  @db.Decimal(18, 2)
   total        Decimal  @db.Decimal(18, 2)
   balanceAfter Decimal  @db.Decimal(18, 2)
+  vat          Decimal  @default(0) @db.Decimal(18, 2) // IVA sobre el interés de esta cuota
+  insurance    Decimal  @default(0) @db.Decimal(18, 2) // seguro y cargos de esta cuota
   obligationId String?  @unique
 
   @@unique([debtId, number])

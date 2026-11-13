@@ -292,7 +292,7 @@ export async function createDebtAction(_: FormState, fd: FormData): Promise<Form
       creditor: str(fd, "creditor"), kind: str(fd, "kind") || "Préstamo", principal: money(fd, "principal", "el importe"),
       currency: acc?.currency ?? (isCurrency(str(fd, "currency")) ? str(fd, "currency") : workspace.baseCurrency), system,
       installments: int(fd, "installments"), tna: optMoney(fd, "tna", "la TNA"), tea: optMoney(fd, "tea", "la TEA"), cft: optMoney(fd, "cft", "el CFT"),
-      installmentAmount: optMoney(fd, "installmentAmount", "la cuota"), startDate: str(fd, "startDate") ? date(fd, "startDate", "la fecha") : todayIn(workspace.timezone),
+      installmentAmount: optMoney(fd, "installmentAmount", "la cuota"), vatPct: optMoney(fd, "vatPct", "el IVA"), insurancePct: optMoney(fd, "insurancePct", "el seguro"), insuranceFixed: optMoney(fd, "insuranceFixed", "los cargos"), startDate: str(fd, "startDate") ? date(fd, "startDate", "la fecha") : todayIn(workspace.timezone),
       firstDue: str(fd, "firstDue") ? date(fd, "firstDue", "la primera cuota") : null, accountId: fd.get("credited") === "on" ? accountId : null,
       paidInstallments: int(fd, "paidInstallments") ?? 0, notes: str(fd, "notes"), userId: user.id, rows: debtRows(fd),
     });
@@ -312,7 +312,7 @@ export async function updateDebtAction(_: FormState, fd: FormData): Promise<Form
       // Con pagos registrados el formulario solo manda nombre, tipo y notas: el resto no se usa.
       principal: str(fd, "principal") ? money(fd, "principal", "el importe") : "1",
       installments: int(fd, "installments"), tna: optMoney(fd, "tna", "la TNA"), tea: optMoney(fd, "tea", "la TEA"), cft: optMoney(fd, "cft", "el CFT"),
-      installmentAmount: optMoney(fd, "installmentAmount", "la cuota"), startDate: str(fd, "startDate") ? date(fd, "startDate", "la fecha") : todayIn(workspace.timezone),
+      installmentAmount: optMoney(fd, "installmentAmount", "la cuota"), vatPct: optMoney(fd, "vatPct", "el IVA"), insurancePct: optMoney(fd, "insurancePct", "el seguro"), insuranceFixed: optMoney(fd, "insuranceFixed", "los cargos"), startDate: str(fd, "startDate") ? date(fd, "startDate", "la fecha") : todayIn(workspace.timezone),
       firstDue: str(fd, "firstDue") ? date(fd, "firstDue", "la primera cuota") : null, paidInstallments: int(fd, "paidInstallments") ?? 0, notes: str(fd, "notes"), rows: debtRows(fd),
     });
     rebuilt = r.rebuilt;

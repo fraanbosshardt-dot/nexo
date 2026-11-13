@@ -33,6 +33,8 @@ export default async function DebtPage({ params, searchParams }: { params: Promi
   const num = (v: unknown) => (v == null ? "" : String(v).replace(".", ","));
   const firstDue = debt.schedule[0]?.dueDate;
   const paidBefore = debt.schedule.filter((r) => !r.obligationId).length;
+  // IVA y seguro: columnas solo si el préstamo los tiene.
+  const hasVat = debt.schedule.some((r) => Number(r.vat) > 0), hasIns = debt.schedule.some((r) => Number(r.insurance) > 0);
   return (
     <>
       <Link className="lk" href="/app/deudas">← Deudas y préstamos</Link>
@@ -74,8 +76,8 @@ export default async function DebtPage({ params, searchParams }: { params: Promi
         {det.rows.length > 0 && (
           <details className="more"><summary>Cronograma de cuotas</summary>
             <div className="tw" style={{ marginTop: 8, maxHeight: 380, overflow: "auto" }}><table>
-              <thead><tr><th>Cuota</th><th>Vence</th><th className="n">Capital</th><th className="n">Interés</th><th className="n">Cuota</th><th>Estado</th></tr></thead>
-              <tbody>{det.rows.map((r) => <tr key={r.id}><td>{r.number}/{debt.installments}</td><td className="num">{fmtDate(r.dueDate)}</td><td className="n">{fm(r.capital)}</td><td className="n">{fm(r.interest)}</td><td className="n"><b>{fm(r.total)}</b></td>
+              <thead><tr><th>Cuota</th><th>Vence</th><th className="n">Capital</th><th className="n">Interés</th>{hasVat && <th className="n">IVA</th>}{hasIns && <th className="n">Seguro</th>}<th className="n">Cuota</th><th>Estado</th></tr></thead>
+              <tbody>{det.rows.map((r) => <tr key={r.id}><td>{r.number}/{debt.installments}</td><td className="num">{fmtDate(r.dueDate)}</td><td className="n">{fm(r.capital)}</td><td className="n">{fm(r.interest)}</td>{hasVat && <td className="n">{fm(r.vat)}</td>}{hasIns && <td className="n">{fm(r.insurance)}</td>}<td className="n"><b>{fm(r.total)}</b></td>
                 <td>{r.status === "SETTLED" || r.status === "PAID_BEFORE" ? <span className="pill g">Pagada</span> : r.status === "CANCELLED" ? <span className="pill">Cancelada</span> : r.dueDate < today ? <span className="pill r">Atrasada</span> : r.status === "PARTIAL" ? <span className="pill">En parte</span> : <span className="pill">Pendiente</span>}</td></tr>)}</tbody>
             </table></div>
           </details>
@@ -91,7 +93,7 @@ export default async function DebtPage({ params, searchParams }: { params: Promi
               </>
             ) : (
               <>
-                <DebtFormFields edit accounts={[]} today={isoDate(today)} baseCurrency={debt.currency} d={{ creditor: debt.creditor, kind: debt.kind, system: debt.system, principal: num(debt.principal), installments: debt.installments ? String(debt.installments) : "", firstDue: firstDue ? isoDate(firstDue) : "", installmentAmount: num(debt.installmentAmount), tna: num(debt.tna), tea: num(debt.tea), cft: num(debt.cft), startDate: isoDate(debt.startDate), paidInstallments: paidBefore ? String(paidBefore) : "", notes: debt.notes ?? "", rows: debt.system === "MANUAL" ? debt.schedule.map((r) => ({ due: isoDate(r.dueDate), total: String(r.total) })) : undefined }} />
+                <DebtFormFields edit accounts={[]} today={isoDate(today)} baseCurrency={debt.currency} d={{ creditor: debt.creditor, kind: debt.kind, system: debt.system, principal: num(debt.principal), installments: debt.installments ? String(debt.installments) : "", firstDue: firstDue ? isoDate(firstDue) : "", installmentAmount: num(debt.installmentAmount), tna: num(debt.tna), tea: num(debt.tea), cft: num(debt.cft), startDate: isoDate(debt.startDate), paidInstallments: paidBefore ? String(paidBefore) : "", notes: debt.notes ?? "", vatPct: num(debt.vatPct), insurancePct: num(debt.insurancePct), insuranceFixed: num(debt.insuranceFixed), rows: debt.system === "MANUAL" ? debt.schedule.map((r) => ({ due: isoDate(r.dueDate), total: String(r.total) })) : undefined }} />
                 <p className="sub" style={{ margin: 0 }}>Al guardar se arma de nuevo el cronograma con estos datos.</p>
               </>
             )}
@@ -99,7 +101,7 @@ export default async function DebtPage({ params, searchParams }: { params: Promi
           </ActionForm>
         </details>
         <details className="more"><summary>Condiciones</summary>
-          <dl className="kv" style={{ paddingTop: 8 }}>{debt.installmentAmount && <><dt>Cuota informada</dt><dd>{fm(debt.installmentAmount)}</dd></>}<dt>Sistema</dt><dd>{SYS[debt.system]}</dd><dt>Desde</dt><dd>{fmtDate(debt.startDate)}</dd><dt>TNA</dt><dd>{pct(debt.tna)}</dd><dt>TEA</dt><dd>{pct(debt.tea)}</dd><dt>CFT</dt><dd>{pct(debt.cft)}</dd>{debt.notes && <><dt>Notas</dt><dd>{debt.notes}</dd></>}</dl>
+          <dl className="kv" style={{ paddingTop: 8 }}>{debt.installmentAmount && <><dt>{debt.vatPct || debt.insurancePct || debt.insuranceFixed ? "Cuota pura" : "Cuota informada"}</dt><dd>{fm(debt.installmentAmount)}</dd></>}{debt.vatPct && <><dt>IVA sobre intereses</dt><dd>{pct(debt.vatPct)}</dd></>}{debt.insurancePct && <><dt>Seguro</dt><dd>{Number(debt.insurancePct).toString().replace(".", ",")}% por mes del saldo</dd></>}{debt.insuranceFixed && <><dt>Otros cargos por cuota</dt><dd>{fm(debt.insuranceFixed)}</dd></>}<dt>Sistema</dt><dd>{SYS[debt.system]}</dd><dt>Desde</dt><dd>{fmtDate(debt.startDate)}</dd><dt>TNA</dt><dd>{pct(debt.tna)}</dd><dt>TEA</dt><dd>{pct(debt.tea)}</dd><dt>CFT</dt><dd>{pct(debt.cft)}</dd>{debt.notes && <><dt>Notas</dt><dd>{debt.notes}</dd></>}</dl>
         </details>
       </div>
       <form action={deleteDebtAction} className="card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>

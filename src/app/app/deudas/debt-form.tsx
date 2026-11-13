@@ -20,7 +20,7 @@ const SYSTEMS: [string, string, string][] = [
 
 export type ScheduleRowInput = { due: string; total: string }; // AAAA-MM-DD, "1234.56"
 // Valores para editar una deuda (en el alta van vacíos).
-export type DebtDefaults = { creditor?: string; kind?: string; system?: string; principal?: string; installments?: string; firstDue?: string; installmentAmount?: string; tna?: string; tea?: string; cft?: string; startDate?: string; paidInstallments?: string; notes?: string; rows?: ScheduleRowInput[] };
+export type DebtDefaults = { creditor?: string; kind?: string; system?: string; principal?: string; installments?: string; firstDue?: string; installmentAmount?: string; tna?: string; tea?: string; cft?: string; startDate?: string; paidInstallments?: string; notes?: string; rows?: ScheduleRowInput[]; vatPct?: string; insurancePct?: string; insuranceFixed?: string };
 
 const fmt = (n: number) => new Intl.NumberFormat("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 const es = (n: string | null | undefined) => (n ? fmt(Number(n)) : undefined);
@@ -145,7 +145,7 @@ export function DebtFormFields({ accounts, today, baseCurrency, d: initial = {},
         )
       )}
 
-      <details className="more" open={edit || !!(d.tna || d.tea || d.cft)}><summary>Más detalles (opcional)</summary>
+      <details className="more" open={edit || !!(d.tna || d.tea || d.cft || d.vatPct || d.insurancePct || d.insuranceFixed)}><summary>Más detalles (opcional)</summary>
         <div key={ver} style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 8 }}>
           <label className="field">Tipo<select name="kind" defaultValue={d.kind ?? "Préstamo personal"}>{[...(d.kind && !KINDS.includes(d.kind) ? [d.kind] : []), ...KINDS].map((k) => <option key={k}>{k}</option>)}</select></label>
           {custom ? <input type="hidden" name="system" value="MANUAL" /> : (
@@ -155,6 +155,16 @@ export function DebtFormFields({ accounts, today, baseCurrency, d: initial = {},
             <>
               <div className="frow" style={{ gridTemplateColumns: "1fr 1fr 1fr" }}><label className="field">TNA %<input name="tna" inputMode="decimal" defaultValue={d.tna} /></label><label className="field">TEA %<input name="tea" inputMode="decimal" defaultValue={d.tea} /></label><label className="field">CFT %<input name="cft" inputMode="decimal" defaultValue={d.cft} /></label></div>
               <p className="sub" style={{ margin: 0 }}>Están en tu contrato. TNA y TEA: la tasa anual del préstamo. CFT: lo que te cuesta en total, con impuestos y seguros. Si ya pusiste cuánto pagás por mes, no hacen falta.</p>
+            </>
+          )}
+          {!free && !custom && sys !== "NO_INTEREST" && (
+            <>
+              <div className="frow" style={{ gridTemplateColumns: "1fr 1fr 1fr" }}>
+                <label className="field">IVA sobre los intereses<select name="vatPct" defaultValue={d.vatPct ?? ""}><option value="">Sin IVA</option><option value="10,5">10,5 %</option><option value="21">21 %</option><option value="27">27 %</option></select></label>
+                <label className="field">Seguro (% por mes del saldo)<input name="insurancePct" inputMode="decimal" placeholder="Ej.: 0,08" defaultValue={d.insurancePct} /></label>
+                <label className="field">Otros cargos por cuota<input name="insuranceFixed" inputMode="decimal" placeholder="0,00" defaultValue={d.insuranceFixed} /></label>
+              </div>
+              <p className="sub" style={{ margin: 0 }}>Están en el contrato o en el detalle de la cuota. Si los cargás, la cuota de arriba es la <b>cuota pura</b> (sin IVA ni seguro): Guafra le suma el IVA de cada mes y el seguro sobre lo que te falta pagar, para que dé igual que el banco.</p>
             </>
           )}
           <div className="frow"><label className="field">Fecha del préstamo<input name="startDate" type="date" defaultValue={d.startDate ?? today} /></label>{!free && <label className="field">Cuotas ya pagadas<input name="paidInstallments" inputMode="numeric" placeholder="0" defaultValue={d.paidInstallments} /></label>}</div>
