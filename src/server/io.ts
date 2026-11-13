@@ -9,11 +9,12 @@ import type Decimal from "decimal.js";
 
 // ---------- Informes ----------
 
-export async function categoryReport(db: Db, ws: string, currency: string, endPeriod: string, months = 6) {
+// accountId: solo los movimientos de esa cuenta (o tarjeta).
+export async function categoryReport(db: Db, ws: string, currency: string, endPeriod: string, months = 6, accountId?: string | null) {
   const periods = Array.from({ length: months }, (_, i) => addMonths(endPeriod, i - months + 1));
   const [cats, tx] = await Promise.all([
     db.category.findMany({ where: { workspaceId: ws }, select: { id: true, name: true, parentId: true, kind: true } }),
-    db.transaction.findMany({ where: { workspaceId: ws, currency, type: { in: ["INCOME", "EXPENSE", "DEBT_PAYMENT"] }, economicPeriod: { in: periods } }, select: { amount: true, direction: true, type: true, categoryId: true, economicPeriod: true } }),
+    db.transaction.findMany({ where: { workspaceId: ws, currency, type: { in: ["INCOME", "EXPENSE", "DEBT_PAYMENT"] }, economicPeriod: { in: periods }, ...(accountId ? { accountId } : {}) }, select: { amount: true, direction: true, type: true, categoryId: true, economicPeriod: true } }),
   ]);
   const top = new Map(cats.map((c) => [c.id, c.parentId ? cats.find((p) => p.id === c.parentId)?.name ?? c.name : c.name]));
   const grid = new Map<string, Map<string, Decimal>>();
@@ -111,7 +112,9 @@ export async function exportBackup(db: Db, ws: string) {
 
 export function parseCsv(text: string): { headers: string[]; rows: string[][] } {
   const clean = text.replace(/^﻿/, "").replace(/\r/g, "");
-  const first = clean.split("\n")[0] ?? "";
+  // Si la primera línea es un título sin separadores (pasa con los bancos), se mira la primera que tenga alguno.
+  const lines = clean.split("\n").filter((l) => l.trim());
+  const first = lines.find((l) => /[;\t,]/.test(l)) ?? lines[0] ?? "";
   const delim = [";", "\t", ","].map((d) => [d, first.split(d).length] as const).sort((a, b) => b[1] - a[1])[0][0];
   const rows: string[][] = [];
   let row: string[] = [], cell = "", q = false;
@@ -128,7 +131,10 @@ export function parseCsv(text: string): { headers: string[]; rows: string[][] } 
   }
   row.push(cell.trim());
   if (row.some((c) => c)) rows.push(row);
-  return { headers: rows[0] ?? [], rows: rows.slice(1) };
+  // Muchos bancos ponen antes un título (banco, cuenta, período): el encabezado es la primera fila con fecha e importe.
+  const isHeader = (r: string[]) => { const k = r.map(guessColumn); return k.includes("fecha") && k.some((x) => x === "importe" || x === "credito" || x === "debito"); };
+  const h = Math.max(0, rows.slice(0, 15).findIndex(isHeader));
+  return { headers: rows[h] ?? [], rows: rows.slice(h + 1) };
 }
 
 // Reconoce las columnas de bancos, planillas y el extracto de Mercado Pago (DATE, DESCRIPTION, NET_CREDIT_AMOUNT,

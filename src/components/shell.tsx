@@ -8,6 +8,7 @@ import type { ModuleState } from "@/lib/modules";
 import { QuickAdd, openQuickAdd } from "@/components/quick-add";
 import { BigTextToggle } from "@/components/big-text";
 import { ThemeButton } from "@/components/theme";
+import { LogoMark } from "@/components/logo-mark";
 
 type Item = { href: string; label: string; icon: IconName; module?: keyof ModuleState; badge?: number; match?: string };
 
@@ -44,7 +45,7 @@ const SETTINGS: Item[] = [
   { href: "/app/ayuda", label: "Ayuda", icon: "help" },
 ];
 
-const Mark = () => <span className="brand-mark">G</span>;
+const Mark = () => <LogoMark />;
 
 export type Space = { id: string; label: string; active: boolean };
 

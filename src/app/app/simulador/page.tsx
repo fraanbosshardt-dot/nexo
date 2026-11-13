@@ -6,6 +6,9 @@ import { formatMoney, parseAmount, ZERO } from "@/lib/money";
 import { addMonths, fmtDate, fmtPeriod, isoDate, parseDate, period, periodStart, todayIn } from "@/lib/dates";
 import { PageHead, Tabs } from "@/components/page";
 import { ProGate } from "@/components/pro";
+import { ConfirmSubmit } from "@/components/confirm-submit";
+import { deleteScenarioAction, saveScenarioAction } from "@/app/actions/modules";
+const MAX_SCENARIOS = 10;
 
 export const metadata: Metadata = { title: "Simulador" };
 type SP = Record<string, string | undefined>;
@@ -32,7 +35,7 @@ export default async function Simulator({ searchParams }: { searchParams: Promis
       <>
         <PageHead crumb="Planificar" title="Simulador" desc="Probá una decisión antes de tomarla. Nada de esto cambia tus datos." />
         {tabs}
-        <div className="split sim">
+      <div className="split sim">
           {/* Al calcular, la pantalla baja sola hasta el resultado (en el celular queda debajo del formulario). */}
           <form className="card" method="get" action="/app/simulador#resultado" style={{ display: "flex", flexDirection: "column", gap: 12, alignSelf: "start" }}>
             <h3>¿Qué querés probar?</h3>
@@ -73,7 +76,13 @@ export default async function Simulator({ searchParams }: { searchParams: Promis
   if (!(await canUse(plan, "simulador"))) return <>{tabs}<ProGate crumb="Planificar" title="Escenarios" text="Compará tu situación actual con escenarios optimistas, pesimistas o armados por vos: gastar más, perder un ingreso, recibir un extra o invertir todos los meses." trialUsed={!!workspace.subscription?.trialEndsAt} /></>;
 
   const db = getDb();
-  const incomeRules = await db.recurringRule.findMany({ where: { workspaceId: workspace.id, direction: "RECEIVABLE", pausedAt: null, currency: cur } });
+  const [incomeRules, saved] = await Promise.all([
+    db.recurringRule.findMany({ where: { workspaceId: workspace.id, direction: "RECEIVABLE", pausedAt: null, currency: cur } }),
+    db.scenario.findMany({ where: { workspaceId: workspace.id }, orderBy: { createdAt: "asc" } }),
+  ]);
+  // Escenario guardado abierto: sus ajustes se usan como si fueran los del formulario.
+  const open = sp.esc ? saved.find((x) => x.id === sp.esc) : undefined;
+  if (open) Object.assign(sp, open.params as SP);
   const PRESETS: Record<string, SP> = { base: {}, optimista: { gastos: "-10", extra: "1000000" }, pesimista: { gastos: "20", sin: incomeRules[0]?.id } };
   const preset = sp.preset && PRESETS[sp.preset] ? sp.preset : sp.gastos || sp.extra || sp.sin || sp.invertir ? "custom" : "base";
   const v = preset === "custom" ? sp : PRESETS[preset];
@@ -96,6 +105,17 @@ export default async function Simulator({ searchParams }: { searchParams: Promis
       <PageHead crumb="Planificar" title="Simulador" desc="Probá una decisión antes de tomarla. Nada de esto cambia tus datos." />
       {tabs}
       <div className="presets">{["base", "optimista", "pesimista", "custom"].map((k) => <a key={k} className={`preset ${preset === k ? "on" : ""}`} href={k === "custom" ? "/app/simulador?tab=escenarios&gastos=0" : `/app/simulador?tab=escenarios&preset=${k}`}><b>{k === "base" ? "Base" : k === "optimista" ? "Optimista" : k === "pesimista" ? "Pesimista" : "Personalizado"}</b><span>{desc[k]}</span></a>)}</div>
+      {saved.length > 0 && (
+        <div className="card"><div className="chead"><h3>Tus escenarios guardados</h3><span className="sub">{saved.length} de {MAX_SCENARIOS}</span></div>
+          <div className="list">{saved.map((x) => (
+            <div className="li" key={x.id}>
+              <div className="grow"><a className={`lnk ${open?.id === x.id ? "on" : ""}`} href={`/app/simulador?tab=escenarios&esc=${x.id}#resultado`}><b>{x.name}</b></a><div className="s">{scenarioText(x.params as SP, incomeRules, (t) => { const a = parseAmount(t); return a ? fm(a) : t; })}</div></div>
+              <form action={deleteScenarioAction}><input type="hidden" name="id" value={x.id} /><ConfirmSubmit className="btn sm ghost" yes="Sí, borrar" question={`¿Borrar el escenario "${x.name}"?`}>Borrar</ConfirmSubmit></form>
+            </div>
+          ))}</div>
+        </div>
+      )}
+      {sp.lleno && <div className="notice a"><span>Ya tenés {MAX_SCENARIOS} escenarios guardados. Borrá uno para guardar otro.</span></div>}
       <div className="split sim">
         <form className="card" method="get" action="/app/simulador#resultado" style={{ display: "flex", flexDirection: "column", gap: 12, alignSelf: "start" }}>
           <input type="hidden" name="tab" value="escenarios" />
@@ -115,8 +135,26 @@ export default async function Simulator({ searchParams }: { searchParams: Promis
           </div>
           <div className="card"><div className="tw"><table><thead><tr><th>Mes</th><th className="n">Base</th><th className="n">Escenario</th><th className="n">Diferencia</th></tr></thead>
             <tbody>{base.rows.map((b, i) => <tr key={b.period}><td style={{ whiteSpace: "nowrap" }}>{fmtPeriod(b.period)}</td><td className="n">{fm(b.end)}</td><td className="n"><b className={scen.rows[i].end.isNegative() ? "neg" : ""}>{fm(scen.rows[i].end)}</b></td><td className={`n ${scen.rows[i].end.minus(b.end).isNegative() ? "neg" : "pos"}`}>{fm(scen.rows[i].end.minus(b.end), { sign: true })}</td></tr>)}</tbody></table></div></div>
+          {preset !== "base" && !open && (
+            <form className="card" action={saveScenarioAction} style={{ display: "flex", gap: 10, alignItems: "end", flexWrap: "wrap" }}>
+              {(["gastos", "extra", "invertir", "sin"] as const).map((k) => <input key={k} type="hidden" name={k} value={k === "gastos" ? String(expensePct) : (v[k] ?? "")} />)}
+              <label className="field" style={{ flex: "1 1 220px" }}>Guardar este escenario para volver a verlo<input name="name" maxLength={60} placeholder="Ej.: Si me cambio de trabajo" defaultValue={preset === "custom" ? "" : preset[0].toUpperCase() + preset.slice(1)} /></label>
+              <button className="btn" type="submit">Guardar escenario</button>
+            </form>
+          )}
         </div>
       </div>
     </>
   );
+}
+
+// Resumen corto de los ajustes de un escenario guardado.
+function scenarioText(p: SP, rules: { id: string; description: string }[], money: (t: string) => string) {
+  const out: string[] = [];
+  const g = Number(p.gastos ?? 0);
+  if (g) out.push(`Gastos ${g > 0 ? "+" : ""}${g}%`);
+  if (p.extra) out.push(`ingreso extra de ${money(p.extra)}`);
+  if (p.invertir) out.push(`invertir ${money(p.invertir)} por mes`);
+  if (p.sin) out.push(`sin "${rules.find((r) => r.id === p.sin)?.description ?? "un ingreso"}"`);
+  return out.length ? out.join(", ") : "Sin cambios";
 }

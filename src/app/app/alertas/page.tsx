@@ -30,10 +30,6 @@ export default async function Alerts() {
           <div className="empty">No hay nada que revisar. Cuando tengas pagos atrasados, meses que quedan en rojo o presupuestos pasados, te avisamos acá.</div>
         )}
       </div>
-      <div className="card">
-        <div className="chead"><h3>Asistente con IA</h3><span className="pill b">Pro · próximamente</span></div>
-        <p className="sub" style={{ fontSize: 14 }}>Vas a poder preguntar cosas como “¿en qué gasté más este mes?” y te va a contestar con tus datos.</p>
-      </div>
     </>
   );
 }

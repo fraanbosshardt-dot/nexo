@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { LogoMark } from "@/components/logo-mark";
 
 export const metadata: Metadata = { title: "Sin conexión", robots: { index: false } };
 export const dynamic = "force-static";
@@ -9,7 +10,7 @@ export default function Offline() {
     <div className="nx auth">
       <div className="auth-card" style={{ maxWidth: 480, gridTemplateColumns: "1fr" }}>
         <main className="auth-main" style={{ gap: 16 }}>
-          <span className="lp-brand"><span className="brand-mark">G</span><b>Guafra</b></span>
+          <span className="lp-brand"><LogoMark /><b>Guafra</b></span>
           <div className="auth-box">
             <h1>Sin conexión</h1>
             <p className="sub">No hay internet en este momento. Por seguridad, tus datos no se guardan en el teléfono: cuando vuelva la conexión, Guafra se abre con todo al día.</p>

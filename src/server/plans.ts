@@ -1,18 +1,17 @@
 // Planes: qué incluye Gratis y qué incluye Pro. El dueño lo cambia desde el panel interno.
 import type { Db } from "./ledger";
 
-export type FeatureKey = "flujo5" | "simulador" | "asistente" | "cereal" | "informes" | "compartido" | "ilimitado" | "soporte" | "pdf";
+export type FeatureKey = "flujo5" | "simulador" | "cereal" | "informes" | "compartido" | "ilimitado" | "soporte" | "pdf";
 
 // Por defecto, casi todo es gratis. Pro suma lo avanzado.
 export const PRO_FEATURES: { key: FeatureKey; name: string; beta?: boolean }[] = [
   { key: "flujo5", name: "Flujo de caja a 2, 3 y 5 años" },
   { key: "simulador", name: "Simulador de escenarios" },
-  { key: "asistente", name: "Asistente con IA", beta: true },
   { key: "cereal", name: "Módulo Agro: ventas de granos" },
   { key: "informes", name: "Informes avanzados y respaldo completo" },
   { key: "compartido", name: "Espacio compartido (hasta 3 personas)", beta: true },
   { key: "ilimitado", name: "Cuentas y objetivos sin límite" },
-  { key: "soporte", name: "Soporte prioritario" },
+  { key: "soporte", name: "Soporte prioritario (respuesta en 1 día hábil)" },
   { key: "pdf", name: "Leer el resumen de la tarjeta desde el PDF (hasta 5 por mes)" },
 ];
 export const FREE_INCLUDES = [
@@ -38,7 +37,7 @@ export async function planSettings(db: Db): Promise<PlanSettings> {
   const s = await db.appSetting.findUnique({ where: { key: "plans" } });
   const v = (s?.value ?? {}) as Partial<PlanSettings>;
   const ars = v.pricesArs && v.pricesArs.monthly > 0 && v.pricesArs.yearly > 0 ? v.pricesArs : null;
-  return { freeAlso: Array.isArray(v.freeAlso) ? v.freeAlso : [], prices: { ...PRICES_DEFAULT, ...(v.prices ?? {}) }, pricesArs: ars };
+  return { freeAlso: Array.isArray(v.freeAlso) ? v.freeAlso.filter((k) => PRO_FEATURES.some((f) => f.key === k)) : [], prices: { ...PRICES_DEFAULT, ...(v.prices ?? {}) }, pricesArs: ars };
 }
 
 // Precio para mostrar: siempre en pesos. Si todavía no está cargado, "a confirmar" (nunca en dólares).

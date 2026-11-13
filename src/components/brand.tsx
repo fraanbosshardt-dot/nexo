@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { Icon } from "./icons";
 import { BRAND } from "@/lib/brand";
+import { LogoMark } from "@/components/logo-mark";
 
-export function Brand({ inverse = false, href = "/" }: { inverse?: boolean; href?: string }) {
+export function Brand({ href = "/" }: { inverse?: boolean; href?: string }) {
   return (
     <Link href={href} className="lp-brand" aria-label={`${BRAND.name}, ir al inicio`} style={{ textDecoration: "none" }}>
-      <span className="brand-mark" style={inverse ? { background: "var(--on-ink)", color: "var(--ink)" } : undefined}>G</span>
+      <LogoMark />
       <b>{BRAND.name}</b>
     </Link>
   );

@@ -666,7 +666,7 @@ export async function supportTicketAction(_: FormState, fd: FormData): Promise<F
   // Soporte prioritario: las consultas de Pro entran con prioridad alta.
   await getDb().supportTicket.create({ data: { userId: user.id, subject: subject.slice(0, 140), body, priority: plan === "PRO" ? "HIGH" : "NORMAL" } });
   revalidatePath("/app/ayuda");
-  return { ok: "Recibimos tu consulta. Te respondemos acá mismo." };
+  return { ok: plan === "PRO" ? "Recibimos tu consulta. Con Pro va primero: te respondemos acá mismo dentro de 1 día hábil." : "Recibimos tu consulta. Te respondemos acá mismo." };
 }
 
 // ---------- Cobro de Pro ----------
@@ -798,4 +798,27 @@ export async function projectedAction(fd: FormData) {
     redirect(/^\/app(\/|\?|$)/.test(back) ? back : "/app/proximos");
   }
   redirect(`/app/proximos/${id}`);
+}
+
+// ---------- Simulador: escenarios guardados (Pro) ----------
+const SCENARIO_KEYS = ["gastos", "extra", "invertir", "sin"] as const;
+const MAX_SCENARIOS = 10; // también en la página del Simulador
+
+export async function saveScenarioAction(fd: FormData) {
+  const { workspace, plan } = await requireWorkspace();
+  if (!(await canUse(plan, "simulador"))) redirect("/app/simulador?tab=escenarios");
+  const name = str(fd, "name").slice(0, 60) || "Mi escenario";
+  const params = Object.fromEntries(SCENARIO_KEYS.map((k) => [k, str(fd, k).slice(0, 40)]).filter(([, v]) => v));
+  const db = getDb();
+  if ((await db.scenario.count({ where: { workspaceId: workspace.id } })) >= MAX_SCENARIOS) redirect("/app/simulador?tab=escenarios&lleno=1");
+  const s = await db.scenario.create({ data: { workspaceId: workspace.id, name, params } });
+  revalidatePath("/app/simulador");
+  redirect(`/app/simulador?tab=escenarios&esc=${s.id}`);
+}
+
+export async function deleteScenarioAction(fd: FormData) {
+  const { workspace } = await requireWorkspace();
+  await getDb().scenario.deleteMany({ where: { id: str(fd, "id"), workspaceId: workspace.id } });
+  revalidatePath("/app/simulador");
+  redirect("/app/simulador?tab=escenarios");
 }

@@ -50,7 +50,10 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 - [ ] P7. Publicar en Play Store y App Store (con Capacitor, la misma app empaquetada). Necesita tus cuentas de desarrollador: Google US$25 una vez, Apple US$99 por año.
 - [ ] P6. Probar la lectura de PDF con resúmenes reales de varios bancos (Galicia, Santander, BBVA, Nación, Macro, Mercado Pago) y ajustar los formatos que no reconozca.
 - [ ] P4. Cuando esté publicado: dar de alta el sitio en Google Search Console y enviar el sitemap (/sitemap.xml).
-- [ ] P1. Asistente con IA (Pro): hoy figura como "próximamente".
+- [ ] P1. Asistente con IA (Pro): se sacó de la lista de Pro y de Alertas hasta que esté hecho; cuando se arme, volver a sumarlo.
+- [ ] P3. Espacio compartido: sacarle "Beta" cuando esté el correo (Z2). Lo dejamos para el final.
+- [ ] P4. Importar Excel y OFX: sacarle "Beta" después de probar un archivo real de un banco.
+- [ ] P5. Leer el resumen en PDF: probar con resúmenes de más bancos (hace falta un PDF de cada uno).
 - [ ] P11. Modo sin conexión para ver los datos sin internet.
 - [ ] P14. Facturas de AFIP para los cobros de Pro.
 
@@ -59,6 +62,8 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 - [ ] M4. Testimonios de usuarios reales, cuando los haya (nunca inventados).
 
 ## Completado
+- [x] 12/11/2026 — Funciones Pro revisadas: sin "Asistente con IA" (no estaba hecho); "Saldo día a día" y "Exportar a Excel y PDF" sin Beta. Importar Excel/CSV: saltea los títulos que ponen los bancos arriba del encabezado. Flujo a 2-5 años avisa que es una estimación. Simulador: guardar hasta 10 escenarios y volver a abrirlos. Informes: filtro por cuenta y "Contra el año pasado". Soporte Pro: respuesta en 1 día hábil.
+- [x] 12/11/2026 — Logo nuevo de Guafra (la "g" con la curva y las barras) en el encabezado, el ícono del sitio, los íconos de la app instalada, el de iPhone y las imágenes para compartir.
 - [x] 12/11/2026 — Comprar Pro desde la web en un solo camino (/suscribirme): sin sesión → crear cuenta (o ingresar) → Mercado Pago → vuelve a la app; con Pro activo no deja comprar de nuevo; en Gratis va directo a pagar. Precios solo en pesos.
 - [x] 12/11/2026 — Mercado Pago listo para cobrar Pro: la aplicación se llama Guafra (Suscripciones), credenciales de producción activadas, webhook a /api/pagos/mercadopago con "Planes y suscripciones", MP_ACCESS_TOKEN y MP_WEBHOOK_SECRET cargadas en Vercel y publicadas. Precio de Pro: $ 7.499 por mes y $ 74.990 por año (ya se ve en la web). Falta una suscripción de prueba real (T9).
 - [x] 12/11/2026 — La app pasa a llamarse Guafra: textos, correos, sitio, título de las pestañas, app instalada (nombre e ícono con la G), imagen para compartir y archivos que se descargan. Falta: nombre de la aplicación en Mercado Pago, y el dominio (Z15) cuando esté.

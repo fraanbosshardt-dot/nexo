@@ -97,6 +97,7 @@ model Workspace {
   invites        WorkspaceInvite[]
   budgets        Budget[]
   goals          Goal[]
+  scenarios      Scenario[]
   investments    Investment[]
   assets         Asset[]
   grainSales     GrainSale[]
@@ -537,6 +538,18 @@ model BudgetLine {
   limitAmount Decimal @db.Decimal(18, 2)
 
   @@unique([budgetId, categoryId])
+}
+
+// Escenario guardado del Simulador: los ajustes (gastos %, extra, invertir, ingreso que se pierde).
+model Scenario {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name        String
+  params      Json      @default("{}")
+  createdAt   DateTime  @default(now())
+
+  @@index([workspaceId])
 }
 
 model Goal {

@@ -6,6 +6,7 @@ import { finishOnboardingAction } from "@/app/actions/app";
 import { COUNTRIES, CURRENCIES, countryByCode, currencyName, symbolOf } from "@/lib/countries";
 import { formatMoney, parseAmount } from "@/lib/money";
 import type { ModuleKey } from "@/lib/modules";
+import { LogoMark } from "@/components/logo-mark";
 
 type Use = { key: string; title: string; description: string; modules: ModuleKey[] };
 type Mod = { key: ModuleKey; name: string; description: string; pro?: boolean };
@@ -112,7 +113,7 @@ export function Onboarding({ firstName, uses, modules, guessCountry, detected }:
   return (
     <div className="nx obx">
       <header className="obx-top">
-        <span className="lp-brand"><span className="brand-mark">G</span><b>Guafra</b></span>
+        <span className="lp-brand"><LogoMark /><b>Guafra</b></span>
       </header>
       <ActionForm action={finishOnboardingAction}>
         <div className="obx-wrap">

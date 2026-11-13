@@ -1115,3 +1115,6 @@ html[data-big] body{zoom:1.15}
 .sec-item>span:nth-child(2){display:flex;flex-direction:column;gap:2px;min-width:0}.sec-item b{font-weight:500;font-size:14px}.sec-item .sub{margin:0;font-size:12.5px;word-break:break-word}
 .sec-dot{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:14px}
 .sec-item.ok .sec-dot{background:var(--green-soft);color:var(--green)}.sec-item.warn .sec-dot{background:#FEF3C7;color:#92400E}
+
+span.brand-mark.logo{background:transparent!important;padding:0;overflow:hidden}
+.brand-mark.logo svg{width:100%;height:100%;display:block}

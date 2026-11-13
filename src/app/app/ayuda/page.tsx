@@ -44,7 +44,7 @@ export default async function Help() {
               <label className="field">Asunto<input name="subject" maxLength={140} required /></label>
               <label className="field">Contanos qué pasó<textarea name="body" rows={5} maxLength={4000} required /></label>
               <div><Submit pending="Enviando…">Enviar</Submit></div>
-              {plan === "PRO" && <p className="sub" style={{ margin: 0 }}>Con Pro te respondemos primero.</p>}
+              {plan === "PRO" && <p className="sub" style={{ margin: 0 }}>Con Pro tu consulta va primero: te respondemos dentro de 1 día hábil.</p>}
             </ActionForm>
           </div>
           {tickets.length > 0 && (

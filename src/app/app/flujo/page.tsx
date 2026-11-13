@@ -49,6 +49,7 @@ export default async function Flow({ searchParams }: { searchParams: Promise<{ h
       <div className="card">
         <div className="fsteps">{step("Hoy", cashNow)}<i>→</i>{step("Fin de mes", rows[0].end)}<i>→</i>{step("En 6 meses", rows[Math.min(5, rows.length - 1)].end)}<i>→</i>{step(h === 12 ? "En 1 año" : `En ${h / 12} años`, rows[rows.length - 1].end)}</div>
         <p className="sub" style={{ marginTop: 12 }}>{red.length ? <span className="neg">Ojo: en {fmtPeriod(red[0].period).toLowerCase()} tu saldo baja a {f(red[0].min)}{red[0].minDate ? ` (el ${fmtDate(red[0].minDate)})` : ""}.</span> : <span className="pos">Tu saldo no baja de cero en este período.</span>}</p>
+        {h > 12 && <p className="sub" style={{ marginTop: 6 }}>A más de un año es una estimación: supone que tus cobros y gastos que se repiten siguen igual y no cuenta aumentos. Usalo para ver la tendencia, no el número exacto.</p>}
       </div>
       {c !== "conf" && !lasting.length && (
         <div className="notice a"><span><b>{incomeRules.length ? `Tus ingresos que se repiten terminan antes (${endsSoon[endsSoon.length - 1]?.description} el ${fmtDate(endsSoon[endsSoon.length - 1].endDate!)})` : "No tenés ingresos que se repitan"}</b>: el flujo solo ve los cobros cargados uno por uno, por eso más adelante da déficit. Cargá tu sueldo, alquileres o cosechas como cobro que se repite (si el monto cambia, marcalo como variable). <Link className="lnk" href="/app/recurrentes?nueva=1">Cargar un cobro que se repite</Link></span></div>
@@ -71,7 +72,7 @@ export default async function Flow({ searchParams }: { searchParams: Promise<{ h
         </table></div>
       </div>
       <div className="card">
-        <div className="chead"><div><h3>Día a día <span className="pill beta">Beta</span></h3><p className="sub">Tu saldo después de cada día con cobros o pagos, en los próximos 60 días.</p></div>{lowest && long && <span className={`pill ${lowest.balance.isNegative() ? "r" : ""}`}>Lo más bajo: {f(lowest.balance)} el {fmtDate(lowest.date)}</span>}</div>
+        <div className="chead"><div><h3>Día a día</h3><p className="sub">Tu saldo después de cada día con cobros o pagos, en los próximos 60 días.</p></div>{lowest && long && <span className={`pill ${lowest.balance.isNegative() ? "r" : ""}`}>Lo más bajo: {f(lowest.balance)} el {fmtDate(lowest.date)}</span>}</div>
         {!long ? (
           <p className="sub">Con Pro ves el saldo de cada día, para saber exactamente qué día te quedás corto. <Link className="lnk" href="/app/configuracion?tab=plan">Probar Pro</Link></p>
         ) : daily.length ? (

@@ -71,16 +71,15 @@ export const PLAN_FEATURES: { name: string; plan: "free" | "pro"; beta?: boolean
   { name: "Verificación en dos pasos", plan: "free" },
   { name: "Flujo de caja a 2, 3 y 5 años", plan: "pro" },
   { name: "Simulador de escenarios", plan: "pro" },
-  { name: "Asistente con IA", plan: "pro", beta: true },
   { name: "Módulo Agro: ventas de granos", plan: "pro" },
   { name: "Informes avanzados", plan: "pro" },
   { name: "Leer el resumen de la tarjeta desde el PDF", plan: "pro" },
-  { name: "Saldo día a día en el flujo de caja", plan: "pro", beta: true },
-  { name: "Exportar a Excel y PDF", plan: "pro", beta: true },
+  { name: "Saldo día a día en el flujo de caja", plan: "pro" },
+  { name: "Exportar a Excel y PDF", plan: "pro" },
   { name: "Importar Excel y OFX", plan: "pro", beta: true },
   { name: "Espacio compartido (hasta 3 personas)", plan: "pro", beta: true },
   { name: "Cuentas y objetivos sin límite", plan: "pro" },
-  { name: "Soporte prioritario", plan: "pro" },
+  { name: "Soporte prioritario (respuesta en 1 día hábil)", plan: "pro" },
 ];
 
 export const FREE_LIMITS = { accounts: 5, goals: 3 };

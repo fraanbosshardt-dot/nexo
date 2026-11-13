@@ -19,12 +19,30 @@ describe("Excel (.xlsx)", () => {
   });
 });
 
+describe("Planillas de bancos con título arriba", () => {
+  it("saltea las filas de título y encuentra el encabezado", () => {
+    const buf = writeXlsx("Hoja", ["Banco Ejemplo"], [["Cuenta 123-456/7"], [""], ["Fecha", "Descripción", "Débito", "Crédito", "Saldo"], ["03/11/2026", "Super", 1500, "", 90000]]);
+    const p = parseCsv(xlsxToCsv(buf));
+    expect(p.headers).toEqual(["Fecha", "Descripción", "Débito", "Crédito", "Saldo"]);
+    expect(p.rows).toEqual([["03/11/2026", "Super", "1500", "", "90000"]]);
+  });
+  it("en CSV también, y elige bien el separador aunque el título no lo tenga", () => {
+    const p = parseCsv("Movimientos de la cuenta\nPeríodo noviembre\nFecha;Concepto;Importe\n01/11/2026;Luz;-9000");
+    expect(p.headers).toEqual(["Fecha", "Concepto", "Importe"]);
+    expect(p.rows).toEqual([["01/11/2026", "Luz", "-9000"]]);
+  });
+});
+
 describe("OFX", () => {
   it("lee los movimientos del banco (SGML sin cierres y XML)", () => {
     const sgml = "OFXHEADER:100\n<OFX><BANKTRANLIST>\n<STMTTRN>\n<TRNTYPE>DEBIT\n<DTPOSTED>20261103120000[-3:ART]\n<TRNAMT>-1500.25\n<NAME>Farmacia\n<STMTTRN>\n<TRNTYPE>CREDIT\n<DTPOSTED>20261105\n<TRNAMT>200000.00\n<MEMO>Transferencia recibida\n</BANKTRANLIST></OFX>";
     expect(parseCsv(ofxToCsv(sgml)).rows).toEqual([["03/11/2026", "Farmacia", "-1500.25"], ["05/11/2026", "Transferencia recibida", "200000.00"]]);
     const xml = "<OFX><BANKTRANLIST><STMTTRN><DTPOSTED>20260102</DTPOSTED><TRNAMT>-10</TRNAMT><NAME>Café</NAME><MEMO>Centro</MEMO></STMTTRN></BANKTRANLIST></OFX>";
     expect(parseCsv(ofxToCsv(xml)).rows).toEqual([["02/01/2026", "Café · Centro", "-10"]]);
+  });
+  it("acepta importes con coma decimal y saltos de línea de Windows", () => {
+    const t = "<OFX>\r\n<STMTTRN>\r\n<DTPOSTED>20261110\r\n<TRNAMT>-2.500,50\r\n<NAME>Nafta\r\n</STMTTRN>\r\n</OFX>";
+    expect(parseCsv(ofxToCsv(t)).rows).toEqual([["10/11/2026", "Nafta", "-2.500,50"]]);
   });
   it("avisa si no hay movimientos", () => {
     expect(() => ofxToCsv("<OFX></OFX>")).toThrow(/No encontramos movimientos/);
