@@ -240,12 +240,21 @@
 @media (max-width:520px){.lx-who,.lx-tools{grid-template-columns:minmax(0,1fr)}.lx-all li{padding:12px;font-size:14px;gap:10px}}
 .ws-foot .lp-brand b{color:#fff!important}
 
-/* Barra de arriba: al bajar queda flotando, suelta, con el fondo desenfocado */
-.site .lp-nav{background:transparent!important;box-shadow:none!important;border:0!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;padding:0;transition:padding .35s cubic-bezier(.2,.7,.2,1)!important}
-.site .lp-nav .lp-navin{border:1px solid transparent;border-radius:999px;transition:background-color .35s ease,box-shadow .35s ease,border-color .35s ease,height .35s ease,padding .35s ease}
-.site .lp-nav.scrolled{padding:10px 12px 0}
-.site .lp-nav.scrolled .lp-navin{height:56px;padding-inline:18px;background:color-mix(in srgb,var(--bg) 62%,transparent);-webkit-backdrop-filter:saturate(180%) blur(18px);backdrop-filter:saturate(180%) blur(18px);border-color:color-mix(in srgb,var(--line) 85%,transparent);box-shadow:0 12px 32px rgba(11,18,32,.12),0 1px 0 rgba(255,255,255,.4) inset}
-@supports not (backdrop-filter:blur(1px)){.site .lp-nav.scrolled .lp-navin{background:var(--bg)}}
+/* Barra de arriba: siempre una pastilla oscura que flota, con el fondo desenfocado (nunca una franja blanca entera).
+   En la portada queda encima del fondo animado. */
+.site .lp-nav{background:transparent!important;box-shadow:none!important;border:0!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;padding:12px 12px 0;pointer-events:none;--logo-dark:#DCEFE2}
+.site:has(.lx-dark) .lp-nav{margin-bottom:-68px}
+.site .lp-nav .lp-navin{pointer-events:auto;height:56px;max-width:1160px;margin-inline:auto;padding-inline:10px 10px;padding-left:18px;border-radius:999px;background:rgba(9,20,16,.74);-webkit-backdrop-filter:saturate(160%) blur(18px);backdrop-filter:saturate(160%) blur(18px);border:1px solid rgba(255,255,255,.1);box-shadow:0 14px 36px rgba(4,12,9,.22)}
+@supports not (backdrop-filter:blur(1px)){.site .lp-nav .lp-navin{background:#0B1813}}
+.site .lp-nav .lp-links a{color:rgba(232,241,236,.74)}
+.site .lp-nav .lp-links a:hover{color:#fff;background:rgba(255,255,255,.08)}
+.site .lp-nav .lp-cta-top .btn{min-height:38px}
+.site .lp-nav .lp-cta-top .btn.ghost{color:#fff;border-color:rgba(255,255,255,.22);background:transparent}
+.site .lp-nav .lp-cta-top .btn.ghost:hover{background:rgba(255,255,255,.08)}
+.site .lp-nav .lp-cta-top .btn.pri{background:#8EC4A0;border-color:#8EC4A0;color:#07120E}
+.site .lp-nav .lp-cta-top .btn.pri:hover{background:#A9D5B7;border-color:#A9D5B7}
+.site .lp-nav .wordmark{color:#DCEFE2!important}
+@media (max-width:600px){.site .lp-nav .lp-navin{padding-left:14px}.site .lp-nav .lp-cta-top .btn.ghost{display:none}}
 
 /* "Todo en un lugar" en una sola línea */
 .lx-strip .ws-w{display:block;overflow:hidden;padding-block:20px}
@@ -384,7 +393,34 @@
 .lx-queda i.no{background:var(--red)}
 @media (max-width:640px){.lx-vs th,.lx-vs td{padding:12px 8px;font-size:13px}}
 
+/* La portada arranca debajo de la barra flotante */
+.site:has(.lx-dark) .lx-hero-c{padding-top:calc(68px + clamp(40px,7vw,104px))}
+
+/* ---------- Funciones: tarjeta grande con la app desenfocada atrás ---------- */
+.lx-show{display:flex;flex-direction:column;align-items:center;gap:18px}
+.lx-show-tabs{display:inline-flex;flex-wrap:wrap;justify-content:center;gap:4px;padding:4px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line)}
+.lx-show-tabs button{position:relative;overflow:hidden;border:0;background:none;padding:10px 18px;border-radius:999px;font:inherit;font-size:15px;font-weight:500;color:var(--muted);cursor:pointer}
+.lx-show-tabs button.on{background:var(--bg);color:var(--fg);box-shadow:var(--shadow)}
+.lx-show-timer{position:absolute;left:18px;right:18px;bottom:5px;height:2px;border-radius:2px;background:var(--ink);transform-origin:left;animation:lx-timer 5.5s linear both}
+@keyframes lx-timer{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.lx-show-card{--pw:330px;--gap:56px;position:relative;width:100%;height:clamp(440px,48vw,600px);border-radius:32px;overflow:hidden;background:#0B1813;isolation:isolate}
+.lx-show-bg{position:absolute;top:50%;left:50%;display:flex;gap:var(--gap);align-items:center;transform:translate(calc(-1 * (var(--k) * (var(--pw) + var(--gap)) + var(--pw) / 2)),-50%);transition:transform .9s cubic-bezier(.65,0,.25,1)}
+.lx-show-pane{flex:0 0 var(--pw);height:560px;padding:14px 0;border-radius:30px;background:var(--bg);color:var(--fg);overflow:hidden;transform:scale(1.18);filter:blur(10px);opacity:.45;transition:filter .7s ease,opacity .7s ease}
+.lx-show-pane.on{opacity:.85}
+.lx-show-card::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse 60% 70% at 50% 50%,rgba(7,18,14,.5),rgba(7,18,14,.88));transition:opacity .6s ease}
+.lx-show-txt{position:relative;z-index:2;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;text-align:center;color:#fff;animation:lx-rise .7s cubic-bezier(.2,.7,.2,1) both;transition:opacity .5s ease,transform .5s ease}
+.lx-show-txt span{font-size:14px;font-weight:600;color:#8EC4A0}
+.lx-show-txt h3{margin:0;font-family:var(--font-tight),"Inter Tight",sans-serif;font-size:clamp(34px,5.6vw,68px);font-weight:600;letter-spacing:-.035em;line-height:1.05;max-width:900px}
+.lx-show-txt p{margin:0;max-width:540px;font-size:17px;color:rgba(232,241,236,.8)}
+/* Al pasar el mouse: la app se ve nítida y el texto se corre */
+@media (hover:hover){
+  .lx-show-card:hover .lx-show-pane.on{filter:blur(0);opacity:1}
+  .lx-show-card:hover::after{opacity:.25}
+  .lx-show-card:hover .lx-show-txt{opacity:0;transform:translateY(12px)}
+}
+@media (max-width:640px){.lx-show-card{--pw:250px;--gap:32px;height:440px;border-radius:24px}.lx-show-tabs button{padding:8px 12px;font-size:13.5px}}
+
 @media (prefers-reduced-motion:reduce){
-  .lx-sky *,.lx-dark .lx-line,.lx-dark .ws-lead,.lx-hero-c .lx-ctas,.lx-hero-c .lx-phone-wrap,.lx-month-toast{animation:none!important}
-  .lx-month-steps li{transition:none}
+  .lx-sky *,.lx-dark .lx-line,.lx-dark .ws-lead,.lx-hero-c .lx-ctas,.lx-hero-c .lx-phone-wrap,.lx-month-toast,.lx-show-txt,.lx-show-timer{animation:none!important}
+  .lx-month-steps li,.lx-show-bg,.lx-show-pane,.lx-show-txt{transition:none}
 }

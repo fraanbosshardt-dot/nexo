@@ -3,7 +3,8 @@ import { Reveal } from "@/components/landing-fx";
 import { CuotasDemo, DemoTabs, PriceSwitch, QuedaDemo } from "@/components/landing-demo";
 import { LandingSky } from "@/components/landing-sky";
 import { MonthStory } from "@/components/landing-month";
-import { LandingMotion, PhoneTour } from "@/components/landing-motion";
+import { LandingMotion } from "@/components/landing-motion";
+import { Showcase } from "@/components/landing-show";
 import { PublicShell } from "@/components/public-shell";
 import { AppCta } from "@/components/app-cta";
 import { PLAN_FEATURES } from "@/lib/modules";
@@ -11,7 +12,6 @@ import { getDb } from "@/lib/db";
 import { planSettings, priceLabel, PRICES_DEFAULT } from "@/server/plans";
 import { jsonLd, SITE } from "@/lib/seo";
 import { BRAND } from "@/lib/brand";
-import { Icon, type IconName } from "@/components/icons";
 
 // Se sirve desde caché y se renueva sola cada 10 minutos: abre al instante.
 export const revalidate = 600;
@@ -20,35 +20,6 @@ const N = BRAND.name;
 const svg = (d: string, extra?: React.ReactNode) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={d} />{extra}</svg>;
 const CHECK = svg("M5 12l5 5L20 7");
 
-const FEATS: [React.ReactNode, string, string, ("bars" | null)?][] = [
-  [svg("M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM3 10h18"), "Tarjetas y cuotas", "Cada compra en cuotas se reparte sola en los meses que vienen y cuenta como gasto una sola vez."],
-  [svg("M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM3 9h18M8 2v4M16 2v4"), "Próximos pagos y avisos", "Alquiler, servicios, préstamos y cobros, ordenados por fecha. Te avisamos antes de que venzan."],
-  [svg("M3 17l5-5 4 3 8-8M15 7h5v5"), "Flujo de caja a 12 meses", "Mirá cómo termina cada mes con lo que entra, lo que sale y lo que ya está comprometido.", "bars"],
-  [svg("M4 21V10M10 21V4M16 21v-7M22 21H2"), "Deudas y préstamos", "Cronograma francés, alemán o americano, y cuánto ahorrás si cancelás antes."],
-  [svg("M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 13h6M9 17h4"), "Leé tu resumen en PDF", "Subí el resumen de la tarjeta y se cargan las compras y cuotas. Vos revisás y confirmás."],
-  [svg("M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"), "Objetivos de ahorro", "Vacaciones, el auto o un fondo para imprevistos. Ves cuánto te falta y cuánto apartar por mes."],
-];
-// Para quién es: cada persona se reconoce rápido.
-const WHO: [IconName, string, string][] = [
-  ["wallet", "Si cobrás un sueldo", "Sabé cuánto podés gastar hasta el próximo cobro y que las cuotas no te sorprendan."],
-  ["user", "Si trabajás por tu cuenta", "Cobros que cambian todos los meses: cargás lo estimado y después lo real."],
-  ["home", "Para la familia", "Alquiler, servicios, colegio y tarjetas de todos, ordenados por fecha."],
-  ["tractor", "Si sos productor", "Ventas de cereal mes a mes, gasoil e insumos junto con los gastos de tu casa."],
-];
-// Todo lo que incluye (lista completa, compacta).
-const ALL: [IconName, string][] = [
-  ["wallet", "Cuentas y billeteras"], ["swap", "Ingresos, gastos y transferencias"], ["card", "Tarjetas y cuotas"], ["bank", "Deudas y préstamos"],
-  ["clock", "Próximos pagos"], ["cal", "Calendario"], ["repeat", "Pagos que se repiten"], ["flow", "Flujo de caja"],
-  ["pie", "Presupuestos"], ["target", "Objetivos de ahorro"], ["sliders", "Simulador de compras"], ["scale", "Inversiones y patrimonio"],
-  ["chart", "Informes"], ["bell", "Alertas y avisos por correo"], ["file", "Importar CSV y resumen en PDF"], ["tag", "Dólar y otras monedas"],
-  ["grain", "Ventas de cereal"], ["lock", "Dos pasos y entrar con Google"], ["home", "Se instala como app"], ["gear", "Modo claro y oscuro"],
-];
-const TOOLS: [string, IconName, string, string][] = [
-  ["/herramientas/cuotas", "sliders", "¿Puedo comprarlo en cuotas?", "Te dice si te alcanza todos los meses."],
-  ["/herramientas/prestamo", "bank", "Calculadora de préstamos", "Cuota, intereses y cronograma completo."],
-  ["/glosario", "file", "Glosario financiero", "TNA, TEA, CFT y más, explicados simple."],
-  ["/guias", "help", "Guías", "Cómo ordenar el sueldo, las cuotas y más."],
-];
 
 const STRIP = ["Pesos y dólares", "Tarjetas en cuotas", "Préstamos", "Servicios y alquiler", "Sueldo o cobros variables", "Ventas de cereal", "Objetivos de ahorro"];
 
@@ -60,11 +31,6 @@ const VS: [string, string, string, string][] = [
   ["Avisos antes de que un mes quede en rojo", "No", "No", "Sí"],
   ["Cómo vienen los próximos meses", "Con fórmulas", "No", "Sí"],
   ["Pesos y dólares juntos", "Con fórmulas", "Por separado", "Sí"],
-];
-const STEPS: [string, string][] = [
-  ["Contanos dónde tenés la plata", "Tu cuenta del banco, la billetera virtual o el efectivo. Solo el saldo: nunca la clave."],
-  ["Sumá lo que cobrás y lo que pagás", "Sueldo, alquiler, servicios y tarjetas. Lo cargás una vez y se repite solo cada mes."],
-  ["Mirá cómo termina el mes", "Cuánto podés gastar hoy, qué vence esta semana y cómo vienen los próximos 12 meses."],
 ];
 const SAFE: [React.ReactNode, string, string][] = [
   [svg("M6 10V7a6 6 0 0 1 12 0v3M5 10h14v11H5z"), "Sin claves del banco", "No nos conectamos a tu banco ni te pedimos sus contraseñas. Nunca."],
@@ -227,55 +193,25 @@ export default async function Landing() {
         </div></div>
       </section>
 
-      {/* Para quién es */}
-      <section className="ws-w ws-sec lx-who-sec">
-        <Reveal className="ws-head"><p className="ws-eyebrow">Para quién es</p><h2 className="ws-h2">Hecho para la plata de todos los días.</h2></Reveal>
-        <div className="lx-who">{WHO.map(([ic, t, d], i) => (
-          <Reveal key={t} className="lx-who-card" tilt style={{ "--i": i } as React.CSSProperties}><span className="ws-ic"><Icon name={ic} /></span><h3>{t}</h3><p>{d}</p></Reveal>
-        ))}</div>
+      {/* Funciones: una tarjeta grande con la app desenfocada atrás */}
+      <section className="ws-w ws-sec" id="funciones">
+        <Reveal className="ws-head c"><p className="ws-eyebrow">Funciones</p><h2 className="ws-h2">Todo lo que hoy anotás a mano, pero que se calcula solo.</h2></Reveal>
+        <Showcase items={TOUR} screens={[<ScreenHome key="h" />, <ScreenCards key="c" />, <ScreenNext key="n" />, <ScreenFlow key="f" />]} />
       </section>
 
       {/* Un mes con Guafra: se cuenta mientras bajás */}
-      <section className="lx-month-sec" id="un-mes">
+      <section className="lx-month-sec" id="como">
         <div className="ws-w ws-sec">
           <Reveal className="ws-head"><p className="ws-eyebrow">Un mes con {N}</p><h2 className="ws-h2">Del cobro al próximo cobro, sin sorpresas.</h2><p className="ws-lead">Bajá y mirá cómo te acompaña durante un mes. Datos de ejemplo.</p></Reveal>
           <MonthStory />
         </div>
       </section>
 
-      {/* Funciones */}
-      <section className="ws-w ws-sec" id="funciones">
-        <Reveal className="ws-head"><p className="ws-eyebrow">Funciones</p><h2 className="ws-h2">Todo lo que hoy anotás en papel o en Excel, pero que se calcula solo.</h2></Reveal>
-        <div className="lx-bento">
-          <Reveal className="lx-big-card">
-            <div><h3>Cuánto podés gastar, hoy</h3><p>Suma lo que tenés, resta lo que vence antes de tu próximo cobro y te dice cuánto te queda por día. Sin cuentas a mano.</p></div>
-            <div className="lx-calc" aria-label="Ejemplo del cálculo">
-              <div><span>En tus cuentas</span><span data-count="612900" data-prefix="$ ">$ 612.900</span></div>
-              <div><span>Vence antes del cobro</span><span className="n" data-count="428650" data-prefix="−$ ">−$ 428.650</span></div>
-              <hr />
-              <div><span>Te queda</span><b data-count="184250" data-prefix="$ ">$ 184.250</b></div>
-            </div>
-          </Reveal>
-          {FEATS.map(([ic, t, d, extra], i) => (
-            <Reveal key={t} className="lx-feat" tilt style={{ "--i": i % 3 } as React.CSSProperties}>
-              <span className="ws-ic">{ic}</span><h3>{t}</h3><p>{d}</p>
-              {extra === "bars" && <div className="lx-bars" aria-hidden="true">{[40, 55, 35, 70, 62, 85].map((h, i) => <i key={i} style={{ "--h": `${h}%`, "--d": `${i * 70}ms` } as React.CSSProperties} className={i === 3 ? "on" : ""} />)}</div>}
-            </Reveal>
-          ))}
-        </div>
-      </section>
-
-      {/* Recorrido del celular */}
-      <section className="ws-w ws-sec lx-tour-sec" id="recorrido">
-        <Reveal className="ws-head"><p className="ws-eyebrow">Por dentro</p><h2 className="ws-h2">Así se ve {N} en tu celular.</h2></Reveal>
-        <PhoneTour steps={TOUR} screens={[<ScreenHome key="h" />, <ScreenCards key="c" />, <ScreenNext key="n" />, <ScreenFlow key="f" />]} />
-      </section>
-
-      {/* Todo lo que incluye */}
-      <section className="ws-soft">
-        <div className="ws-w ws-sec">
-          <Reveal className="ws-head"><p className="ws-eyebrow">Todo lo que incluye</p><h2 className="ws-h2">Una sola app para toda tu plata.</h2></Reveal>
-          <ul className="lx-all">{ALL.map(([ic, t], i) => <Reveal as="li" key={t} style={{ "--i": i % 4 } as React.CSSProperties}><Icon name={ic} /><span>{t}</span></Reveal>)}</ul>
+      {/* Demo */}
+      <section className="lx-demo-sec" id="demo">
+        <div className="ws-w ws-sec lx-two">
+          <Reveal className="lx-two-copy"><p className="ws-eyebrow">Probalo ahora</p><h2 className="ws-h2">¿Cuánto te queda? ¿Te alcanza en cuotas?</h2><p className="ws-lead">Mové los valores y mirá la respuesta al instante. Sin registrarte. En {N} estas cuentas se hacen solas con tus datos reales.</p></Reveal>
+          <DemoTabs titles={["¿Cuánto te queda?", "¿Te alcanza en cuotas?"]}>{[<QuedaDemo key="q" />, <CuotasDemo key="c" />]}</DemoTabs>
         </div>
       </section>
 
@@ -290,32 +226,6 @@ export default async function Landing() {
             </table>
           </Reveal>
         </div>
-      </section>
-
-      {/* Cómo funciona */}
-      <section className="ws-w ws-sec" id="como">
-        <Reveal className="ws-head"><p className="ws-eyebrow">Cómo funciona</p><h2 className="ws-h2">Listo en cinco minutos.</h2></Reveal>
-        <div className="lx-track" data-progress=""><i /></div>
-        <ol className="lx-steps">{STEPS.map(([t, d], i) => <Reveal as="li" key={t} style={{ "--i": i } as React.CSSProperties}><span>0{i + 1}</span><h3>{t}</h3><p>{d}</p></Reveal>)}</ol>
-      </section>
-
-      {/* Demo */}
-      <section className="lx-demo-sec" id="demo">
-        <div className="ws-w ws-sec lx-two">
-          <Reveal className="lx-two-copy"><p className="ws-eyebrow">Probalo ahora</p><h2 className="ws-h2">¿Cuánto te queda? ¿Te alcanza en cuotas?</h2><p className="ws-lead">Mové los valores y mirá la respuesta al instante. Sin registrarte. En {N} estas cuentas se hacen solas con tus datos reales.</p></Reveal>
-          <DemoTabs titles={["¿Cuánto te queda?", "¿Te alcanza en cuotas?"]}>{[<QuedaDemo key="q" />, <CuotasDemo key="c" />]}</DemoTabs>
-        </div>
-      </section>
-
-      {/* Herramientas gratis */}
-      <section className="ws-w ws-sec lx-tools-sec">
-        <div className="lx-sec-head">
-          <Reveal className="ws-head"><p className="ws-eyebrow">Gratis y sin registrarte</p><h2 className="ws-h2">Herramientas para decidir mejor.</h2></Reveal>
-          <Link className="lx-link" href="/herramientas">Ver todas →</Link>
-        </div>
-        <div className="lx-tools">{TOOLS.map(([href, ic, t, d], i) => (
-          <Reveal key={href} className="lx-tool" style={{ "--i": i } as React.CSSProperties}><Link href={href}><span className="ws-ic"><Icon name={ic} /></span><b>{t}</b><span>{d}</span><em>Usar →</em></Link></Reveal>
-        ))}</div>
       </section>
 
       {/* Para el campo */}
