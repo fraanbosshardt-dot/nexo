@@ -533,12 +533,33 @@ export async function resendVerifyAction(_: FormState, __?: FormData): Promise<F
   const { sendVerifyEmail } = await import("@/server/account-mail");
   await sendVerifyEmail(user);
   await audit("auth.verify_sent", { userId: user.id });
-  return { ok: `Te mandamos un enlace nuevo a ${user.email}.` };
+  return { ok: `Te mandamos un código nuevo a ${user.email}.` };
+}
+
+// Confirmar el correo con el código de 6 números (5 intentos cada 15 minutos).
+export async function verifyEmailCodeAction(_: FormState, fd: FormData): Promise<FormState> {
+  const { user } = await requireUser();
+  if (user.emailVerified) return { ok: "Tu correo ya está confirmado." };
+  const db = getDb();
+  if ((await db.auditLog.count({ where: { action: "auth.verify_code_failed", userId: user.id, createdAt: { gte: new Date(Date.now() - 15 * 60_000) } } })) >= 5) return { error: "Demasiados códigos incorrectos. Probá de nuevo en 15 minutos." };
+  const { checkVerifyCode } = await import("@/server/email-verify");
+  if (!checkVerifyCode(user.id, user.email, String(fd.get("code") ?? ""))) {
+    await audit("auth.verify_code_failed", { userId: user.id });
+    return { error: "El código no es correcto o venció. Revisá el último correo o pedí uno nuevo." };
+  }
+  await db.user.update({ where: { id: user.id }, data: { emailVerified: new Date() } });
+  await audit("auth.email_verified", { userId: user.id, meta: { via: "code" } });
+  revalidatePath("/app", "layout");
+  return { ok: "Listo, tu correo quedó confirmado." };
 }
 
 export async function emailRemindersAction(fd: FormData) {
   const { user } = await requireUser();
-  await getDb().user.update({ where: { id: user.id }, data: { emailReminders: fd.get("on") === "1" } });
+  const on = fd.get("on") === "1";
+  // Los avisos por correo se prenden solo con el correo confirmado (si no, irían a una dirección que quizás no es tuya).
+  const { needsVerifiedEmail } = await import("@/server/email-verify");
+  if (on && needsVerifiedEmail(user)) redirect("/app/configuracion?verificar=avisos");
+  await getDb().user.update({ where: { id: user.id }, data: { emailReminders: on } });
   revalidatePath("/app/configuracion");
 }
 

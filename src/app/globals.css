@@ -1193,3 +1193,11 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):focus,select:focu
 .maint-pulse i{width:9px;height:9px;border-radius:50%;background:var(--ink);opacity:.25}
 @media (prefers-reduced-motion:no-preference){.maint .maint-pulse i{animation:maintDot 1.2s ease-in-out infinite!important}.maint .maint-pulse i:nth-child(2){animation-delay:.2s!important}.maint .maint-pulse i:nth-child(3){animation-delay:.4s!important}}
 @keyframes maintDot{0%,100%{opacity:.25;transform:none}50%{opacity:1;transform:translateY(-4px)}}
+
+/* Confirmar el correo: código de 6 números en el aviso de arriba; a los 3 días, más visible */
+.vbanner.late{border-color:color-mix(in srgb,var(--amber) 45%,var(--line));background:color-mix(in srgb,var(--amber-soft) 55%,var(--surface))}
+.vbanner.late .vbanner-ic{background:var(--amber-soft);color:var(--amber)}
+.vbanner-acts{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.vbanner-code{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.vbanner-code input{width:120px;min-height:36px;border:1px solid var(--line-2);border-radius:10px;padding:0 12px;background:var(--surface);color:var(--fg);font:inherit;font-size:16px;font-weight:600;letter-spacing:.18em;text-align:center;font-variant-numeric:tabular-nums}
+@media (max-width:640px){.vbanner-acts,.vbanner-code{width:100%}.vbanner-code input{flex:1}}

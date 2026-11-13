@@ -44,7 +44,7 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 - [ ] T6. Deslizar un pago en Próximos pagos desde el celular (no se pudo probar con el dedo en la compu).
 - [ ] T7. Abrir en Excel el archivo de Exportar → Movimientos (Excel) y guardar un reporte en PDF desde el celular y la compu.
 - [ ] T4. Importar un extracto real de Mercado Pago (CSV desde la app o la web de MP) y revisar que entren bien los movimientos.
-- [ ] T5. Recibir los correos nuevos (confirmar correo, contraseña cambiada, ingreso nuevo) cuando esté cargada la clave de Resend.
+- [ ] T5. Cuando esté Resend: crear una cuenta con correo, recibir el código de 6 números y confirmarlo desde el aviso de arriba; ver que sin confirmar no deje pagar Pro, invitar ni prender avisos por correo. Recibir también "contraseña cambiada" e "ingreso nuevo".
 - [ ] T10. Ver en la web la tarjeta nueva de Configuración → Plan (en Gratis): en local no se pudo ver porque el cobro no está activado.
 - [ ] T11. Probar el modo mantenimiento en el sitio publicado: prenderlo en el Panel, entrar con una cuenta que no sea del equipo y ver la pantalla completa; después apagarlo.
 - [ ] T1. Ingreso al panel interno con Google, con tu cuenta.
@@ -64,6 +64,7 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 - [ ] M4. Testimonios de usuarios reales, cuando los haya (nunca inventados).
 
 ## Completado
+- [x] 13/11/2026 — Confirmar el correo: la app se usa sin confirmar, pero para pagar Pro, invitar al espacio compartido o prender avisos por correo pide el correo confirmado (solo cuando los correos están configurados). Código de 6 números además del enlace (5 intentos cada 15 minutos). Elegir contraseña nueva desde el correo también lo confirma. A los 3 días el aviso se vuelve más visible. Cuentas con correo que nunca se confirmaron ni se usaron: aviso a los 23 días y se borran solas a los 30 (nunca las de Google, con Pro o del equipo). El aviso de arriba no aparece mientras no haya correos configurados.
 - [x] 13/11/2026 — Revisión completa (54 páginas sin errores, Gratis/Pro bien separados también en el servidor, sin dependencias con fallas). Arreglos: mantenimiento en pantalla completa (el equipo del panel sí entra), tarjeta de Configuración → Plan en dos columnas, barra de progreso suave en la bienvenida, barra de la web más blanca, 7 correos que todavía firmaban "Finan", campos sin doble línea, Presupuestos con tarjetas, Informes sin botones "Ver", comparación de la portada con la columna de Guafra en verde. Se borraron las 4 cuentas de prueba (hola@fraguan.com, vetra.store10, visionandtechnologies, itztheiplay).
 - [x] 12/11/2026 — Funciones Pro revisadas: sin "Asistente con IA" (no estaba hecho); "Saldo día a día" y "Exportar a Excel y PDF" sin Beta. Importar Excel/CSV: saltea los títulos que ponen los bancos arriba del encabezado. Flujo a 2-5 años avisa que es una estimación. Simulador: guardar hasta 10 escenarios y volver a abrirlos. Informes: filtro por cuenta y "Contra el año pasado". Soporte Pro: respuesta en 1 día hábil.
 - [x] 12/11/2026 — Logo nuevo de Guafra (la "g" con la curva y las barras) en el encabezado, el ícono del sitio, los íconos de la app instalada, el de iPhone y las imágenes para compartir.

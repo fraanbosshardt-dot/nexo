@@ -2,6 +2,7 @@
 // El enlace de confirmación va firmado con AUTH_SECRET (no hace falta guardarlo): sirve 7 días y solo para ese correo.
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { PrismaClient } from "@/generated/prisma/client";
+import { verifyCode } from "./email-verify";
 
 const DAYS = 7;
 const sign = (payload: string) => createHmac("sha256", `${process.env.AUTH_SECRET ?? ""}|verify-email`).update(payload).digest("base64url");
@@ -32,7 +33,7 @@ export async function sendVerifyEmail(user: { id: string; email: string; name: s
   return sendEmail({
     to: user.email,
     subject: "Confirmá tu correo en Guafra",
-    text: `Hola ${user.name.split(" ")[0]}:\n\nPara confirmar que este correo es tuyo, entrá a este enlace (vence en ${DAYS} días):\n${appUrl()}/verificar-correo/${verifyToken(user.id, user.email)}\n\nSi no creaste una cuenta en Guafra, ignorá este correo.\n\nGuafra`,
+    text: `Hola ${user.name.split(" ")[0]}:\n\nTu código para confirmar el correo es: ${verifyCode(user.id, user.email)}\nEscribilo en el aviso de arriba de la app (vence en 30 minutos).\n\nO entrá a este enlace (vence en ${DAYS} días):\n${appUrl()}/verificar-correo/${verifyToken(user.id, user.email)}\n\nSi no creaste una cuenta en Guafra, ignorá este correo.\n\nGuafra`,
   });
 }
 

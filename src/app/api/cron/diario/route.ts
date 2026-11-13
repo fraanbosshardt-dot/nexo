@@ -45,8 +45,9 @@ async function run(db: ReturnType<typeof getDb>) {
     await Promise.all(workspaces.slice(i, i + 20).map((ws) => one(ws).catch((e) => { skipped++; console.error("[cron] aviso", ws.id, e); })));
   }
   const pushes = await pushDueTomorrow(db);
-  await db.auditLog.create({ data: { action: "cron.diario", meta: { rates: fx, emails: sent, notSent: skipped, pushes } } });
-  return Response.json({ ok: true, rates: fx, emails: sent, notSent: skipped, pushes });
+  const unverified = await cleanUnverified(db);
+  await db.auditLog.create({ data: { action: "cron.diario", meta: { rates: fx, emails: sent, notSent: skipped, pushes, ...unverified } } });
+  return Response.json({ ok: true, rates: fx, emails: sent, notSent: skipped, pushes, ...unverified });
 }
 
 // Personas con avisos en el celular y algo que vence mañana en alguno de sus espacios.
@@ -63,4 +64,34 @@ async function pushDueTomorrow(db: ReturnType<typeof getDb>) {
     if (due) n += await pushToUser(db, u.id);
   }
   return n;
+}
+
+// Cuentas creadas con correo que nunca se confirmaron ni se usaron: a los 23 días se avisa por correo (una vez) y a los
+// 30 se borran con todos sus datos. Solo corre con los correos configurados (si no, nadie podría confirmar).
+async function cleanUnverified(db: ReturnType<typeof getDb>) {
+  const { emailEnabled, abandonedUnverified, UNVERIFIED_DAYS } = await import("@/server/email-verify");
+  if (!emailEnabled()) return { unverifiedWarned: 0, unverifiedDeleted: 0 };
+  const { ownerEmails } = await import("@/server/admin-team");
+  const { deleteAccount } = await import("@/server/admin-accounts");
+  const { sendVerifyEmail } = await import("@/server/account-mail");
+  const staff = ownerEmails();
+  const now = Date.now();
+  let warned = 0, deleted = 0;
+  // Aviso una semana antes: los que se borrarían dentro de 7 días y todavía no recibieron el aviso.
+  const soon = await abandonedUnverified(db, now + 7 * 864e5, staff);
+  for (const u of soon.slice(0, 100)) {
+    if (await db.auditLog.count({ where: { action: "account.unverified_warned", entityId: u.id } })) continue;
+    const user = await db.user.findUnique({ where: { id: u.id } });
+    if (!user) continue;
+    const r = await sendEmail({ to: user.email, subject: "Tu cuenta de Guafra se borra en 7 días", text: `Hola ${user.name.split(" ")[0]}:\n\nCreaste una cuenta en Guafra pero nunca confirmaste tu correo ni la usaste. Si en 7 días sigue así, la borramos con todos sus datos.\n\nSi la querés conservar, entrá a ${appUrl()}/app y confirmá tu correo (te mandamos un código en otro correo).\n\nGuafra` });
+    if (r.sent) { await sendVerifyEmail(user); warned++; }
+    await db.auditLog.create({ data: { action: "account.unverified_warned", entity: "user", entityId: u.id } });
+  }
+  // Borrado a los 30 días (de a 50 por día como máximo).
+  for (const u of (await abandonedUnverified(db, now, staff)).slice(0, 50)) {
+    await deleteAccount(db, u.id);
+    await db.auditLog.create({ data: { action: "account.auto_deleted", entity: "user", entityId: u.id, meta: { reason: `sin confirmar ni usar en ${UNVERIFIED_DAYS} días` } } });
+    deleted++;
+  }
+  return { unverifiedWarned: warned, unverifiedDeleted: deleted };
 }

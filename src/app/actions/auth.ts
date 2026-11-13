@@ -133,6 +133,7 @@ export async function resetPasswordAction(_: FormState, fd: FormData): Promise<F
   if (!r || r.usedAt || r.expiresAt < new Date()) return { error: "El enlace venció o ya se usó. Pedí uno nuevo." };
   await db.$transaction([
     db.user.update({ where: { id: r.userId }, data: { passwordHash: await hashPassword(password) } }),
+    db.user.updateMany({ where: { id: r.userId, emailVerified: null }, data: { emailVerified: new Date() } }),
     db.passwordReset.update({ where: { id: r.id }, data: { usedAt: new Date() } }),
     db.session.deleteMany({ where: { userId: r.userId } }), // cierra todas las sesiones abiertas
   ]);

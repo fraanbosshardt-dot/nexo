@@ -673,6 +673,9 @@ export async function supportTicketAction(_: FormState, fd: FormData): Promise<F
 
 export async function checkoutAction(fd: FormData) {
   const { user, workspace } = await requireOwner();
+  // Para pagar, el correo tiene que estar confirmado: ahí llegan los comprobantes y los avisos de cobro.
+  const { needsVerifiedEmail } = await import("@/server/email-verify");
+  if (needsVerifiedEmail(user)) redirect("/app/configuracion?tab=plan&verificar=pro");
   const { startCheckout } = await import("@/server/billing");
   const { appUrl } = await import("@/lib/email");
   const cycle = fd.get("cycle") === "yearly" ? "yearly" : "monthly";

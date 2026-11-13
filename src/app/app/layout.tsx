@@ -14,7 +14,8 @@ import { Icon } from "@/components/icons";
 import { ActionForm, Submit } from "@/components/forms";
 import { BigTextSync } from "@/components/big-text";
 import { switchWorkspaceAction } from "@/app/actions/sharing";
-import { resendVerifyAction } from "@/app/actions/app";
+import { resendVerifyAction, verifyEmailCodeAction } from "@/app/actions/app";
+import { emailEnabled } from "@/server/email-verify";
 import { LogoMark } from "@/components/logo-mark";
 
 // La app es privada: nunca se indexa.
@@ -78,15 +79,30 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <span>Estás viendo el espacio de {ownerOf(workspace.id)}{membership.role === "VIEWER" ? " (solo mirar)" : ""}. Cambiás al tuyo desde el menú de tu cuenta.</span>
         </div>
       )}
-      {!user.emailVerified && (
-        <div className="vbanner" role="status">
-          <span className="vbanner-ic" aria-hidden="true"><Icon name="info" /></span>
-          <ActionForm action={resendVerifyAction} className="vbanner-body">
-            <span className="vbanner-txt"><b>Confirmá tu correo</b><span>Te mandamos un enlace a <b className="vbanner-mail">{user.email}</b>. Así recibís avisos y podés recuperar la contraseña.</span></span>
-            <Submit className="btn sm pri" pending="Enviando…">Mandame el enlace</Submit>
-          </ActionForm>
-        </div>
-      )}
+      {/* Confirmar el correo: solo si los correos están configurados (si no, prometería algo que no llega).
+          A los 3 días sin confirmar, el aviso se vuelve más visible y explica qué te perdés. */}
+      {!user.emailVerified && emailEnabled() && (() => {
+        const days = Math.floor((Date.now() - user.createdAt.getTime()) / 864e5);
+        const late = days >= 3;
+        return (
+          <div className={`vbanner ${late ? "late" : ""}`} role="status">
+            <span className="vbanner-ic" aria-hidden="true"><Icon name="info" /></span>
+            <div className="vbanner-body">
+              <span className="vbanner-txt">
+                <b>{late ? `Hace ${days} días que no confirmás tu correo` : "Confirmá tu correo"}</b>
+                <span>{late ? "Sin confirmarlo no vas a poder pagar Pro, invitar a alguien ni recibir avisos por correo. " : "Así podés pagar Pro, invitar a alguien y recuperar la contraseña. "}Te mandamos un código a <b className="vbanner-mail">{user.email}</b>.</span>
+              </span>
+              <div className="vbanner-acts">
+                <ActionForm action={verifyEmailCodeAction} className="vbanner-code">
+                  <input name="code" inputMode="numeric" autoComplete="one-time-code" maxLength={7} placeholder="000000" aria-label="Código de 6 números" />
+                  <Submit className="btn sm pri" pending="Confirmando…">Confirmar</Submit>
+                </ActionForm>
+                <ActionForm action={resendVerifyAction}><Submit className="btn sm ghost" pending="Enviando…">Mandame otro código</Submit></ActionForm>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
       {sys.maintenance && <div className="notice a app-ann" role="status"><Icon name="info" /><span>Modo mantenimiento activo: las personas ven la pantalla de “Volvemos enseguida”. Vos entrás porque sos del equipo.</span></div>}
       {children}
     </Shell></>

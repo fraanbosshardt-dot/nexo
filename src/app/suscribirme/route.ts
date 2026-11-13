@@ -27,6 +27,8 @@ export async function GET(req: Request) {
   const sub = m.workspace.subscription;
   // Ya tiene Pro activo (pago o regalado): no se compra dos veces.
   if (sub?.plan === "PRO" && sub.status === "ACTIVE") redirect("/app/configuracion?tab=plan&yatenes=1");
+  const { needsVerifiedEmail } = await import("@/server/email-verify");
+  if (needsVerifiedEmail(s.user)) redirect("/app/configuracion?tab=plan&verificar=pro");
   const { billingConfig, startCheckout } = await import("@/server/billing");
   const db = getDb();
   if (!(await billingConfig(db)).enabled) redirect("/app/configuracion?tab=plan");
