@@ -51,8 +51,8 @@ Cuando algo se termina, pasa a "Completado" con la fecha.
 - [ ] P6. Probar la lectura de PDF con resúmenes reales de varios bancos (Galicia, Santander, BBVA, Nación, Macro, Mercado Pago) y ajustar los formatos que no reconozca.
 - [ ] P4. Cuando esté publicado: dar de alta el sitio en Google Search Console y enviar el sitemap (/sitemap.xml).
 - [ ] P1. Asistente con IA (Pro): se sacó de la lista de Pro y de Alertas hasta que esté hecho; cuando se arme, volver a sumarlo.
-- [ ] P3. Espacio compartido: sacarle "Beta" cuando esté el correo (Z2). Lo dejamos para el final.
-- [ ] P4. Importar Excel y OFX: sacarle "Beta" después de probar un archivo real de un banco.
+- [ ] P3. Espacio compartido: ya sin "Beta". Falta el correo automático de invitación (Z2); mientras tanto la app muestra el enlace para pasarlo a mano.
+- [ ] P4. Importar Excel y OFX: ya sin "Beta". Probarlo con un archivo real de un banco.
 - [ ] P5. Leer el resumen en PDF: probar con resúmenes de más bancos (hace falta un PDF de cada uno).
 - [ ] P11. Modo sin conexión para ver los datos sin internet.
 - [ ] P14. Facturas de AFIP para los cobros de Pro.

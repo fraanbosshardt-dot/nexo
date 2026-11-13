@@ -9,7 +9,7 @@ export const PRO_FEATURES: { key: FeatureKey; name: string; beta?: boolean }[] =
   { key: "simulador", name: "Simulador de escenarios" },
   { key: "cereal", name: "Módulo Agro: ventas de granos" },
   { key: "informes", name: "Informes avanzados y respaldo completo" },
-  { key: "compartido", name: "Espacio compartido (hasta 3 personas)", beta: true },
+  { key: "compartido", name: "Espacio compartido (hasta 3 personas)" },
   { key: "ilimitado", name: "Cuentas y objetivos sin límite" },
   { key: "soporte", name: "Soporte prioritario (respuesta en 1 día hábil)" },
   { key: "pdf", name: "Leer el resumen de la tarjeta desde el PDF (hasta 5 por mes)" },

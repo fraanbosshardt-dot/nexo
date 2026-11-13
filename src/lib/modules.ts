@@ -76,8 +76,8 @@ export const PLAN_FEATURES: { name: string; plan: "free" | "pro"; beta?: boolean
   { name: "Leer el resumen de la tarjeta desde el PDF", plan: "pro" },
   { name: "Saldo día a día en el flujo de caja", plan: "pro" },
   { name: "Exportar a Excel y PDF", plan: "pro" },
-  { name: "Importar Excel y OFX", plan: "pro", beta: true },
-  { name: "Espacio compartido (hasta 3 personas)", plan: "pro", beta: true },
+  { name: "Importar Excel y OFX", plan: "pro" },
+  { name: "Espacio compartido (hasta 3 personas)", plan: "pro" },
   { name: "Cuentas y objetivos sin límite", plan: "pro" },
   { name: "Soporte prioritario (respuesta en 1 día hábil)", plan: "pro" },
 ];

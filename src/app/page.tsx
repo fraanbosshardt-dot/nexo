@@ -266,7 +266,7 @@ export default async function Landing() {
         <div className="ws-w ws-sec lx-pricing">
           <Reveal className="ws-head c"><p className="ws-eyebrow">Precios</p><h2 className="ws-h2">Empezá gratis. Pasate a Pro cuando lo necesites.</h2></Reveal>
           <PriceSwitch monthly={plans(pm.text, "mes")} yearly={plans(py.text, "año")} />
-          <p className="ws-fine" style={{ textAlign: "center" }}>Beta: ya se puede usar y la seguimos mejorando, sin costo extra. Cancelás cuando quieras y tenés 10 días para arrepentirte con <Link href="/reembolsos">devolución total</Link>.</p>
+          <p className="ws-fine" style={{ textAlign: "center" }}>Cancelás cuando quieras y tenés 10 días para arrepentirte con <Link href="/reembolsos">devolución total</Link>.</p>
         </div>
       </section>
 
