@@ -305,7 +305,7 @@ export async function debtDetail(db: Db, ws: string, debtId: string) {
   const capitalPaid = settled.reduce((s, r) => s.plus(dec(r.capital)), ZERO);
   // Sin cronograma: lo que falta es el capital menos los pagos a cuenta registrados.
   const manualPaid = debt.schedule.length ? ZERO : (await db.transaction.findMany({ where: { workspaceId: ws, type: "DEBT_PAYMENT", notes: `debt:${debt.id}` } })).reduce((s, t) => s.plus(dec(t.amount)), ZERO);
-  const remainingCapital = debt.status === "ACTIVE" ? dec(debt.principal).minus(capitalPaid).minus(manualPaid) : ZERO;
+  const remainingCapital = debt.status !== "ACTIVE" ? ZERO : debt.schedule.length ? open.reduce((s, r) => s.plus(dec(r.capital)), ZERO) : dec(debt.principal).minus(capitalPaid).minus(manualPaid);
   const futureSum = open.reduce((s, r) => s.plus(dec(r.total)).minus(r.paid ?? ZERO), ZERO);
   return { debt, rows, open, settledCount: settled.length, remainingCapital, futureSum, next: open[0] ?? null };
 }
@@ -350,4 +350,106 @@ export async function payDebtOnAccount(db: Db, ws: string, input: { debtId: stri
   if (!amount.gt(0) || amount.gt(det.remainingCapital)) throw new UserError(`El pago tiene que ser mayor a cero y como mucho ${det.remainingCapital.toFixed(2)}.`);
   await db.transaction.create({ data: { workspaceId: ws, accountId: acc.id, type: "DEBT_PAYMENT", direction: "OUT", amount: amount.toFixed(2), currency: acc.currency, description: `Pago a cuenta — ${det.debt.creditor}`, effectiveDate: input.date, economicPeriod: period(input.date), notes: `debt:${det.debt.id}`, createdById: input.userId ?? null } });
   if (amount.eq(det.remainingCapital)) await db.debt.update({ where: { id: det.debt.id }, data: { status: "PAID" } });
+}
+
+// ---------- Rearmar las cuotas que faltan: pago anticipado (F6) y refinanciación (F9) ----------
+// Las cuotas ya pagadas no se tocan. Las que faltan se reemplazan por un cronograma nuevo.
+
+// Tasa mensual del préstamo: la de la TNA o, si no hay, la que surge de sus cuotas (sin IVA ni seguro).
+function monthlyRate(debt: { tna: MoneyValue | null; principal: MoneyValue }, schedule: { capital: MoneyValue; interest: MoneyValue }[]): Decimal {
+  if (debt.tna != null && dec(debt.tna).gt(0)) return dec(debt.tna).dividedBy(100).dividedBy(12);
+  if (!schedule.length) return ZERO;
+  return dec(rateForPayments(dec(debt.principal).toNumber(), schedule.map((r) => dec(r.capital).plus(dec(r.interest)).toNumber())));
+}
+
+// Misma cantidad de cuotas con un capital menor (baja la cuota).
+function reshapeCount(P: Decimal, i: Decimal, n: number, system: AmortizationSystem, firstDue: Date): ScheduleRow[] {
+  const rows: ScheduleRow[] = [];
+  let bal = P;
+  const push = (k: number, cap: Decimal, int: Decimal) => { bal = bal.minus(cap); rows.push({ k, due: addMonths(firstDue, k - 1), capital: cap, interest: int, total: cap.plus(int), balance: bal.lt(0) ? ZERO : bal }); };
+  if (system === "GERMAN") { const caps = allocate(P, n); for (let k = 1; k <= n; k++) push(k, caps[k - 1], round2(bal.times(i))); }
+  else if (system === "AMERICAN") { for (let k = 1; k <= n; k++) push(k, k === n ? bal : ZERO, round2(P.times(i))); }
+  else if (i.gt(0)) {
+    const c = round2(P.times(i).dividedBy(dec(1).minus(dec(1).plus(i).pow(-n))));
+    for (let k = 1; k <= n; k++) { const int = round2(bal.times(i)); push(k, k === n ? bal : c.minus(int), int); }
+  } else { for (const [idx, cap] of allocate(P, n).entries()) push(idx + 1, cap, ZERO); }
+  return rows;
+}
+
+// La misma cuota (o la misma parte de capital, en el alemán) con un capital menor (baja el plazo).
+function reshapeTerm(P: Decimal, i: Decimal, first: { capital: Decimal; interest: Decimal }, system: AmortizationSystem, firstDue: Date): ScheduleRow[] {
+  const rows: ScheduleRow[] = [];
+  let bal = P;
+  for (let k = 1; bal.gt(0) && k <= 480; k++) {
+    const int = round2(bal.times(i));
+    let cap = system === "GERMAN" ? first.capital : first.capital.plus(first.interest).minus(int);
+    if (!cap.gt(0)) throw new UserError("Con esa cuota no se termina de pagar. Elegí bajar la cuota.");
+    if (cap.gt(bal)) cap = bal;
+    bal = bal.minus(cap);
+    rows.push({ k, due: addMonths(firstDue, k - 1), capital: cap, interest: int, total: cap.plus(int), balance: bal });
+  }
+  return rows;
+}
+
+// Reemplaza las cuotas que faltan por las nuevas, numeradas a continuación de las pagadas.
+async function replaceOpen(tx: Tx, ws: string, debt: { id: string; creditor: string; currency: string }, det: NonNullable<Awaited<ReturnType<typeof debtDetail>>>, rows: ScheduleRow[]) {
+  if (det.open.some((r) => r.status === "PARTIAL" || (r.paid && r.paid.gt(0)))) throw new UserError("Hay una cuota pagada en parte. Terminá de pagarla desde Próximos pagos y probá de nuevo.");
+  const openIds = det.open.map((r) => r.id);
+  const obIds = det.open.map((r) => r.obligationId).filter(Boolean) as string[];
+  await tx.debtInstallment.deleteMany({ where: { id: { in: openIds } } });
+  await tx.obligation.deleteMany({ where: { workspaceId: ws, id: { in: obIds } } });
+  const start = det.rows.filter((r) => !openIds.includes(r.id)).reduce((m, r) => Math.max(m, r.number), 0) + 1;
+  const total = start - 1 + rows.length;
+  for (const [idx, r] of rows.entries()) {
+    const n = start + idx;
+    const ob = await tx.obligation.create({ data: { workspaceId: ws, direction: "PAYABLE", description: `${debt.creditor} — cuota ${n}/${total}`, amount: r.total.toFixed(2), currency: debt.currency, dueDate: r.due, economicPeriod: period(r.due), sourceType: "debt", sourceId: debt.id } });
+    await tx.debtInstallment.create({ data: { debtId: debt.id, number: n, dueDate: r.due, capital: r.capital.toFixed(2), interest: r.interest.toFixed(2), vat: (r.vat ?? ZERO).toFixed(2), insurance: (r.insurance ?? ZERO).toFixed(2), total: r.total.toFixed(2), balanceAfter: r.balance.toFixed(2), obligationId: ob.id } });
+  }
+  await tx.debt.update({ where: { id: debt.id }, data: { installments: total } });
+}
+
+// Pago anticipado de una parte: baja la cuota (mismas cuotas) o baja el plazo (misma cuota, menos cuotas).
+export async function prepayDebt(db: Db, ws: string, input: { debtId: string; accountId: string; amount: MoneyValue; date: Date; mode: "cuota" | "plazo"; userId?: string | null }) {
+  const det = await debtDetail(db, ws, input.debtId);
+  if (!det) throw new UserError("No encontramos esa deuda.");
+  const debt = det.debt;
+  if (debt.status !== "ACTIVE") throw new UserError("Esa deuda ya está cerrada.");
+  if (!det.open.length) throw new UserError("Esta deuda no tiene cuotas por pagar.");
+  const acc = await db.account.findFirst({ where: { id: input.accountId, workspaceId: ws, active: true } });
+  if (!acc || acc.type === "CREDIT_CARD") throw new UserError("Elegí una cuenta de dinero.");
+  if (acc.currency !== debt.currency) throw new UserError(`Elegí una cuenta en ${debt.currency}.`);
+  const amount = round2(input.amount);
+  if (!amount.gt(0)) throw new UserError("El importe tiene que ser mayor a cero.");
+  if (amount.gte(det.remainingCapital)) throw new UserError("Con ese importe la cancelás entera: usá «Cancelar total».");
+  const P = det.remainingCapital.minus(amount);
+  const i = monthlyRate(debt, debt.schedule);
+  const first = det.open[0];
+  const pure = input.mode === "plazo" && debt.system !== "AMERICAN"
+    ? reshapeTerm(P, i, { capital: dec(first.capital), interest: dec(first.interest) }, debt.system, first.dueDate)
+    : reshapeCount(P, i, det.open.length, debt.system, first.dueDate);
+  const rows = withExtras(pure, P, debt);
+  const newSum = rows.reduce((s, r) => s.plus(r.total), ZERO);
+  await db.$transaction(async (tx) => {
+    await tx.transaction.create({ data: { workspaceId: ws, accountId: acc.id, type: "DEBT_PAYMENT", direction: "OUT", amount: amount.toFixed(2), currency: acc.currency, description: `Pago anticipado — ${debt.creditor}`, effectiveDate: input.date, economicPeriod: period(input.date), notes: `debt:${debt.id}`, createdById: input.userId ?? null } });
+    await replaceOpen(tx, ws, debt, det, rows);
+  });
+  return { saved: det.futureSum.minus(amount).minus(newSum), installments: rows.length, before: det.open.length, nextTotal: rows[0]?.total ?? ZERO };
+}
+
+// Refinanciar: las cuotas que faltan se rearman con condiciones nuevas, sin perder lo pagado.
+export async function refinanceDebt(db: Db, ws: string, input: { debtId: string; principal?: MoneyValue | null; installments: number; tna?: MoneyValue | null; installmentAmount?: MoneyValue | null; firstDue: Date; date: Date }) {
+  const det = await debtDetail(db, ws, input.debtId);
+  if (!det) throw new UserError("No encontramos esa deuda.");
+  const debt = det.debt;
+  if (debt.status !== "ACTIVE") throw new UserError("Esa deuda ya está cerrada.");
+  if (!det.open.length) throw new UserError("Esta deuda no tiene cuotas por pagar.");
+  const P = input.principal != null && round2(input.principal).gt(0) ? round2(input.principal) : det.remainingCapital;
+  const system: AmortizationSystem = input.tna || input.installmentAmount ? "FRENCH" : "NO_INTEREST";
+  const rows = buildSchedule({ system, principal: P, installments: input.installments, tna: input.tna, installmentAmount: input.installmentAmount, firstDue: input.firstDue, extras: debt });
+  const note = `Refinanciado el ${input.date.toISOString().slice(0, 10)}: ${P.toFixed(2)} en ${rows.length} cuotas.`;
+  await db.$transaction(async (tx) => {
+    await replaceOpen(tx, ws, debt, det, rows);
+    await tx.debt.update({ where: { id: debt.id }, data: { system, tna: input.tna != null ? dec(input.tna).toFixed(4) : null, installmentAmount: input.installmentAmount != null ? round2(input.installmentAmount).toFixed(2) : null, notes: [debt.notes, note].filter(Boolean).join(" · ").slice(0, 500) } });
+  });
+  return { installments: rows.length, nextTotal: rows[0]?.total ?? ZERO, total: rows.reduce((s, r) => s.plus(r.total), ZERO) };
 }

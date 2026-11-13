@@ -825,3 +825,33 @@ export async function deleteScenarioAction(fd: FormData) {
   revalidatePath("/app/simulador");
   redirect("/app/simulador?tab=escenarios");
 }
+
+// ---------- Deudas: pago anticipado (F6) y refinanciación (F9) ----------
+export async function prepayDebtAction(_: FormState, fd: FormData): Promise<FormState> {
+  const { user, workspace } = await requireWorkspace();
+  const id = str(fd, "debtId");
+  let msg = "";
+  try {
+    const { prepayDebt } = await import("@/server/debts");
+    const mode = str(fd, "mode") === "plazo" ? "plazo" : "cuota";
+    const r = await prepayDebt(getDb(), workspace.id, { debtId: id, accountId: str(fd, "accountId"), amount: money(fd, "amount", "el importe"), date: date(fd, "date", "la fecha"), mode, userId: user.id });
+    msg = mode === "plazo" ? `plazo:${r.before - r.installments}:${r.saved.toFixed(2)}` : `cuota:${r.nextTotal.toFixed(2)}:${r.saved.toFixed(2)}`;
+    await audit("debt.prepaid", { userId: user.id, workspaceId: workspace.id, entity: "debt", entityId: id, meta: { mode, saved: r.saved.toFixed(2) } });
+  } catch (e) { return fail(e); }
+  revalidatePath("/app", "layout");
+  redirect(`/app/deudas/${id}?adelanto=${encodeURIComponent(msg)}`);
+}
+
+export async function refinanceDebtAction(_: FormState, fd: FormData): Promise<FormState> {
+  const { user, workspace } = await requireWorkspace();
+  const id = str(fd, "debtId");
+  try {
+    const n = int(fd, "installments");
+    if (!n) throw new UserError("Poné en cuántas cuotas queda.");
+    const { refinanceDebt } = await import("@/server/debts");
+    await refinanceDebt(getDb(), workspace.id, { debtId: id, principal: optMoney(fd, "principal", "el saldo"), installments: n, tna: optMoney(fd, "tna", "la TNA"), installmentAmount: optMoney(fd, "installmentAmount", "la cuota"), firstDue: date(fd, "firstDue", "la primera cuota"), date: todayIn(workspace.timezone) });
+    await audit("debt.refinanced", { userId: user.id, workspaceId: workspace.id, entity: "debt", entityId: id, meta: { installments: n } });
+  } catch (e) { return fail(e); }
+  revalidatePath("/app", "layout");
+  redirect(`/app/deudas/${id}?refinanciada=1`);
+}

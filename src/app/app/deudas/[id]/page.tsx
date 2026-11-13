@@ -8,7 +8,7 @@ import { formatMoney } from "@/lib/money";
 import { fmtDate, fmtPeriod, isoDate, period, todayIn } from "@/lib/dates";
 import { PageHead } from "@/components/page";
 import { ActionForm, Submit } from "@/components/forms";
-import { cancelDebtAction, deleteDebtAction, payDebtOnAccountAction, updateDebtAction } from "@/app/actions/modules";
+import { cancelDebtAction, deleteDebtAction, payDebtOnAccountAction, prepayDebtAction, refinanceDebtAction, updateDebtAction } from "@/app/actions/modules";
 import { DebtFormFields } from "../debt-form";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 
@@ -16,7 +16,7 @@ export const metadata: Metadata = { title: "Deuda" };
 const SYS: Record<string, string> = { FRENCH: "Francés", GERMAN: "Alemán", AMERICAN: "Americano", NO_INTEREST: "Sin interés", MANUAL: "Manual", NONE: "Sin cronograma" };
 const pct = (v: unknown) => (v == null ? "No informada" : `${Number(v).toFixed(2).replace(".", ",")}%`);
 
-export default async function DebtPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ cancelada?: string; editada?: string }> }) {
+export default async function DebtPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ cancelada?: string; editada?: string; adelanto?: string; refinanciada?: string }> }) {
   const { id } = await params;
   const { workspace } = await requireWorkspace();
   const db = getDb();
@@ -40,6 +40,11 @@ export default async function DebtPage({ params, searchParams }: { params: Promi
       <Link className="lk" href="/app/deudas">← Deudas y préstamos</Link>
       <PageHead crumb={debt.kind} title={debt.creditor} actions={active && det.next ? <Link className="btn pri" href={`/app/proximos/${det.next.obligationId}`}>Pagar cuota {det.next.number}</Link> : undefined} />
       {sp.editada && <p className="notice g" role="status">{sp.editada === "todo" ? "Listo, el préstamo quedó corregido y el cronograma se armó de nuevo." : "Listo, guardamos los cambios."}</p>}
+      {sp.adelanto && (() => {
+        const [mode, a, saved] = sp.adelanto.split(":");
+        return <p className="notice g" role="status">Listo, registramos el pago anticipado. {mode === "plazo" ? (a === "0" ? "Seguís con la misma cantidad de cuotas, pero la última queda más chica" : `Terminás ${a} ${a === "1" ? "cuota" : "cuotas"} antes`) : `La próxima cuota queda en ${fm(a)}`}{Number(saved) > 0 ? ` y te ahorrás ${fm(saved)} en intereses` : ""}.</p>;
+      })()}
+      {sp.refinanciada && <p className="notice g" role="status">Listo, refinanciamos lo que faltaba. Las cuotas ya pagadas quedan como estaban; las nuevas están abajo y en Próximos pagos.</p>}
       {sp.cancelada && <div className="notice g"><div>Deuda cancelada. Las cuotas que faltaban se cerraron y ya no aparecen en tus pagos.</div></div>}
       <div className="card hero">
         <div><div className="lbl">{active ? "Te falta devolver" : debt.status === "CANCELLED" ? "Cancelada" : "Pagada"}</div><div className="big">{active ? fm(det.remainingCapital) : <span className="pos">✓</span>}</div>
@@ -53,7 +58,21 @@ export default async function DebtPage({ params, searchParams }: { params: Promi
       </div>
       {active && det.futureSum.gt(det.remainingCapital) && <div className="notice g"><div>Si la cancelás hoy pagando el capital que falta, te ahorrás <b>{fm(det.futureSum.minus(det.remainingCapital))}</b> en intereses (sin contar comisiones).</div></div>}
       <div className="card">
-        {active && (det.rows.length ? (
+        {active && (det.rows.length ? (<>
+          {/* Pagar una parte antes: elegís si baja la cuota o el plazo */}
+          <details className="more"><summary>Pagar una parte por adelantado</summary>
+            <ActionForm action={prepayDebtAction} style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 10, maxWidth: 560 }}>
+              <input type="hidden" name="debtId" value={debt.id} />
+              <p className="sub" style={{ margin: 0 }}>Adelantás capital y pagás menos intereses. Te falta devolver {fm(det.remainingCapital)}.</p>
+              <div className="frow"><label className="field">¿Cuánto adelantás?<input name="amount" inputMode="decimal" placeholder="0,00" /></label><label className="field">Fecha<input name="date" type="date" defaultValue={isoDate(today)} /></label></div>
+              <label className="field">Sale de<select name="accountId">{accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>
+              <div className="choice2" role="radiogroup" aria-label="Qué querés que baje">
+                <label><input type="radio" name="mode" value="cuota" defaultChecked /><span><b>Que baje la cuota</b><small>Seguís con las mismas cuotas, pero más chicas.</small></span></label>
+                {debt.system !== "AMERICAN" && <label><input type="radio" name="mode" value="plazo" /><span><b>Que baje el plazo</b><small>Pagás la misma cuota y terminás antes. Ahorrás más intereses.</small></span></label>}
+              </div>
+              <div><Submit>Registrar pago anticipado</Submit></div>
+            </ActionForm>
+          </details>
           <details className="more"><summary>Cancelar total</summary>
             <ActionForm action={cancelDebtAction} style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 10, maxWidth: 560 }}>
               <input type="hidden" name="debtId" value={debt.id} />
@@ -63,7 +82,18 @@ export default async function DebtPage({ params, searchParams }: { params: Promi
               <div><ConfirmSubmit className="btn pri" question="¿Cancelar la deuda con este pago? Se borran las cuotas que quedan." yes="Sí, cancelar">Confirmar cancelación</ConfirmSubmit></div>
             </ActionForm>
           </details>
-        ) : (
+          {/* Refinanciar: las cuotas que faltan se rearman, sin perder lo pagado */}
+          <details className="more"><summary>Refinanciar</summary>
+            <ActionForm action={refinanceDebtAction} style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 10, maxWidth: 560 }}>
+              <input type="hidden" name="debtId" value={debt.id} />
+              <p className="sub" style={{ margin: 0 }}>Si el acreedor te ofreció nuevas condiciones, cargalas acá. Las cuotas ya pagadas no se tocan; las {det.open.length} que faltan se reemplazan por las nuevas.</p>
+              <div className="frow"><label className="field">Saldo que refinanciás<input name="principal" inputMode="decimal" defaultValue={det.remainingCapital.toFixed(2).replace(".", ",")} /></label><label className="field">¿En cuántas cuotas?<input name="installments" inputMode="numeric" placeholder="Ej.: 24" /></label></div>
+              <div className="frow"><label className="field">Cuota nueva (o la TNA)<input name="installmentAmount" inputMode="decimal" placeholder="0,00" /></label><label className="field">TNA %<input name="tna" inputMode="decimal" placeholder="Opcional" /></label></div>
+              <label className="field">¿Cuándo vence la primera?<input name="firstDue" type="date" defaultValue={isoDate(det.open[0]?.dueDate ?? today)} /></label>
+              <div><ConfirmSubmit className="btn pri" question="¿Refinanciar? Las cuotas que faltan se reemplazan por las nuevas." yes="Sí, refinanciar">Refinanciar</ConfirmSubmit></div>
+            </ActionForm>
+          </details>
+        </>) : (
           <details className="more" open><summary>Registrar un pago a cuenta</summary>
             <ActionForm action={payDebtOnAccountAction} style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 10, maxWidth: 560 }}>
               <input type="hidden" name="debtId" value={debt.id} />
