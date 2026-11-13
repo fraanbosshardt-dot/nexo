@@ -581,3 +581,10 @@
 .plan-aware[data-plan=free] .lx-plan.free{position:relative;border-color:var(--ink);box-shadow:0 0 0 3px var(--ink-soft)}
 .plan-aware[data-plan=pro] .lx-plan.pro h3::after,.plan-aware[data-plan=free] .lx-plan.free h3::after{content:"Tu plan";display:inline-block;margin-left:10px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;vertical-align:middle;background:var(--ink);color:var(--on-ink)}
 .plan-aware[data-plan=pro] .lx-plan.pro h3::after{background:#8EC4A0;color:#07120E}
+
+/* Pestañas de Funciones: sin rayitas; la activa se resalta con un tono verde suave que cambia con transición */
+.lx-show-timer{display:none!important}
+.lx-show-tabs button{transition:background-color .45s ease,color .45s ease,box-shadow .45s ease}
+.lx-show-tabs button.on{background:color-mix(in srgb,var(--ink) 16%,var(--bg));color:var(--ink-txt);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ink) 28%,transparent)}
+.lx-show-tabs button.done{color:var(--muted)}
+.lx-show-tabs button:not(.on):hover{color:var(--fg)}
