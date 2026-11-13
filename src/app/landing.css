@@ -708,3 +708,18 @@
   .lx-sky .veil{background:radial-gradient(ellipse 80% 60% at 50% 35%,rgba(7,18,14,.25),rgba(7,18,14,.8) 80%)}
   .site main>section:not(.lx-top):not(.lx-bands):not(#funciones){content-visibility:auto;contain-intrinsic-size:auto 900px}
 }
+
+/* Celular: animaciones livianas (solo moverse y aparecer, lo más barato para el teléfono).
+   Portada: suben al abrir. Secciones: aparecen al bajar con el propio navegador (sin JavaScript);
+   si el teléfono no lo soporta, se ven quietas pero siempre visibles. */
+@keyframes lx-up{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@media (max-width:900px) and (prefers-reduced-motion:no-preference),(pointer:coarse) and (prefers-reduced-motion:no-preference){
+  .lx-dark .lx-h1 .lx-line{animation:lx-up .5s cubic-bezier(.2,.7,.2,1) both!important;opacity:1}
+  .lx-dark .lx-h1 em.lx-line{animation-delay:.08s!important}
+  .lx-dark .ws-lead{animation:lx-up .5s .14s cubic-bezier(.2,.7,.2,1) both!important}
+  .lx-hero-c .lx-ctas{animation:lx-up .5s .2s cubic-bezier(.2,.7,.2,1) both!important}
+  .lx-hero-c .lx-news{animation:lx-up .45s cubic-bezier(.2,.7,.2,1) both}
+  @supports (animation-timeline: view()){
+    .site .rv,.lx-month-steps li,.lx-faq-item,.lx-vs tbody tr,.lx-grain-r,.lx-plan{animation:lx-up linear both!important;animation-timeline:view()!important;animation-range:entry 0% entry 45%!important}
+  }
+}
