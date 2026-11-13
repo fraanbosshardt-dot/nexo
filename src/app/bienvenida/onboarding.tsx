@@ -105,6 +105,13 @@ export function Onboarding({ firstName, uses, modules, guessCountry, detected }:
     go(step + 1);
   };
   const back = () => go(step - 1);
+  // Saltar e ir a la app: entra con lo que ya cargaste; lo que quedó a medias no se manda (no hay errores).
+  const skipAll = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const form = e.currentTarget.form;
+    if (!acc.type || !acc.name.trim() || (acc.balance && !parseAmount(acc.balance))) setSkipAcc(true);
+    if (incomes.some((x) => { const a = parseAmount(x.amount), d = Number(x.day); return !a || !a.gt(0) || !(d >= 1 && d <= 31); })) setIncMode("");
+    setTimeout(() => form?.requestSubmit(), 0);
+  };
   const nextLabel = step === 0 ? "Empezar" : step === 1 ? (acc.type ? "Seguir" : "Lo cargo después") : step === 2 ? (incMode === "" ? "Lo cargo después" : "Seguir") : "";
 
   // Vista previa: cómo queda el Inicio con lo cargado.
@@ -129,7 +136,7 @@ export function Onboarding({ firstName, uses, modules, guessCountry, detected }:
           </section>
           <main key={step} className="obx-body obx-step" onKeyDown={(e) => { if (e.key === "Enter" && step < 3 && (e.target as HTMLElement).tagName === "INPUT") { e.preventDefault(); next(); } }}>
             <nav className="obx-track" aria-label="Pasos de la bienvenida">
-              <span className="obx-track-now">Paso {step + 1} de {STEPS.length} · <b>{STEPS[step]}</b></span>
+              <span className="obx-track-now">Paso {step + 1} de {STEPS.length} · <b>{STEPS[step]}</b>{step >= 1 && step < 3 && <button type="button" className="lnk obx-skipall" onClick={skipAll}>Saltar e ir a la app</button>}</span>
               <div className="obx-prog" aria-hidden="true" style={{ "--from": `${fromPct}%`, "--to": `${((step + 1) / STEPS.length) * 100}%` } as React.CSSProperties}><i /></div>
               <ol>
                 {STEPS.map((s, i) => (

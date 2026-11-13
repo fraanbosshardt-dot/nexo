@@ -1338,3 +1338,10 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):focus,select:focu
 .plan-upg{display:flex;flex-wrap:wrap;gap:14px 20px;align-items:center;justify-content:space-between;width:100%;padding:16px 18px;border-radius:16px;background:var(--ink-soft)}
 .plan-upg b{display:block;font-size:15px;color:var(--ink-txt)}
 .plan-upg p{margin:4px 0 0;font-size:13.5px;color:var(--muted);max-width:56ch}
+
+/* Terminá de configurar: barra de avance */
+.setup-bar{height:8px;border-radius:999px;background:var(--surface-2);overflow:hidden;margin:0 0 12px}
+.setup-bar i{display:block;height:100%;border-radius:999px;background:var(--ink)}
+/* Campos con sugerencias: sin la flechita del navegador (las sugerencias aparecen igual al escribir) */
+input[list]::-webkit-calendar-picker-indicator{display:none!important;opacity:0}
+input[list]{appearance:none;-webkit-appearance:none}

@@ -385,3 +385,6 @@
 .nx .obx-track em{flex:none;display:grid;place-items:center;width:20px;height:20px;border-radius:50%;font-style:normal;font-size:11px;font-weight:700;background:var(--nx-line);color:var(--nx-ink3)}
 .nx .obx-track li.on em{background:var(--nx-accent);color:var(--nx-on-accent)}
 .nx .obx-track li.done em{background:var(--nx-accent-soft);color:var(--nx-accent-ink)}
+
+.nx .obx-track-now{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.nx .obx-skipall{font-size:13px;font-weight:500}
