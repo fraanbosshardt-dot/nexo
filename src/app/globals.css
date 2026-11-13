@@ -1169,7 +1169,7 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):focus,select:focu
 .plan-cycle input:checked+span{background:var(--ink);color:var(--on-ink)}
 .plan-cycle input:checked+span em{color:inherit;opacity:.85}
 .plan-cycle input:focus-visible+span{outline:2px solid var(--ink);outline-offset:2px}
-.plan-price{display:flex;flex-direction:column;gap:2px;padding:4px 2px}
+.plan-price{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 8px;padding:6px 2px 2px}
 .plan-price b{font-size:30px;font-weight:600;letter-spacing:-.02em;line-height:1.1}
 .plan-price span{font-size:13px;color:var(--muted)}
 .plan-price.y{display:none}
@@ -1201,3 +1201,7 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):focus,select:focu
 .vbanner-code{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .vbanner-code input{width:120px;min-height:36px;border:1px solid var(--line-2);border-radius:10px;padding:0 12px;background:var(--surface);color:var(--fg);font:inherit;font-size:16px;font-weight:600;letter-spacing:.18em;text-align:center;font-variant-numeric:tabular-nums}
 @media (max-width:640px){.vbanner-acts,.vbanner-code{width:100%}.vbanner-code input{flex:1}}
+
+.plan-note{margin:-4px 0 12px;font-size:13.5px;color:var(--muted)}
+.plan-box{gap:12px}
+.plan-cycle span{min-height:44px}

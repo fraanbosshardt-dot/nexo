@@ -160,11 +160,12 @@ export default async function Settings({ searchParams }: { searchParams: Promise
           <div className="chead"><div><h3>Tu plan: {plan === "PRO" ? "Pro" : "Gratis"}</h3><p className="sub">{trial ? `Prueba gratis hasta el ${fmtDate(sub!.trialEndsAt!)}.` : endsAt ? `${sub!.status === "CANCELED" ? "Cancelado" : "Pago pendiente en Mercado Pago"}: tenés Pro hasta el ${fmtDate(endsAt)}.` : paidPro ? `Pagás con Mercado Pago, ${sub!.billingCycle === "yearly" ? "por año" : "por mes"}.` : plan === "PRO" ? "Pro activado por Guafra." : "Tenés casi todo incluido, sin costo."}</p></div></div>
           {paidPro ? (
             <form action={cancelPlanAction}><ConfirmSubmit className="btn" question={sub!.currentPeriodEnd ? `¿Cancelar Pro? No se te cobra más y lo seguís usando hasta el ${fmtDate(sub!.currentPeriodEnd)}.` : "¿Cancelar Pro? Dejás de pagar y volvés al plan Gratis."} yes="Sí, cancelar">Cancelar Pro</ConfirmSubmit></form>
-          ) : bill.enabled ? (
+          ) : bill.enabled && (plan !== "PRO" || trial) ? (
             // En Gratis: a la izquierda qué suma Pro; a la derecha el precio (por mes o por año) y los botones.
             <div className="plan-up">
               <div className="plan-why">
-                <h4>Pasate a Pro</h4>
+                <h4>{trial ? "Seguí con Pro cuando termine la prueba" : "Pasate a Pro"}</h4>
+                {trial && <p className="plan-note">Tu prueba termina el {fmtDate(sub!.trialEndsAt!)}. Si te suscribís, no perdés nada de esto:</p>}
                 <ul>{PLAN_FEATURES.filter((f) => f.plan === "pro").slice(0, 5).map((f) => <li key={f.name}><Icon name="check" />{f.name}</li>)}</ul>
               </div>
               <div className="plan-box">
@@ -176,11 +177,11 @@ export default async function Settings({ searchParams }: { searchParams: Promise
                   </div>
                   <div className="plan-price m"><b>{formatMoney(String(bill.monthly), bill.currency)}</b><span>por mes</span></div>
                   <div className="plan-price y"><b>{formatMoney(String(bill.yearly), bill.currency)}</b><span>por año · {formatMoney(String(Math.round(Number(bill.yearly) / 12)), bill.currency)} por mes</span></div>
-                  <button className="btn pri plan-cta" type="submit">Pasar a Pro</button>
+                  <button className="btn pri plan-cta" type="submit">{trial ? "Suscribirme a Pro" : "Pasar a Pro"}</button>
                   <details className="plan-coupon" open={!!sp.cupon}><summary>¿Tenés un cupón?</summary><input name="coupon" autoComplete="off" placeholder="Ej.: BIENVENIDA" aria-label="Cupón" /></details>
                 </form>
                 {!sub?.trialEndsAt && <form action={startTrialAction}><button className="btn plan-trial" type="submit">Probar 14 días gratis</button></form>}
-                <p className="plan-fine">Pagás con Mercado Pago. Cancelás cuando quieras.</p>
+                <p className="plan-fine">{trial ? "El primer cobro es al suscribirte. " : ""}Pagás con Mercado Pago y cancelás cuando quieras.</p>
               </div>
             </div>
           ) : plan !== "PRO" ? (
