@@ -207,3 +207,9 @@
 .ws-grid.c3{grid-template-columns:repeat(3,minmax(0,1fr))}
 @media (max-width:980px){.ws-grid.c3{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:600px){.ws-grid.c3{grid-template-columns:minmax(0,1fr)}}
+
+/* Novedades sin publicaciones: tarjeta alineada con el título */
+.news-empty{display:flex;gap:16px;align-items:center;padding:22px 24px;border:1px solid var(--line);border-radius:20px;background:var(--surface)}
+.news-empty-ic{flex:none;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--ink-soft);color:var(--ink-txt);font-size:18px}
+.news-empty b{display:block;font-size:16px;margin-bottom:2px}
+.news-empty p{margin:0;color:var(--muted);font-size:14.5px}
