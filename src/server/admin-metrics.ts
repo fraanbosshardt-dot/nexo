@@ -16,6 +16,12 @@ export async function toUsd(db: PrismaClient, amount: number, currency: string) 
   const r = await usdRate(db, currency);
   return r ? amount / r : null;
 }
+// Pasado a pesos (el panel muestra todo en pesos): moneda → dólares → pesos.
+export async function toArs(db: PrismaClient, amount: number, currency: string) {
+  if (currency === "ARS") return amount;
+  const [r, ars] = await Promise.all([usdRate(db, currency), usdRate(db, "ARS")]);
+  return r && ars ? (amount / r) * ars : null;
+}
 
 export async function overview(db: PrismaClient, prices: { monthly: number; yearly: number }, now = new Date()) {
   const [users, newWeek, newMonth, dau, mau, subs, openTickets, canceled30] = await Promise.all([
@@ -46,20 +52,18 @@ export async function signupsByDay(db: PrismaClient, days = 30, now = new Date()
   return out;
 }
 
-// Cobrado por mes (pagos aprobados), pasado a dólares con la última cotización.
+// Cobrado por mes (pagos aprobados), en pesos.
 export async function revenueByMonth(db: PrismaClient, months = 6, now = new Date()) {
   const from = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (months - 1), 1));
   const inv = await db.invoice.findMany({ where: { status: "approved", paidAt: { gte: from } }, select: { amount: true, currency: true, paidAt: true } });
   const keys = Array.from({ length: months }, (_, i) => ym(new Date(Date.UTC(from.getUTCFullYear(), from.getUTCMonth() + i, 1))));
   const out = keys.map((key) => ({ key, n: 0, count: 0 }));
-  const rates = new Map<string, number | null>();
   for (const i of inv) {
-    if (!rates.has(i.currency)) rates.set(i.currency, await usdRate(db, i.currency));
-    const r = rates.get(i.currency);
     const row = out.find((o) => o.key === ym(i.paidAt!));
     if (!row) continue;
     row.count++;
-    if (r) row.n += Number(i.amount) / r;
+    const v = await toArs(db, Number(i.amount), i.currency);
+    if (v !== null) row.n += v;
   }
   return out.map((o) => ({ ...o, n: Math.round(o.n * 100) / 100 }));
 }
@@ -97,14 +101,14 @@ export async function signupMethods(db: PrismaClient, days = 30, now = new Date(
   return { google, email };
 }
 
-// Costos de la empresa por mes, en dólares.
-export async function monthlyCostsUsd(db: PrismaClient) {
+// Costos de la empresa por mes, en pesos.
+export async function monthlyCosts(db: PrismaClient) {
   const costs = await db.companyCost.findMany({ where: { active: true } });
   let total = 0, unknown = 0;
   for (const c of costs) {
     const perMonth = Number(c.amount) / (c.period === "yearly" ? 12 : 1);
-    const usd = await toUsd(db, perMonth, c.currency);
-    if (usd === null) unknown++; else total += usd;
+    const v = await toArs(db, perMonth, c.currency);
+    if (v === null) unknown++; else total += v;
   }
   return { total: Math.round(total * 100) / 100, unknown, items: costs };
 }

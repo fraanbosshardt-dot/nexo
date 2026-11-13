@@ -1,6 +1,7 @@
 // Piezas del panel interno: gráficos de barras sin librerías, números y textos de la actividad.
 import { fmtDate } from "@/lib/dates";
 
+export const ars = (v: number) => `$ ${v.toLocaleString("es-AR", { maximumFractionDigits: v < 100 ? 2 : 0 })}`;
 export const usd = (v: number) => `US$ ${v.toLocaleString("es-AR", { maximumFractionDigits: v < 100 ? 2 : 0 })}`;
 export const int = (v: number) => v.toLocaleString("es-AR");
 export const pct = (v: number) => `${v.toLocaleString("es-AR", { maximumFractionDigits: 1 })}%`;

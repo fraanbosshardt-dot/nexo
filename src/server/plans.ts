@@ -41,10 +41,10 @@ export async function planSettings(db: Db): Promise<PlanSettings> {
   return { freeAlso: Array.isArray(v.freeAlso) ? v.freeAlso : [], prices: { ...PRICES_DEFAULT, ...(v.prices ?? {}) }, pricesArs: ars };
 }
 
-// Precio para mostrar: en pesos si está cargado; si no, en dólares.
+// Precio para mostrar: siempre en pesos. Si todavía no está cargado, "a confirmar" (nunca en dólares).
 export function priceLabel(s: Pick<PlanSettings, "prices" | "pricesArs">, cycle: "monthly" | "yearly") {
   if (s.pricesArs) return { text: `$ ${s.pricesArs[cycle].toLocaleString("es-AR")}`, amount: s.pricesArs[cycle], currency: "ARS" };
-  return { text: `US$ ${s.prices[cycle].toLocaleString("es-AR")}`, amount: s.prices[cycle], currency: "USD" };
+  return { text: "Precio a confirmar", amount: 0, currency: "ARS" };
 }
 
 export async function savePlanSettings(db: Db, value: PlanSettings) {

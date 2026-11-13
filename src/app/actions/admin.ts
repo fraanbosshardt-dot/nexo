@@ -320,7 +320,7 @@ export async function adminSavePlansAction(_: FormState, fd: FormData): Promise<
   const freeAlso = fd.getAll("freeAlso").map(String).filter((k): k is FeatureKey => keys.has(k as FeatureKey));
   // Precio en pesos (opcional): si se completa, es el que se ve en la web y en la app.
   const arsM = s(fd, "arsMonthly") ? n(fd, "arsMonthly") : 0, arsY = s(fd, "arsYearly") ? n(fd, "arsYearly") : 0;
-  if ((arsM || arsY) && !(arsM > 0 && arsY > 0)) return { error: "Para mostrar el precio en pesos, completá por mes y por año." };
+  if (!(arsM > 0 && arsY > 0)) return { error: "Completá el precio en pesos por mes y por año." };
   const pricesArs = arsM > 0 && arsY > 0 ? { monthly: Math.round(arsM), yearly: Math.round(arsY) } : null;
   await savePlanSettings(getDb(), { freeAlso, prices: { monthly, yearly }, pricesArs });
   await adminAudit(a, "admin.plans_saved", { meta: { monthly, yearly, pricesArs, freeAlso } });

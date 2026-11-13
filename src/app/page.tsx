@@ -172,7 +172,7 @@ export default async function Landing() {
     <div className="lx-plans">
       <div className="lx-plan" style={{ "--i": 0 } as React.CSSProperties}>
         <div><h3>Gratis</h3><p>Para ordenar tu plata del día a día.</p></div>
-        <div className="lx-price"><b>{ps.pricesArs ? "$ 0" : "US$ 0"}</b><span>para siempre</span></div>
+        <div className="lx-price"><b>$ 0</b><span>para siempre</span></div>
         <Link className="ws-btn" href="/registro">Crear cuenta gratis</Link>
         <ul>{free.map((f) => <li key={f.name}>{CHECK}{f.name}</li>)}</ul>
       </div>

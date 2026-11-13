@@ -29,17 +29,14 @@ export default async function AdminSettings() {
         <div><Submit>Guardar</Submit></div>
       </ActionForm>
       <ActionForm action={adminSavePlansAction} className="card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        <div className="chead"><h3>Precio de Pro</h3><span className="sub">El cobro real usa los precios de Mercado Pago en Vercel</span></div>
-        <p className="sub" style={{ margin: 0 }}>En pesos (recomendado para Argentina): si lo completás, es el precio que se ve en la web y en la app. Si lo dejás vacío, se muestra el de dólares.</p>
+        <div className="chead"><h3>Precio de Pro</h3><span className="sub">Es lo que cobra Mercado Pago y lo que se ve en la web y en la app</span></div>
+        <p className="sub" style={{ margin: 0 }}>En pesos, por mes y por año (los dos hacen falta para cobrar).</p>
         <div className="frow" style={{ maxWidth: 420 }}>
           <label className="field">Pesos por mes<input name="arsMonthly" inputMode="decimal" placeholder="Ej.: 6000" defaultValue={settings.pricesArs?.monthly ?? ""} /></label>
           <label className="field">Pesos por año<input name="arsYearly" inputMode="decimal" placeholder="Ej.: 60000" defaultValue={settings.pricesArs?.yearly ?? ""} /></label>
         </div>
-        <p className="sub" style={{ margin: 0 }}>En dólares (para otros países y para las métricas del panel):</p>
-        <div className="frow" style={{ maxWidth: 420 }}>
-          <label className="field">Por mes<input name="monthly" inputMode="decimal" defaultValue={settings.prices.monthly} /></label>
-          <label className="field">Por año<input name="yearly" inputMode="decimal" defaultValue={settings.prices.yearly} /></label>
-        </div>
+        {/* Por ahora solo pesos: los precios en dólares quedan guardados como estaban, sin mostrarse. */}
+        <input type="hidden" name="monthly" value={settings.prices.monthly} /><input type="hidden" name="yearly" value={settings.prices.yearly} />
         <div className="chead" style={{ marginTop: 8 }}><h3>Funciones Pro</h3><span className="sub">Marcá las que también querés dar gratis</span></div>
         <div className="list">{PRO_FEATURES.map((f) => (
           <label className="li" key={f.key} style={{ cursor: "pointer" }}><div className="grow"><div className="t">{f.name}{f.beta && <> <span className="pill beta">Beta</span></>}</div><div className="s">{settings.freeAlso.includes(f.key) ? "Incluida en Gratis" : "Solo Pro"}</div></div><span className="sw-t"><input type="checkbox" name="freeAlso" value={f.key} defaultChecked={settings.freeAlso.includes(f.key)} aria-label={`Dar gratis: ${f.name}`} /><span /></span></label>

@@ -2,11 +2,11 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { planSettings } from "@/server/plans";
-import { byCountry, funnel, monthlyCostsUsd, overview, revenueByMonth, signupMethods, signupsByDay } from "@/server/admin-metrics";
+import { byCountry, funnel, monthlyCosts, overview, revenueByMonth, signupMethods, signupsByDay } from "@/server/admin-metrics";
 import { countryByCode } from "@/lib/countries";
 import { can } from "@/server/admin-team";
 import { PageHead } from "@/components/page";
-import { Bars, HBars, Stats, int, pct, usd } from "@/components/admin-ui";
+import { Bars, HBars, Stats, ars, int, pct } from "@/components/admin-ui";
 
 const MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 
@@ -16,7 +16,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
   const db = getDb();
   const settings = await planSettings(db);
   const [o, days, rev, fun, countries, methods, costs] = await Promise.all([
-    overview(db, settings.prices), signupsByDay(db, 30), revenueByMonth(db, 6), funnel(db), byCountry(db), signupMethods(db, 30), monthlyCostsUsd(db),
+    overview(db, settings.pricesArs ?? { monthly: 0, yearly: 0 }), signupsByDay(db, 30), revenueByMonth(db, 6), funnel(db), byCountry(db), signupMethods(db, 30), monthlyCosts(db),
   ]);
   const thisMonth = rev[rev.length - 1]?.n ?? 0;
   return (
@@ -28,7 +28,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
         ["Activos hoy", int(o.dau), `${int(o.mau)} en 30 días`],
         ["Pagan Pro", int(o.paid), `${pct(o.conversion)} del total`],
         ["Pro regalado", int(o.gifted), `${int(o.trials)} en prueba`],
-        ["Ingreso por mes", usd(o.mrr), "estimado por suscripciones"],
+        ["Ingreso por mes", ars(o.mrr), "estimado por suscripciones"],
         ["Cancelaron (30 días)", pct(o.churn), "de los que pagaban"],
       ]} />
       <div className="grid g2">
@@ -39,8 +39,8 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
         </div>
         <div className="card">
           <div className="chead"><h3>Cobrado por mes</h3><span className="sub">En dólares, con la última cotización</span></div>
-          <Bars label="Cobrado por mes en dólares" format={usd} data={rev.map((r) => ({ key: r.key, n: r.n, tick: `${MES[Number(r.key.slice(5, 7)) - 1]} ${r.key.slice(2, 4)}` }))} />
-          {can(admin.role, "owner") && <p className="adm-hint" style={{ marginTop: 10 }}>Este mes: {usd(thisMonth)} cobrados contra {usd(costs.total)} de gastos. <Link className="lnk" href="/admin/finanzas">Ver finanzas</Link></p>}
+          <Bars label="Cobrado por mes en pesos" format={ars} data={rev.map((r) => ({ key: r.key, n: r.n, tick: `${MES[Number(r.key.slice(5, 7)) - 1]} ${r.key.slice(2, 4)}` }))} />
+          {can(admin.role, "owner") && <p className="adm-hint" style={{ marginTop: 10 }}>Este mes: {ars(thisMonth)} cobrados contra {ars(costs.total)} de gastos. <Link className="lnk" href="/admin/finanzas">Ver finanzas</Link></p>}
         </div>
         <div className="card">
           <div className="chead"><h3>Activación</h3><span className="sub">De cada 100 que se registran</span></div>
