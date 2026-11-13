@@ -17,6 +17,7 @@ import { switchWorkspaceAction } from "@/app/actions/sharing";
 import { resendVerifyAction, verifyEmailCodeAction } from "@/app/actions/app";
 import { emailEnabled } from "@/server/email-verify";
 import { LogoMark } from "@/components/logo-mark";
+import { AnnouncementBar } from "@/components/announcement-bar";
 
 // La app es privada: nunca se indexa.
 export const metadata: Metadata = { robots: { index: false, follow: false } };
@@ -67,12 +68,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <><BigTextSync saved={user.bigText ?? null} />
     <Shell spaces={spaces} switchSpace={switchWorkspaceAction} modules={modules} overdue={overdue} userName={user.name} plan={plan} isAdmin={!!role} logout={logoutAction}>
-      {notice && (
-        <div className={`notice ${notice.tone === "warn" ? "a" : "b"} app-ann`} role="status">
-          <Icon name={notice.tone === "warn" ? "info" : "spark"} />
-          <span>{notice.text}{notice.link && <> <a className="lnk" href={notice.link}>Ver más</a></>}</span>
-        </div>
-      )}
+      {notice && <AnnouncementBar text={notice.text} tone={notice.tone} link={notice.link} />}
       {sharedView && (
         <div className="notice b app-ann" role="status">
           <Icon name="user" />
