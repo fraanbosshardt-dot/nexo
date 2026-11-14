@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 
 export function useHasSession() {
   const [on, setOn] = useState(false);
-  useEffect(() => { setOn(/(?:^|; )nexo_in=1/.test(document.cookie)); }, []);
+  useEffect(() => { setOn(/(?:^|; )somosguafra_in=1/.test(document.cookie)); }, []);
   return on;
 }
 

@@ -21,7 +21,7 @@ Thumbs.db
 *.log
 npm-debug.log*
 
-# NEXO
+# Somos Guafra
 .data/
 src/generated/
 .vercel/

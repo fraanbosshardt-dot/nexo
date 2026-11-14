@@ -1,6 +1,6 @@
 "use client";
 // Armar el presupuesto sin una lista larga de "Sin límite": se ven solo las categorías con límite,
-// se agregan de a una y Guafra sugiere el monto con lo que gastaste los últimos meses.
+// se agregan de a una y Somos Guafra sugiere el monto con lo que gastaste los últimos meses.
 import { useState } from "react";
 import { ActionForm, Submit } from "@/components/forms";
 import { saveBudgetAction } from "@/app/actions/modules";

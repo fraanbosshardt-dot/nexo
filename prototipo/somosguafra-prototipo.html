@@ -1,4 +1,4 @@
-<title>NEXO Finanzas</title>
+<title>Somos Guafra Finanzas</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@600;700&display=swap">
@@ -474,7 +474,7 @@ details.more summary:hover{color:var(--fg)}
 
 <script>
 /* ============================================================
-   NEXO — prototipo navegable. Todos los importes son enteros en pesos
+   Somos Guafra — prototipo navegable. Todos los importes son enteros en pesos
    (en la app real: decimales exactos en centavos, redondeo half-even).
    Todo se deriva de un único motor de eventos para que los módulos cuadren.
    ============================================================ */
@@ -798,14 +798,14 @@ function renderSide(cur){
   const item=([k,n,i])=>{const tabs=TABS[k],vis=tabs?tabs.filter(([t])=>navOn(t)):null;if(tabs?!vis.length:!navOn(k))return'';
     return`<a href="#${tabs?vis[0][0]:k}" class="${k===par?'on':''}">${ic(i)}<span>${n}</span>${VIEW_FEAT[k]&&!hasFeat(VIEW_FEAT[k])?'<span class="pill" style="margin-left:auto;font-size:10.5px">Pro</span>':''}${k==='vencimientos'&&late.length?`<span class="badge">${late.length}</span>`:''}</a>`};
   const grp=(g,it)=>{const h=it.map(item).join('');return h?`<nav class="navg">${g?`<h6>${g.toUpperCase()}</h6>`:''}${h}</nav>`:''};
-  document.getElementById('side').innerHTML=`<div class="brand"><div class="brand-mark">N</div><div><b>NEXO</b><small>Espacio personal · ARS</small></div></div>
+  document.getElementById('side').innerHTML=`<div class="brand"><div class="brand-mark">N</div><div><b>Somos Guafra</b><small>Espacio personal · ARS</small></div></div>
   ${NAV.map(([g,it])=>grp(g,it)).join('')}<div style="flex:1"></div>${grp('Ajustes',NAV_AJ)}`;
 }
 
 /* ---------- Estado de UI (preferencias por visitante) ---------- */
 // Copia en memoria por si el navegador no deja usar localStorage (ventana privada, vista previa)
 const MEM={};
-const store={get(k,d){if(k in MEM)return MEM[k];try{const v=localStorage.getItem('nexo.'+k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){MEM[k]=v;try{localStorage.setItem('nexo.'+k,JSON.stringify(v))}catch(e){}}};
+const store={get(k,d){if(k in MEM)return MEM[k];try{const v=localStorage.getItem('somosguafra.'+k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){MEM[k]=v;try{localStorage.setItem('somosguafra.'+k,JSON.stringify(v))}catch(e){}}};
 const S={cancelados:new Set(),cancelLog:[],flujoH:12,flujoC:'prob',real:false,dashEdit:false,movF:'todos',sim:{preset:'base',gastosPct:0,extra:0,pierdo:false,cancel:false,invertir:0,minimo:false},goalAp:{},imp:{step:1,src:'csv',file:null,headers:[],rows:[],map:{}},calM:0,cuentaSel:'galicia',deudaSel:'mpd'};
 /* Funciones activables: lo apagado desaparece del menú y del inicio, los datos se conservan */
 const MODS=[
@@ -892,7 +892,7 @@ V.resumen=()=>{
   const pend=EV.filter(e=>mIdx(e.date)<=0);
   const pin=sum(pend.filter(e=>e.a>0).map(e=>e.a)),pout=-sum(pend.filter(e=>e.a<0).map(e=>e.a));
   const box=(L,t,v,d,cls)=>`<div class="card"><div style="display:flex;gap:10px;align-items:center"><span class="pill ${cls}">${L}</span><h3>${t}</h3></div><div class="kpi" style="cursor:default;margin-top:10px"><div class="val">${v}</div></div><p class="sub" style="margin-top:6px">${d}</p></div>`;
-  return ph('Inicio','Resumen financiero','Las cuatro preguntas que NEXO responde siempre por separado, para que nunca se mezclen dinero real, dinero esperado y patrimonio.')+
+  return ph('Inicio','Resumen financiero','Las cuatro preguntas que Somos Guafra responde siempre por separado, para que nunca se mezclen dinero real, dinero esperado y patrimonio.')+
   `<div class="grid g4">${box('A','Saldo real',money(BAL0),'Dinero efectivamente acreditado en cuentas en pesos. No incluye inversiones ni USD.','g')}
   ${box('B','Flujo pendiente del mes',sgn(pin-pout),`Cobros ${money(pin)} − pagos ${money(pout)} aún no realizados en noviembre.`,'b')}
   ${box('C','Saldo proyectado al 30/11',money(mr[0].end),'A + B, aplicados en orden cronológico día por día.','a')}
@@ -903,7 +903,7 @@ V.resumen=()=>{
    <dt class="neg">Préstamos (capital adeudado)</dt><dd class="neg">${money(-debtCap)}</dd><dt class="neg">Tarjeta (resumen + consumos + cuotas futuras)</dt><dd class="neg">${money(-cardDebt)}</dd>
    <dt><b>Patrimonio neto</b></dt><dd><b>${money(NETO)}</b></dd></dl>
    <p class="foot-note" style="margin-top:10px">Conversión USD con cotización ${TC.fuente} del ${TC.fecha}. Cada conversión guarda tasa y fecha.</p></div>
-   <div class="card"><div class="chead"><h3>Principio de NEXO</h3></div><div class="list">
+   <div class="card"><div class="chead"><h3>Principio de Somos Guafra</h3></div><div class="list">
    ${[['¿Cuánto dinero tengo?',money(BAL0)+' en pesos + US$ '+usdCash.toLocaleString('es-AR'),'cuentas'],['¿Cuánto debo?',money(PASIVOS),'deudas'],['¿Cuánto voy a cobrar este mes?',money(nov.pi),'ingresos'],['¿Cuánto tendré en 6 meses?',money(mr[6].end),'flujo'],['¿Qué puedo gastar sin riesgo?',money(Math.max(0,Math.min(...mr.slice(0,3).map(r=>r.end))-recMensual*0.5)),'inteligencia']].map(([q,a,go])=>`<a class="li" href="#${go}" style="text-decoration:none;color:inherit"><div class="grow"><div class="t">${q}</div></div><b class="num">${a}</b></a>`).join('')}</div></div></div>`;
 };
 
@@ -1138,7 +1138,7 @@ function afHTML(){
   ${f('n','Nombre','Ej.: Caja de ahorro sueldo')}${f('inst','Banco o institución','Ej.: Banco Nación, Mercado Pago')}
   <div class="frow"><label class="field">Tipo<select id="af-t" data-af="t">${ACC_TYPES.map(x=>`<option ${x===AF.t?'selected':''}>${x}</option>`).join('')}</select></label><label class="field">Moneda<select id="af-cur" data-af="cur"><option value="ARS" ${AF.cur==='ARS'?'selected':''}>Pesos (ARS)</option><option value="USD" ${AF.cur==='USD'?'selected':''}>Dólares (USD)</option></select></label></div>
   <div class="frow">${f('ini','Saldo inicial','0,00',1)}${f('iniD','A la fecha','dd/mm/aaaa')}</div>
-  <div class="calc">El saldo inicial es lo que tenía la cuenta en esa fecha. A partir de ahí NEXO suma y resta tus movimientos.${AF.t==='Cuenta de inversión'?' Las cuentas de inversión no cuentan como dinero disponible.':''}</div>
+  <div class="calc">El saldo inicial es lo que tenía la cuenta en esa fecha. A partir de ahí Somos Guafra suma y resta tus movimientos.${AF.t==='Cuenta de inversión'?' Las cuentas de inversión no cuentan como dinero disponible.':''}</div>
   <details class="more"><summary>Más opciones</summary><div style="padding-top:8px">${f('notas','Notas')}</div></details>
   <div class="acts" style="justify-content:flex-end"><button class="btn" data-act="close">Cancelar</button><button class="btn pri" data-act="afSave">Crear cuenta</button></div>`;
 }
@@ -1487,7 +1487,7 @@ V.inteligencia=()=>{
    <div class="msg u">¿Cuándo termino de pagar mis deudas?</div>
    <div class="msg a">La última cuota pactada es en <b>${finDeudas()}</b>. La deuda con Carlos no tiene fecha, así que no la estimo.<span class="src-note">Calculado por el cronograma de deudas</span></div></div>
    <label class="field"><input id="askq" placeholder="Preguntá sobre tus finanzas…"></label></div>`
-   :`<div class="card"><h3>Asistente con IA</h3><p class="sub" style="margin-top:6px">Está apagado. Si lo activás, responde preguntas como "¿cuánto puedo gastar este mes?" usando solo los cálculos de NEXO, sin inventar importes ni cambiar nada.</p><a class="btn sm" style="margin-top:10px" href="#funciones">Activar en Funciones</a></div>`;
+   :`<div class="card"><h3>Asistente con IA</h3><p class="sub" style="margin-top:6px">Está apagado. Si lo activás, responde preguntas como "¿cuánto puedo gastar este mes?" usando solo los cálculos de Somos Guafra, sin inventar importes ni cambiar nada.</p><a class="btn sm" style="margin-top:10px" href="#funciones">Activar en Funciones</a></div>`;
   return ph('Análisis','Alertas y consejos','Avisos calculados con reglas fijas sobre tus datos: vencimientos, meses en rojo, deudas caras y ahorro posible.')+
   `<div class="split"><div style="display:flex;flex-direction:column;gap:14px;min-width:0">${lista('Urgente',urg)}${lista('Para revisar',resto)}</div>${chat}</div>`;
 };
@@ -1502,7 +1502,7 @@ const setRow=(t,s,ctl)=>`<div class="li"><div class="grow"><div class="t" style=
 V.configuracion=()=>{
   const t=S.cfgTab||'general',th=document.documentElement.dataset.theme,ss=store.get('session',{})||{};
   let body='';
-  if(t==='general')body=`<div class="card"><div class="chead"><h3>Perfil</h3></div><div class="frow"><label class="field">Nombre<input id="cfgName" value="${esc(ss.name||'')}" placeholder="Tu nombre"></label><label class="field">Correo<input id="cfgMail" value="${esc(ss.email||'demo@nexo.app')}" disabled></label></div></div>
+  if(t==='general')body=`<div class="card"><div class="chead"><h3>Perfil</h3></div><div class="frow"><label class="field">Nombre<input id="cfgName" value="${esc(ss.name||'')}" placeholder="Tu nombre"></label><label class="field">Correo<input id="cfgMail" value="${esc(ss.email||'demo@somosguafra.com')}" disabled></label></div></div>
    <div class="card"><div class="chead"><h3>Región</h3></div><div class="frow"><label class="field">Zona horaria<select id="cfgTz"><option selected>Buenos Aires, Argentina (GMT−3)</option><option>Córdoba, Argentina (GMT−3)</option><option>Montevideo, Uruguay (GMT−3)</option><option>Santiago, Chile (GMT−4)</option></select></label><label class="field">Hora actual<input id="cfgNow" value="${baTime()}" disabled></label></div>
     <div class="frow" style="margin-top:10px"><label class="field">Moneda principal<select id="cfgCur"><option>Peso argentino (ARS)</option><option>Dólar (USD)</option></select></label><label class="field">Formato de números y fechas<select id="cfgLoc"><option>1.234,56 · dd/mm/aaaa</option></select></label></div></div>
    <div class="card"><div class="chead"><h3>Apariencia</h3></div><div class="frow"><label class="field">Tema<select id="cfgTheme">${['Automático','Claro','Oscuro'].map(x=>`<option ${(th==='light'&&x==='Claro')||(th==='dark'&&x==='Oscuro')||(!th&&x==='Automático')?'selected':''}>${x}</option>`).join('')}</select></label><label class="field">La semana empieza el<select id="cfgWeek"><option>Lunes</option><option>Domingo</option></select></label></div></div>`;
@@ -1518,7 +1518,7 @@ V.configuracion=()=>{
     ${setRow('Cambiar contraseña','','<button class="btn sm">Cambiar</button>')}
     ${setRow('Sesiones abiertas','Este equipo · Windows · Buenos Aires','<button class="btn sm">Cerrar las demás</button>')}
     ${setRow('Actividad de la cuenta','Inicios de sesión, descargas y cambios importantes.','<button class="btn sm">Ver</button>')}</div>
-    <p class="foot-note" style="margin-top:10px">NEXO nunca te pide ni guarda las contraseñas de tu banco.</p></div>`;
+    <p class="foot-note" style="margin-top:10px">Somos Guafra nunca te pide ni guarda las contraseñas de tu banco.</p></div>`;
   if(t==='plan')body=planCard();
   if(t==='datos')body=`<div class="card"><div class="list">
     ${setRow('Copia de seguridad automática','Todos los días · última: hoy 03:00',sw('cfgBk',true))}
@@ -1578,13 +1578,13 @@ function validate(){
   return {ok,bad,dup,col:{cf,ci,cc}};
 }
 V.importar=()=>{const I=S.imp;
-  const SRC=[['csv','CSV','Planillas, exportaciones bancarias'],['xlsx','Excel (.xlsx)','Una o varias hojas'],['ofx','OFX / QIF','Formatos estándar de bancos'],['json','JSON','Desde otras apps o APIs'],['nexo','Respaldo NEXO (.nexo)','Restaura un espacio completo'],['sql','Base de datos SQL','Volcado PostgreSQL, MySQL o SQLite'],['apps','Otras apps','Money Manager, Wallet, YNAB, Monefy']];
+  const SRC=[['csv','CSV','Planillas, exportaciones bancarias'],['xlsx','Excel (.xlsx)','Una o varias hojas'],['ofx','OFX / QIF','Formatos estándar de bancos'],['json','JSON','Desde otras apps o APIs'],['somosguafra','Respaldo Somos Guafra (.somosguafra)','Restaura un espacio completo'],['sql','Base de datos SQL','Volcado PostgreSQL, MySQL o SQLite'],['apps','Otras apps','Money Manager, Wallet, YNAB, Monefy']];
   const steps=['Origen','Archivo','Mapeo de columnas','Validación','Confirmar'];
   const stepper=`<div class="steps">${steps.map((s,i)=>`<div class="step ${I.step===i+1?'on':I.step>i+1?'done':''}"><b>${I.step>i+1?'✓':i+1}</b>${s}</div>`).join('')}</div>`;
   let body='';
   if(I.step===1)body=`<div class="card"><div class="chead"><div><h3>¿Desde dónde importás?</h3><p class="sub">Movimientos, cuentas, categorías, deudas y reglas recurrentes.</p></div></div><div class="grid g4">${SRC.map(([k,n,d])=>`<button class="src ${I.src===k?'on':''}" data-act="impSrc" data-v="${k}"><b>${n}</b><span>${d}</span></button>`).join('')}</div><div class="acts" style="margin-top:14px"><button class="btn pri" data-act="impStep" data-v="2">Continuar</button></div></div>`;
-  if(I.step===2)body=`<div class="card"><div class="chead"><div><h3>Subí el archivo</h3><p class="sub">${I.src==='sql'?'Volcado .sql o archivo .sqlite/.db. En la app se procesa en el servidor: se leen las tablas y elegís cuáles importar.':I.src==='nexo'?'El respaldo restaura cuentas, movimientos, reglas y adjuntos en un espacio nuevo.':'Esta vista previa lee CSV y JSON en tu navegador. Excel, OFX y SQL se procesan en el servidor en la app real.'}</p></div></div>
-   <label class="drop" id="drop"><input type="file" id="impFile" accept=".csv,.txt,.json,.tsv,.xlsx,.ofx,.qif,.sql,.sqlite,.db,.nexo" hidden><b style="color:var(--fg)">Arrastrá un archivo o hacé clic para elegirlo</b><br><span style="font-size:12.5px">CSV · XLSX · OFX · QIF · JSON · SQL · SQLite · .nexo · hasta 25 MB</span></label>
+  if(I.step===2)body=`<div class="card"><div class="chead"><div><h3>Subí el archivo</h3><p class="sub">${I.src==='sql'?'Volcado .sql o archivo .sqlite/.db. En la app se procesa en el servidor: se leen las tablas y elegís cuáles importar.':I.src==='somosguafra'?'El respaldo restaura cuentas, movimientos, reglas y adjuntos en un espacio nuevo.':'Esta vista previa lee CSV y JSON en tu navegador. Excel, OFX y SQL se procesan en el servidor en la app real.'}</p></div></div>
+   <label class="drop" id="drop"><input type="file" id="impFile" accept=".csv,.txt,.json,.tsv,.xlsx,.ofx,.qif,.sql,.sqlite,.db,.somosguafra" hidden><b style="color:var(--fg)">Arrastrá un archivo o hacé clic para elegirlo</b><br><span style="font-size:12.5px">CSV · XLSX · OFX · QIF · JSON · SQL · SQLite · .somosguafra · hasta 25 MB</span></label>
    <div class="acts" style="margin-top:14px"><button class="btn" data-act="impStep" data-v="1">Volver</button><button class="btn" data-act="impSample">Usar archivo de ejemplo</button></div></div>`;
   if(I.step===3)body=`<div class="card"><div class="chead"><div><h3>Mapeo de columnas · ${esc(I.file)}</h3><p class="sub">${I.rows.length} filas · separador "${I.del==='\t'?'tab':I.del||'—'}" · decimales con coma · fechas dd/mm/aaaa</p></div><div class="acts"><button class="btn sm" data-act="toast" data-msg="Plantilla de mapeo guardada.">Guardar como plantilla</button></div></div>
    <div class="tw"><table><thead><tr>${I.headers.map((h,i)=>`<th><div style="display:flex;flex-direction:column;gap:5px"><span>${esc(h)}</span><select id="map-${i}" data-act="impMap" data-i="${i}" style="border:1px solid var(--line);border-radius:6px;padding:4px;background:var(--surface)">${FIELDS.map(([k,l])=>`<option value="${k}" ${I.map[i]===k?'selected':''}>${l}</option>`).join('')}</select></div></th>`).join('')}</tr></thead><tbody>${I.rows.slice(0,8).map(r=>`<tr>${I.headers.map((_,i)=>`<td style="${I.map[i]==='ignorar'?'opacity:.4':''}">${esc(r[i]??'')}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
@@ -1597,7 +1597,7 @@ V.importar=()=>{const I=S.imp;
    <div class="acts" style="margin-top:12px"><button class="btn" data-act="impStep" data-v="3">Volver al mapeo</button>${I.step===4?`<button class="btn pri" data-act="impStep" data-v="5">Importar ${v.ok.length} movimientos</button>`:`<button class="btn" data-act="impReset">Nueva importación</button>`}</div></div>`;}
   return ph('Ajustes','Importación y exportación','Traé tu historial desde planillas, bancos, otras apps o una base de datos existente. Todo entra como un lote auditable y reversible.')+stepper+body+
   `<div class="grid g2"><div class="card"><div class="chead"><h3>Historial de importaciones</h3></div><div class="tw"><table><thead><tr><th>Lote</th><th>Origen</th><th>Fecha</th><th class="n">Filas</th><th></th></tr></thead><tbody><tr><td>IMP-2026-10-01-01</td><td>CSV · Galicia</td><td>01/10/2026</td><td class="n">214</td><td><button class="btn sm" data-act="toast" data-msg="En la app: revierte las 214 filas del lote.">Revertir</button></td></tr><tr><td>IMP-2026-09-12-01</td><td>SQL · base anterior (SQLite)</td><td>12/09/2026</td><td class="n">3.482</td><td><button class="btn sm">Revertir</button></td></tr></tbody></table></div></div>
-  <div class="card"><div class="chead"><h3>Exportar</h3></div><div class="list"><div class="li"><div class="grow"><div class="t">Respaldo completo (.nexo)</div><div class="s">Todo el espacio, para restaurar o migrar</div></div><button class="btn sm" data-act="toast" data-msg="En la app se descarga el respaldo.">Exportar</button></div><div class="li"><div class="grow"><div class="t">CSV / Excel por módulo</div><div class="s">Movimientos, deudas, inversiones, presupuestos</div></div><button class="btn sm" data-act="toast" data-msg="En la app se descargan los archivos.">Exportar</button></div><div class="li"><div class="grow"><div class="t">Volcado SQL</div><div class="s">PostgreSQL, con el esquema de NEXO</div></div><button class="btn sm" data-act="toast" data-msg="En la app se descarga el volcado.">Exportar</button></div></div></div></div>`;
+  <div class="card"><div class="chead"><h3>Exportar</h3></div><div class="list"><div class="li"><div class="grow"><div class="t">Respaldo completo (.somosguafra)</div><div class="s">Todo el espacio, para restaurar o migrar</div></div><button class="btn sm" data-act="toast" data-msg="En la app se descarga el respaldo.">Exportar</button></div><div class="li"><div class="grow"><div class="t">CSV / Excel por módulo</div><div class="s">Movimientos, deudas, inversiones, presupuestos</div></div><button class="btn sm" data-act="toast" data-msg="En la app se descargan los archivos.">Exportar</button></div><div class="li"><div class="grow"><div class="t">Volcado SQL</div><div class="s">PostgreSQL, con el esquema de Somos Guafra</div></div><button class="btn sm" data-act="toast" data-msg="En la app se descarga el volcado.">Exportar</button></div></div></div></div>`;
 };
 
 /* ---------- Nuevo movimiento: el formulario cambia según tipo y estado ---------- */
@@ -1740,7 +1740,7 @@ function planCard(){
    <p class="foot-note" style="margin-top:8px">Los métodos de pago se conectan más adelante (Mercado Pago o Stripe). En este prototipo el cambio de plan es simulado.</p></div>`;
 }
 V.upsell=k=>{const f=FEATS.find(x=>x[0]===k);
-  return ph('NEXO Pro',f?f[1]:'Función Pro','Esta función es parte del plan Pro.')+`<div class="card hero"><div><div class="lbl">Plan Pro</div><div class="big">US$ ${PRICE.mes}<span class="mut" style="font-size:18px;font-weight:500"> / mes</span></div><p class="sub">≈ ${arsMes()} al dólar de hoy · o US$ ${PRICE.anio} por año (2 meses gratis).</p>
+  return ph('Somos Guafra Pro',f?f[1]:'Función Pro','Esta función es parte del plan Pro.')+`<div class="card hero"><div><div class="lbl">Plan Pro</div><div class="big">US$ ${PRICE.mes}<span class="mut" style="font-size:18px;font-weight:500"> / mes</span></div><p class="sub">≈ ${arsMes()} al dólar de hoy · o US$ ${PRICE.anio} por año (2 meses gratis).</p>
    <div class="acts" style="margin-top:14px"><button class="btn pri" data-act="planSet" data-v="pro">Probar Pro 14 días gratis</button><a class="btn" href="#dashboard">Ahora no</a></div></div>
    <div class="hero-side">${FEATS.filter(x=>x[2]==='pro').slice(0,6).map(x=>`<div class="hrow"><span>${x[1]}</span><b class="pos">✓</b></div>`).join('')}</div></div>`};
 
@@ -1756,7 +1756,7 @@ function exportPanel(){
 /* ---------- Menú de usuario ---------- */
 function userPanel(){
   const ss=store.get('session',null)||{},pro=plan()==='pro';
-  openPanel(`<div style="display:flex;gap:12px;align-items:center"><div class="avatar" style="width:44px;height:44px;font-size:15px">${esc(initials())}</div><div><h2 style="font-size:17px">${esc(ss.name||'Tu cuenta')}</h2><p class="sub">${esc(ss.email||'demo@nexo.app')}</p></div></div>
+  openPanel(`<div style="display:flex;gap:12px;align-items:center"><div class="avatar" style="width:44px;height:44px;font-size:15px">${esc(initials())}</div><div><h2 style="font-size:17px">${esc(ss.name||'Tu cuenta')}</h2><p class="sub">${esc(ss.email||'demo@somosguafra.com')}</p></div></div>
   <div class="card" style="padding:12px 14px"><div class="chead" style="margin:0;align-items:center"><div><b>Plan ${pro?'Pro':'Gratis'}</b><p class="sub">${pro?'Tenés todas las funciones.':'Pasá a Pro por US$ '+PRICE.mes+'/mes.'}</p></div>${pro?'<span class="pill g">Activo</span>':'<button class="btn sm pri" data-act="planSet" data-v="pro">Mejorar</button>'}</div></div>
   <div class="list">${[['Configuración','configuracion'],['Funciones','funciones']].map(([l,k])=>`<a class="li" href="#${k}" data-act="close" style="text-decoration:none;color:inherit"><div class="grow">${l}</div><span class="mut">›</span></a>`).join('')}
    <button class="li" data-act="toAdmin" style="border:0;border-bottom:1px solid var(--line);background:none;width:100%;text-align:left;cursor:pointer"><div class="grow">Panel interno <span class="pill" style="margin-left:6px">Administradores</span></div><span class="mut">›</span></button>
@@ -1778,7 +1778,7 @@ function setMode(m,sub){
   app.hidden=true;pub.hidden=false;pub.innerHTML=PUB[m](sub);window.scrollTo(0,0);afterPub(m);
 }
 const PUB={};
-const brand=(inv)=>`<button class="lp-brand" data-pa="home" aria-label="NEXO, ir al inicio"><span class="brand-mark" ${inv?'style="background:var(--on-ink);color:var(--ink)"':''}>N</span><b>NEXO</b></button>`;
+const brand=(inv)=>`<button class="lp-brand" data-pa="home" aria-label="Somos Guafra, ir al inicio"><span class="brand-mark" ${inv?'style="background:var(--on-ink);color:var(--ink)"':''}>N</span><b>Somos Guafra</b></button>`;
 const demoNote='<p class="pub-note">Prototipo: lo que escribís no se envía a ningún servidor. La sesión se guarda solo en este navegador.</p>';
 
 /* ---------- Landing ---------- */
@@ -1792,7 +1792,7 @@ const LP_FEATS=[
 ];
 const LP_FAQ=[
  ['¿Es gratis?','Sí. El plan Gratis incluye casi todo y no vence. Pro suma funciones avanzadas por US$ 5 por mes.'],
- ['¿Tengo que conectar mi banco?','No. Cargás tus movimientos a mano o importás un archivo. NEXO nunca te pide la contraseña de tu banco.'],
+ ['¿Tengo que conectar mi banco?','No. Cargás tus movimientos a mano o importás un archivo. Somos Guafra nunca te pide la contraseña de tu banco.'],
  ['¿Sirve con pesos y dólares?','Sí. Cada cuenta tiene su moneda y la cotización del dólar se actualiza sola. Cada conversión guarda el valor que usó.'],
  ['¿Qué pasa si me arrepiento de Pro?','Tenés 10 días corridos desde que lo contratás para pedir la devolución total con el botón de arrepentimiento, y podés darte de baja cuando quieras.'],
  ['¿Mis datos están seguros?','Se guardan cifrados, podés activar la verificación en dos pasos y descargar o borrar todo cuando quieras.'],
@@ -1807,7 +1807,7 @@ PUB.landing=()=>{
   <section class="lp-w lp-hero">
    <div class="lp-copy"><p class="lp-eyebrow">Finanzas personales, hechas en Argentina</p>
     <h1>Sabé cuánto tenés, cuánto debés y cuánto vas a tener.</h1>
-    <p class="lp-lead">NEXO junta tus cuentas, tarjetas, deudas y cobros, y te muestra qué podés gastar sin comprometer lo que viene.</p>
+    <p class="lp-lead">Somos Guafra junta tus cuentas, tarjetas, deudas y cobros, y te muestra qué podés gastar sin comprometer lo que viene.</p>
     <div class="acts"><button class="btn pri lp-big" data-pa="signup">Crear cuenta gratis</button><button class="btn lp-big" data-pa="demo">Ver la demo</button></div>
     <p class="sub">Gratis para siempre · Sin tarjeta · Verificación en dos pasos</p></div>
    <div class="lp-mock" aria-hidden="true">
@@ -1817,7 +1817,7 @@ PUB.landing=()=>{
     <div class="lpm-toast">Pago registrado · quedan $ 0 pendientes</div></div>
   </section>
   <section class="lp-w lp-sec" id="lp-func"><h2 class="rv">Todo tu dinero, en un lugar</h2><div class="lp-grid">${LP_FEATS.map(([i,t,d])=>`<div class="lp-feat rv">${ic(i)}<h3>${t}</h3><p>${d}</p></div>`).join('')}</div></section>
-  <section class="lp-band"><div class="lp-w lp-sec"><h2 class="rv">Empezás en tres pasos</h2><ol class="lp-steps">${[['Creá tu cuenta','Con tu correo, en un minuto.'],['Elegí qué vas a usar','NEXO se arma a tu medida: lo que no te sirve no aparece.'],['Cargá tus cuentas','O importá tu planilla. Desde ahí, todo se calcula solo.']].map(([t,d])=>`<li class="rv"><b>${t}</b><span>${d}</span></li>`).join('')}</ol></div></section>
+  <section class="lp-band"><div class="lp-w lp-sec"><h2 class="rv">Empezás en tres pasos</h2><ol class="lp-steps">${[['Creá tu cuenta','Con tu correo, en un minuto.'],['Elegí qué vas a usar','Somos Guafra se arma a tu medida: lo que no te sirve no aparece.'],['Cargá tus cuentas','O importá tu planilla. Desde ahí, todo se calcula solo.']].map(([t,d])=>`<li class="rv"><b>${t}</b><span>${d}</span></li>`).join('')}</ol></div></section>
   <section class="lp-w lp-sec" id="lp-ar"><h2 class="rv">Pensado para cómo se vive acá</h2><div class="lp-chips rv">${['Pesos y dólares','Dólar oficial, MEP, blue y tarjeta','Cuotas con y sin interés','TNA, TEA y CFT','Aguinaldo','Alquileres por ICL','Impuesto al cheque','Ventas de granos en quintales'].map(x=>`<span>${x}</span>`).join('')}</div></section>
   <section class="lp-w lp-sec lp-sec2"><div class="rv"><h2>Tus datos, cuidados</h2><p class="lp-lead">Nunca te pedimos la clave de tu banco. Activás la verificación en dos pasos con Google Authenticator, y podés descargar o borrar todo cuando quieras.</p></div>
    <div class="lp-sgrid">${[['Verificación en dos pasos','Un código de tu celular además de la contraseña.'],['Datos cifrados','En tránsito y guardados.'],['Vos decidís','Exportás o eliminás tu cuenta en un clic.']].map(([t,d])=>`<div class="lp-feat rv"><h3>${t}</h3><p>${d}</p></div>`).join('')}</div></section>
@@ -1829,7 +1829,7 @@ PUB.landing=()=>{
    </div></div></section>
   <section class="lp-w lp-sec" id="lp-faq"><h2 class="rv">Preguntas frecuentes</h2><div class="lp-faq">${LP_FAQ.map(([q,a])=>`<details class="rv"><summary>${q}</summary><p>${a}</p></details>`).join('')}</div></section>
   <section class="lp-w lp-final rv"><h2>Empezá hoy. Es gratis.</h2><div class="acts" style="justify-content:center"><button class="btn pri lp-big" data-pa="signup">Crear cuenta</button><button class="btn lp-big" data-pa="demo">Ver la demo</button></div></section>
-  <footer class="lp-foot"><div class="lp-w lp-footin">${brand()}<div class="lp-flinks"><button data-pa="legal" data-v="terms">Términos y condiciones</button><button data-pa="legal" data-v="privacy">Política de privacidad</button><button data-pa="legal" data-v="arrep">Botón de arrepentimiento</button><span>Ayuda: <span class="sel">soporte@nexo.app</span></span></div><p class="sub">© 2026 NEXO. Prototipo con datos de ejemplo.</p></div></footer>
+  <footer class="lp-foot"><div class="lp-w lp-footin">${brand()}<div class="lp-flinks"><button data-pa="legal" data-v="terms">Términos y condiciones</button><button data-pa="legal" data-v="privacy">Política de privacidad</button><button data-pa="legal" data-v="arrep">Botón de arrepentimiento</button><span>Ayuda: <span class="sel">soporte@somosguafra.com</span></span></div><p class="sub">© 2026 Somos Guafra. Prototipo con datos de ejemplo.</p></div></footer>
   </div>`;
 };
 
@@ -1857,7 +1857,7 @@ function qrSVG(){let seed=7;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483
   for(let i=0;i<N;i++)for(let j=0;j<N;j++){const inF=(i<8&&j<8)||(i>N-9&&j<8)||(i<8&&j>N-9);if(!inF&&rnd()>.52)c.push([i,j])}
   return`<svg viewBox="-2 -2 ${N+4} ${N+4}" class="qr" role="img" aria-label="Código QR de ejemplo"><rect x="-2" y="-2" width="${N+4}" height="${N+4}" style="fill:#fff"/>${c.map(([x,y])=>`<rect x="${x}" y="${y}" width="1" height="1" style="fill:#111"/>`).join('')}</svg>`}
 const twofaSetupHTML=()=>`<p class="sub">1. Abrí Google Authenticator en tu celular y tocá "+".<br>2. Escaneá este código o cargá la clave a mano.<br>3. Escribí el código de 6 números que te muestra.</p>
-  <div class="tf-box">${qrSVG()}<div><div class="sub">Clave</div><b class="num sel">NEXO 4F7K Q2ZP 9MTD</b></div></div>
+  <div class="tf-box">${qrSVG()}<div><div class="sub">Clave</div><b class="num sel">Somos Guafra 4F7K Q2ZP 9MTD</b></div></div>
   <label class="field">Código de 6 números<input id="tf-code" class="otp" inputmode="numeric" autocomplete="one-time-code" maxlength="7" placeholder="000 000"></label>`;
 PUB.twofaSetup=()=>authWrap(`<h1>Protegé tu cuenta</h1><p class="sub">Activá la verificación en dos pasos. Te lleva un minuto.</p>${twofaSetupHTML()}<p class="sub">En este prototipo sirve cualquier código de 6 números.</p>
   <p class="auth-err" id="tf-err" hidden></p><button class="btn pri auth-btn" data-pa="tfSetupGo">Activar y seguir</button><button class="lnk" data-pa="tfSkip">Lo hago después</button>`);
@@ -1882,7 +1882,7 @@ const OB_STEPS=['Para qué','Moneda','Funciones','Primera cuenta','Listo'];
 PUB.onboarding=()=>{
   const st=OB.step,ss=store.get('session',null)||{},prog=`<div class="ob-prog"><i style="width:${(st+1)/OB_STEPS.length*100}%"></i></div><p class="sub">Paso ${st+1} de ${OB_STEPS.length} · ${OB_STEPS[st]}</p>`;
   let body='';
-  if(st===0)body=`<h1>Hola${ss.name?', '+esc(ss.name.split(' ')[0]):''}. ¿Para qué vas a usar NEXO?</h1><p class="sub">Elegí todas las que quieras. Con esto armamos tu menú; después lo cambiás cuando quieras.</p>
+  if(st===0)body=`<h1>Hola${ss.name?', '+esc(ss.name.split(' ')[0]):''}. ¿Para qué vas a usar Somos Guafra?</h1><p class="sub">Elegí todas las que quieras. Con esto armamos tu menú; después lo cambiás cuando quieras.</p>
    <div class="ob-grid">${USOS.map(([k,t,d])=>`<button class="ob-card ${OB.usos.has(k)?'on':''}" data-pa="obUso" data-v="${k}" aria-pressed="${OB.usos.has(k)}"><b>${t}</b><span>${d}</span></button>`).join('')}</div>`;
   if(st===1)body=`<h1>Tu moneda y tu zona</h1><p class="sub">Los totales se muestran en tu moneda principal.</p>
    <div class="field">Moneda principal<div class="seg">${[['ARS','Pesos'],['USD','Dólares']].map(([k,l])=>`<button class="${OB.cur===k?'on':''}" data-pa="obCur" data-v="${k}" style="flex:1">${l}</button>`).join('')}</div></div>
@@ -1895,11 +1895,11 @@ PUB.onboarding=()=>{
    <label class="field">Nombre<input id="ob-an" value="${esc(OB.acc.n)}" placeholder="Ej.: Caja de ahorro sueldo"></label>
    <div class="frow"><label class="field">Tipo<select id="ob-at">${ACC_TYPES.map(x=>`<option ${x===OB.acc.t?'selected':''}>${x}</option>`).join('')}</select></label><label class="field">Saldo de hoy<input id="ob-ai" value="${esc(OB.acc.ini)}" inputmode="decimal" placeholder="0,00"></label></div>`;
   if(st===4){const on=MODS.filter(m=>m.nav&&OB.mods[m.k]);
-   body=`<h1>Listo, tu NEXO está armado</h1><p class="sub">Así queda tu menú. Lo podés cambiar en Ajustes → Funciones.</p>
+   body=`<h1>Listo, tu Somos Guafra está armado</h1><p class="sub">Así queda tu menú. Lo podés cambiar en Ajustes → Funciones.</p>
    <div class="chips" style="margin:6px 0 4px">${on.map(m=>`<span class="tag">${m.n}</span>`).join('')}</div>
    <dl class="kv" style="margin-top:12px"><dt>Moneda principal</dt><dd>${OB.cur==='ARS'?'Pesos':'Dólares'}${OB.extra.size?' · también '+[...OB.extra].join(', '):''}</dd><dt>Zona horaria</dt><dd>${OB.tz}</dd><dt>Primera cuenta</dt><dd>${OB.acc.n?esc(OB.acc.n):'La cargás después'}</dd><dt>Plan</dt><dd>Gratis</dd></dl>`}
   return`<div class="ob"><header class="ob-top">${brand()}<button class="lnk" data-pa="obSkip">Saltear</button></header><main class="ob-main"><div class="ob-card-w" key="${st}">${prog}${body}
-   <div class="acts ob-acts">${st?'<button class="btn" data-pa="obBack">Atrás</button>':'<span></span>'}<button class="btn pri" data-pa="obNext">${st===OB_STEPS.length-1?'Entrar a NEXO':st===3&&!OB.acc.n?'Saltear y seguir':'Siguiente'}</button></div></div></main></div>`;
+   <div class="acts ob-acts">${st?'<button class="btn" data-pa="obBack">Atrás</button>':'<span></span>'}<button class="btn pri" data-pa="obNext">${st===OB_STEPS.length-1?'Entrar a Somos Guafra':st===3&&!OB.acc.n?'Saltear y seguir':'Siguiente'}</button></div></div></main></div>`;
 };
 function obSave(){
   if(OB.step===1)OB.tz=document.getElementById('ob-tz').value;
@@ -1909,18 +1909,18 @@ function obFinish(){
   mods=Object.assign({},MOD_DEF,OB.mods||obMods());store.set('mods',mods);
   if(OB.acc.n){const ini=parseAR(OB.acc.ini)||0,id='a'+Date.now();ACC.push({id,n:OB.acc.n,inst:'—',t:OB.acc.t,cur:OB.acc.t==='Cuenta en dólares'?'USD':OB.cur,ini,iniD:'05/11/2026',bal:ini,act:true,inv:OB.acc.t==='Cuenta de inversión'});if(isPool(ACC[ACC.length-1]))REAL_TRF+=ini}
   const ss=store.get('session',null)||{};ss.onboarded=true;store.set('session',ss);store.set('noteOff',false);
-  recompute();cur='dashboard';setMode('app');toast('¡Bienvenido! Tu NEXO quedó armado a tu medida.');
+  recompute();cur='dashboard';setMode('app');toast('¡Bienvenido! Tu Somos Guafra quedó armado a tu medida.');
 }
 
 /* ---------- Legales (borrador para revisar con un abogado) ---------- */
 const LEGAL={
  terms:['Términos y condiciones',[
-  ['Quiénes somos','NEXO es una aplicación de organización de finanzas personales. Estos términos regulan el uso del sitio y de la aplicación. Al crear una cuenta aceptás estos términos.'],
-  ['Qué hace y qué no hace NEXO','NEXO te ayuda a registrar, ordenar y proyectar tu información financiera. No es un banco, no mueve dinero, no da asesoramiento financiero ni de inversión personalizado, y los cálculos y proyecciones son estimaciones basadas en los datos que cargás.'],
+  ['Quiénes somos','Somos Guafra es una aplicación de organización de finanzas personales. Estos términos regulan el uso del sitio y de la aplicación. Al crear una cuenta aceptás estos términos.'],
+  ['Qué hace y qué no hace Somos Guafra','Somos Guafra te ayuda a registrar, ordenar y proyectar tu información financiera. No es un banco, no mueve dinero, no da asesoramiento financiero ni de inversión personalizado, y los cálculos y proyecciones son estimaciones basadas en los datos que cargás.'],
   ['Tu cuenta','Sos responsable de la información que cargás y de mantener segura tu contraseña. Te recomendamos activar la verificación en dos pasos. Podés eliminar tu cuenta en cualquier momento desde Configuración.'],
   ['Planes y pagos','El plan Gratis no tiene costo ni vencimiento. El plan Pro se cobra por mes o por año en dólares estadounidenses, o su equivalente en pesos al momento del cobro, e incluye impuestos cuando corresponda. La suscripción se renueva sola hasta que la des de baja.'],
   ['Baja y arrepentimiento','Podés dar de baja Pro cuando quieras desde Configuración → Plan, con el mismo medio que usaste para contratarlo. Además, tenés 10 días corridos desde la contratación para arrepentirte y pedir la devolución total, con el botón de arrepentimiento (Ley 24.240 de Defensa del Consumidor y Resolución 424/2020).'],
-  ['Uso aceptable','No podés usar NEXO para actividades ilegales, intentar acceder a cuentas de otras personas ni afectar el funcionamiento del servicio.'],
+  ['Uso aceptable','No podés usar Somos Guafra para actividades ilegales, intentar acceder a cuentas de otras personas ni afectar el funcionamiento del servicio.'],
   ['Responsabilidad','Hacemos lo posible para que el servicio funcione sin interrupciones y con información correcta, pero no respondemos por decisiones tomadas en base a las proyecciones ni por datos cargados con errores.'],
   ['Cambios','Si cambiamos estos términos te avisamos con anticipación por correo o dentro de la app.'],
   ['Ley aplicable','Rigen las leyes de la República Argentina. Cualquier conflicto se resuelve ante los tribunales ordinarios de la Ciudad Autónoma de Buenos Aires, sin perjuicio de los derechos que te da la ley como consumidor.'],
@@ -1931,13 +1931,13 @@ const LEGAL={
   ['Para qué los usamos','Para que la aplicación funcione, calcular tus saldos y proyecciones, mandarte los avisos que activaste y mejorar el servicio. No vendemos tus datos.'],
   ['Con quién los compartimos','Solo con proveedores que necesitamos para dar el servicio (alojamiento, correo, cobros), bajo acuerdos de confidencialidad, o cuando lo exija la ley.'],
   ['Cómo los protegemos','Cifrado en tránsito y guardado, verificación en dos pasos, accesos internos limitados y registro de auditoría.'],
-  ['Tus derechos','Podés acceder, corregir, actualizar o eliminar tus datos cuando quieras, de acuerdo con la Ley 25.326 de Protección de los Datos Personales. Podés hacerlo desde la app o escribiendo a soporte@nexo.app. La Agencia de Acceso a la Información Pública es el órgano de control y atiende denuncias por incumplimientos.'],
+  ['Tus derechos','Podés acceder, corregir, actualizar o eliminar tus datos cuando quieras, de acuerdo con la Ley 25.326 de Protección de los Datos Personales. Podés hacerlo desde la app o escribiendo a soporte@somosguafra.com. La Agencia de Acceso a la Información Pública es el órgano de control y atiende denuncias por incumplimientos.'],
   ['Cuánto tiempo','Mientras tu cuenta esté activa. Si la eliminás, borramos tus datos en hasta 30 días, salvo lo que la ley nos obligue a conservar.'],
   ['Cambios','Si cambiamos esta política te avisamos antes de que entre en vigencia.'],
  ]],
  arrep:['Botón de arrepentimiento',[
-  ['Qué es','Si contrataste NEXO Pro, tenés 10 días corridos desde la contratación para arrepentirte, sin dar motivos y sin costo. Te devolvemos el total.'],
-  ['Cómo pedirlo','Desde la app: Configuración → Plan → Botón de arrepentimiento. Si no podés entrar, escribí a soporte@nexo.app con el correo de tu cuenta. Te respondemos con un número de trámite en 24 horas.'],
+  ['Qué es','Si contrataste Somos Guafra Pro, tenés 10 días corridos desde la contratación para arrepentirte, sin dar motivos y sin costo. Te devolvemos el total.'],
+  ['Cómo pedirlo','Desde la app: Configuración → Plan → Botón de arrepentimiento. Si no podés entrar, escribí a soporte@somosguafra.com con el correo de tu cuenta. Te respondemos con un número de trámite en 24 horas.'],
   ['Dar de baja','Más allá del arrepentimiento, podés dar de baja Pro cuando quieras desde Configuración → Plan, sin trámites extra.'],
  ]],
 };
@@ -2013,13 +2013,13 @@ document.addEventListener('click',e=>{
   else if(pa==='app'){setMode(store.get('session',null)?'app':'landing')}
   else if(pa==='legal'){setMode('legal',v)}
   else if(pa==='forgot'){toast('Te mandaríamos un correo para crear una contraseña nueva (simulado).')}
-  else if(pa==='demo'){store.set('session',{name:'',email:'demo@nexo.app',plan:'pro',twofa:true,demo:true});mods=Object.assign({},MOD_DEF,{cereal:true,activos:true,informes:true});store.set('mods',mods);cur='dashboard';setMode('app');toast('Estás en la demo, con datos de ejemplo.')}
+  else if(pa==='demo'){store.set('session',{name:'',email:'demo@somosguafra.com',plan:'pro',twofa:true,demo:true});mods=Object.assign({},MOD_DEF,{cereal:true,activos:true,informes:true});store.set('mods',mods);cur='dashboard';setMode('app');toast('Estás en la demo, con datos de ejemplo.')}
   else if(pa==='google'){store.set('session',{name:'',email:'cuenta@gmail.com',plan:'free',twofa:false});OB.step=0;OB.mods=null;setMode('onboarding');toast('En la app real se abre tu cuenta de Google (simulado).')}
   else if(pa==='loginGo'){const m=document.getElementById('li-mail').value.trim(),p=document.getElementById('li-pass').value;
     if(!validMail(m))return showErr('li-err','Revisá el correo: falta algo, como la @.');if(p.length<8)return showErr('li-err','La contraseña tiene al menos 8 caracteres.');
     S.pendingLogin=m;setMode('twofa')}
   else if(pa==='tfGo'){const c=document.getElementById('tf-code').value.replace(/\s/g,'');if(!/^\d{6}$/.test(c))return showErr('tf-err','El código tiene 6 números.');
-    const prev=store.get('session',null);store.set('session',{name:prev&&prev.name||'',email:S.pendingLogin||'demo@nexo.app',plan:prev&&prev.plan||'free',twofa:true,onboarded:true});setMode('app')}
+    const prev=store.get('session',null);store.set('session',{name:prev&&prev.name||'',email:S.pendingLogin||'demo@somosguafra.com',plan:prev&&prev.plan||'free',twofa:true,onboarded:true});setMode('app')}
   else if(pa==='signupGo'){const n=document.getElementById('su-name').value.trim(),m=document.getElementById('su-mail').value.trim(),p=document.getElementById('su-pass').value;
     if(!n)return showErr('su-err','Decinos cómo te llamamos.');if(!validMail(m))return showErr('su-err','Revisá el correo: falta algo, como la @.');
     if(p.length<8||!/\d/.test(p))return showErr('su-err','La contraseña necesita 8 caracteres o más y al menos un número.');if(!document.getElementById('su-terms').checked)return showErr('su-err','Para seguir, aceptá los términos y la política de privacidad.');
@@ -2081,7 +2081,7 @@ document.addEventListener('click',e=>{
   else if(act==='newSub'){CF.t=S.catTab||'g';CF.parent=a.dataset.v;CF.name='';openPanel(cfHTML())}
   else if(act==='accEdit'){const x=ACC.find(q=>q.id===a.dataset.v);x.n=document.getElementById('ae-n').value.trim()||x.n;x.inst=document.getElementById('ae-inst').value.trim()||x.inst;x.notas=document.getElementById('ae-notes').value.trim();render();toast('Cuenta actualizada.')}
   else if(act==='accToggle'){const x=ACC.find(q=>q.id===a.dataset.v);x.act=!x.act;recompute();render();toast(x.act?'Cuenta reactivada.':'Cuenta desactivada. Sus movimientos se conservan.')}
-  else if(act==='planSet'){setPlan(a.dataset.v);closeOverlay();render();toast(a.dataset.v==='pro'?'Listo: ya tenés NEXO Pro (simulado).':'Volviste al plan Gratis.')}
+  else if(act==='planSet'){setPlan(a.dataset.v);closeOverlay();render();toast(a.dataset.v==='pro'?'Listo: ya tenés Somos Guafra Pro (simulado).':'Volviste al plan Gratis.')}
   else if(act==='arrep'){openPanel(arrepHTML())}
   else if(act==='arrepOk'){closeOverlay();setPlan('free');render();toast('Recibimos tu pedido de arrepentimiento. Te devolvemos el total en hasta 10 días hábiles (simulado).')}
   else if(act==='export'){exportPanel()}

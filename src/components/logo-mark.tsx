@@ -1,4 +1,4 @@
-// La marca de Guafra (el dibujo del logo) para el encabezado y las pantallas de la app. Sin fondo: el verde oscuro
+// La marca de Somos Guafra (el dibujo del logo) para el encabezado y las pantallas de la app. Sin fondo: el verde oscuro
 // cambia a uno claro en modo oscuro (variable --logo-dark) para que se vea sobre cualquier fondo.
 import { LOGO, LOGO_PARTS } from "@/lib/logo";
 

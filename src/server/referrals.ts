@@ -5,7 +5,7 @@ import { giftPro } from "./grants";
 
 export const REFERRAL_DAYS = 30;
 export const REFERRAL_MAX_REWARDS = 12;
-export const REF_COOKIE = "nexo_ref";
+export const REF_COOKIE = "somosguafra_ref";
 
 const ABC = "abcdefghjkmnpqrstuvwxyz23456789";
 export function newReferralCode(rand: () => number = Math.random) {

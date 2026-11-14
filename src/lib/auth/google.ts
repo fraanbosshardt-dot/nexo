@@ -2,7 +2,7 @@
 // Se activa cargando GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET.
 import { createHash, randomBytes } from "node:crypto";
 
-export const GOOGLE_COOKIE = "nexo_g";
+export const GOOGLE_COOKIE = "somosguafra_g";
 export const googleEnabled = () => !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
 export const googleRedirectUri = (base: string) => `${base}/api/auth/google/callback`;
 

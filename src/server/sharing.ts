@@ -6,7 +6,7 @@ import { UserError } from "./ledger";
 
 export const MAX_GUESTS = 3;
 const INVITE_DAYS = 7;
-export const INVITE_COOKIE = "nexo_invite";
+export const INVITE_COOKIE = "somosguafra_invite";
 export type GuestRole = "EDITOR" | "VIEWER";
 export const ROLE_LABEL: Record<string, string> = { OWNER: "Dueño", EDITOR: "Carga y edita", VIEWER: "Solo mira" };
 

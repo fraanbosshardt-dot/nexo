@@ -10,7 +10,7 @@ import { getDb } from "@/lib/db";
 import { pickMembership } from "@/server/sharing";
 
 export const dynamic = "force-dynamic";
-const AFTER_COOKIE = "nexo_after";
+const AFTER_COOKIE = "somosguafra_after";
 
 export async function GET(req: Request) {
   const anual = new URL(req.url).searchParams.get("ciclo") === "anual";

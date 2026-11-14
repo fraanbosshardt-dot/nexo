@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 const FAQ: [string, string][] = [
   ["¿De dónde sale la cotización?", "De una fuente pública de cotizaciones oficiales, que se actualiza todos los días. Es una referencia: bancos y casas de cambio cobran con su propio precio de compra y venta."],
   ["¿Por qué el banco me da otro precio?", "Porque cada entidad suma su margen e impuestos. Usá este conversor para tener una idea; para operar, mirá el precio de tu banco."],
-  ["¿Puedo tener cuentas en varias monedas en Guafra?", "Sí. Cargás cada cuenta en su moneda y Guafra te muestra tu patrimonio en tu moneda principal y en dólares."],
+  ["¿Puedo tener cuentas en varias monedas en Somos Guafra?", "Sí. Cargás cada cuenta en su moneda y Somos Guafra te muestra tu patrimonio en tu moneda principal y en dólares."],
 ];
 
 export default async function Page() {
@@ -43,7 +43,7 @@ export default async function Page() {
       <section className="lp-band"><div className="lp-w lp-sec">
         <h2>Preguntas frecuentes</h2>
         <div className="lp-faq">{FAQ.map(([q, a]) => <details key={q}><summary>{q}</summary><p>{a}</p></details>)}</div>
-        <div className="acts" style={{ marginTop: 28, display: "flex", flexWrap: "wrap", gap: 12 }}><Link className="ws-btn pri" href="/registro">Manejar varias monedas en Guafra</Link><Link className="ws-btn" href="/herramientas">Más herramientas</Link></div>
+        <div className="acts" style={{ marginTop: 28, display: "flex", flexWrap: "wrap", gap: 12 }}><Link className="ws-btn pri" href="/registro">Manejar varias monedas en Somos Guafra</Link><Link className="ws-btn" href="/herramientas">Más herramientas</Link></div>
       </div></section>
     </PublicShell>
   );

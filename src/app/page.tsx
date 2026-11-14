@@ -27,7 +27,7 @@ const CHECK = svg("M5 12l5 5L20 7");
 
 const STRIP = ["Pesos y dólares", "Tarjetas en cuotas", "Préstamos", "Servicios y alquiler", "Sueldo o cobros variables", "Ventas de cereal", "Objetivos de ahorro"];
 
-// Planilla, app del banco y Guafra (la última columna siempre es "sí").
+// Planilla, app del banco y Somos Guafra (la última columna siempre es "sí").
 const VS: [string, string, string, string][] = [
   ["Todas tus cuentas y tarjetas juntas", "A mano", "Solo las de ese banco", "Sí"],
   ["Cuotas repartidas mes a mes", "A mano", "Solo esa tarjeta", "Solas"],
@@ -216,7 +216,7 @@ export default async function Landing() {
         <div className="lx-mega-row r2">{Array.from({ length: 3 }, (_, k) => <span key={k}>Cuotas <em>✦</em> Tarjetas <em>✦</em> Vencimientos <em>✦</em> Ahorro <em>✦</em> Dólares <em>✦</em> </span>)}</div>
       </section>
 
-      {/* Un mes con Guafra: se cuenta mientras bajás */}
+      {/* Un mes con Somos Guafra: se cuenta mientras bajás */}
       <section className="lx-month-sec lx-fx" id="como" data-sfx="">
         <Aurora />
         <div className="ws-w ws-sec">
@@ -234,7 +234,7 @@ export default async function Landing() {
         </div>
       </section>
 
-      {/* Planilla vs Guafra */}
+      {/* Planilla vs Somos Guafra */}
       <section className="ws-soft">
         <div className="ws-w ws-sec lx-two">
           <Reveal className="lx-two-copy"><p className="ws-eyebrow">Por qué {N}</p><h2 className="ws-h2">La planilla te muestra el pasado. {N} te muestra lo que viene.</h2><p className="ws-lead">Una planilla depende de que te acuerdes de todo, y la app del banco solo ve lo suyo. {N} junta todo, repite tus pagos fijos, reparte las cuotas y te avisa antes de que un mes quede en rojo.</p></Reveal>

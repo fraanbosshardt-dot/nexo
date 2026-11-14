@@ -4,7 +4,7 @@ import { setBigTextAction } from "@/app/actions/app";
 
 const apply = (on: boolean) => {
   if (on) document.documentElement.setAttribute("data-big", ""); else document.documentElement.removeAttribute("data-big");
-  try { localStorage.setItem("nexo-big", on ? "1" : "0"); } catch { /* sin almacenamiento: vale solo por ahora */ }
+  try { localStorage.setItem("somosguafra-big", on ? "1" : "0"); } catch { /* sin almacenamiento: vale solo por ahora */ }
 };
 
 // Al entrar a la app, aplica lo guardado en la cuenta (así vale en todos tus dispositivos).

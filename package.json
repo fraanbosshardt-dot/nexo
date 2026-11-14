@@ -1,8 +1,8 @@
 {
-  "name": "nexo",
+  "name": "somosguafra",
   "version": "0.1.0",
   "private": true,
-  "description": "Finan: finanzas personales y planificación patrimonial",
+  "description": "Somos Guafra: finanzas personales y planificación patrimonial",
   "engines": {
     "node": ">=20.19"
   },

@@ -1,4 +1,4 @@
-# NEXO — Arquitectura
+# Somos Guafra — Arquitectura
 
 ## 1. Producto en una frase
 

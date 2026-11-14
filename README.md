@@ -1,4 +1,6 @@
-# Finan
+# Somos Guafra
+
+Sitio: https://somosguafra.com · Repositorio: https://github.com/fraanbosshardt-dot/somosguafra
 
 Plataforma de finanzas personales y planificación patrimonial, pensada para Argentina: pesos y dólares, cuotas, tarjetas, deudas, flujo de caja, presupuestos, objetivos, inversiones y ventas de granos.
 

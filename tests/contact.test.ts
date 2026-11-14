@@ -19,6 +19,6 @@ describe("Contacto", () => {
     expect(Object.keys(LEGAL)).toEqual(expect.arrayContaining(["terminos", "privacidad", "reembolsos", "cookies", "arrepentimiento"]));
     expect(JSON.stringify(LEGAL.terminos)).toContain(BRAND.cuit);
     expect(JSON.stringify(LEGAL.terminos)).toMatch(/No es asesoramiento financiero/);
-    expect(JSON.stringify(LEGAL)).not.toContain("soporte@nexo.app");
+    expect(JSON.stringify(LEGAL)).not.toContain("soporte@somosguafra.com");
   });
 });

@@ -594,7 +594,7 @@ export async function deleteMyAccountAction(_: FormState, fd: FormData): Promise
   await audit("auth.account_self_deleted", { meta: { email: user.email } });
   await deleteAccount(db, user.id);
   const { cookies } = await import("next/headers");
-  (await cookies()).delete("nexo_session");
+  (await cookies()).delete("somosguafra_session");
   redirect("/?cuenta-borrada=1");
 }
 

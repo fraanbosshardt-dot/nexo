@@ -8,8 +8,8 @@ import { readModules } from "@/lib/modules";
 import { effectivePlan, hasFeature, type FeatureKey } from "@/server/plans";
 import { pickMembership } from "@/server/sharing";
 
-const COOKIE = "nexo_session";
-export const HINT_COOKIE = "nexo_in"; // solo dice "hay sesión" (sin datos), para que la web pública muestre "Ir a la app"
+const COOKIE = "somosguafra_session";
+export const HINT_COOKIE = "somosguafra_in"; // solo dice "hay sesión" (sin datos), para que la web pública muestre "Ir a la app"
 const LONG = 30 * 24 * 3600 * 1000;
 const SHORT = 12 * 3600 * 1000;
 
@@ -86,12 +86,12 @@ export async function requireWorkspace(opts: { allowNotOnboarded?: boolean } = {
 // Después de ingresar: si estaba aceptando una invitación, vuelve a ella; si no, al destino de siempre.
 export async function landingPath(fallback: string) {
   const jar = await cookies();
-  const t = jar.get("nexo_invite")?.value;
+  const t = jar.get("somosguafra_invite")?.value;
   if (t && /^[\w-]{20,64}$/.test(t)) return `/invitacion/${t}`;
   // Venía a comprar Pro desde el sitio: después de crear la cuenta o ingresar, sigue a pagar.
-  const after = jar.get("nexo_after")?.value;
+  const after = jar.get("somosguafra_after")?.value;
   if (after && /^\/suscribirme\?ciclo=(mensual|anual)$/.test(after)) {
-    try { jar.delete("nexo_after"); } catch { /* en una página no se puede borrar: vence sola */ }
+    try { jar.delete("somosguafra_after"); } catch { /* en una página no se puede borrar: vence sola */ }
     return after;
   }
   return fallback;

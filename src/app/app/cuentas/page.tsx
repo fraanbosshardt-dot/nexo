@@ -83,7 +83,7 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
                 <label className="field">Saldo inicial<input name="initialBalance" inputMode="decimal" placeholder="0,00" /></label>
                 <label className="field">A la fecha<input name="initialDate" type="date" defaultValue={isoDate(todayIn(workspace.timezone))} /></label>
               </div>
-              <div className="calc">El saldo inicial es lo que tenía la cuenta en esa fecha. Desde ahí, Guafra suma y resta tus movimientos. Las cuentas de inversión no cuentan como dinero disponible.</div>
+              <div className="calc">El saldo inicial es lo que tenía la cuenta en esa fecha. Desde ahí, Somos Guafra suma y resta tus movimientos. Las cuentas de inversión no cuentan como dinero disponible.</div>
               <div className="acts" style={{ justifyContent: "flex-end" }}><Submit>Crear cuenta</Submit></div>
             </ActionForm>
           )}

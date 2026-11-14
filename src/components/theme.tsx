@@ -3,13 +3,13 @@
 import { useEffect, useState } from "react";
 
 type Mode = "auto" | "light" | "dark";
-const KEY = "nexo-theme";
+const KEY = "somosguafra-theme";
 
 function apply(mode: Mode) {
   const el = document.documentElement;
   if (mode === "auto") el.removeAttribute("data-theme"); else el.setAttribute("data-theme", mode);
   try { localStorage.setItem(KEY, mode); } catch { /* sin almacenamiento: vale solo por ahora */ }
-  window.dispatchEvent(new CustomEvent("nexo:theme", { detail: mode }));
+  window.dispatchEvent(new CustomEvent("somosguafra:theme", { detail: mode }));
 }
 const current = (): Mode => (document.documentElement.getAttribute("data-theme") as Mode | null) ?? "auto";
 const isDarkNow = (m: Mode) => m === "dark" || (m === "auto" && window.matchMedia("(prefers-color-scheme: dark)").matches);
@@ -19,8 +19,8 @@ function useMode() {
   useEffect(() => {
     setMode(current());
     const on = (e: Event) => setMode((e as CustomEvent).detail as Mode);
-    window.addEventListener("nexo:theme", on);
-    return () => window.removeEventListener("nexo:theme", on);
+    window.addEventListener("somosguafra:theme", on);
+    return () => window.removeEventListener("somosguafra:theme", on);
   }, []);
   return mode;
 }

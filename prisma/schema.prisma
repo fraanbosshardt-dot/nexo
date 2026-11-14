@@ -1,4 +1,4 @@
-// NEXO — modelo de datos.
+// Somos Guafra — modelo de datos.
 // Reglas:
 // - Todo dato financiero pertenece a un espacio (workspaceId) y se filtra siempre por él.
 // - Importes con Decimal exacto (18,2); cotizaciones con Decimal(18,6). Nunca float.

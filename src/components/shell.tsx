@@ -54,12 +54,12 @@ export function Shell({ children, modules, overdue, userName, plan, isAdmin, log
   const [open, setOpen] = useState(false);
   const [menu, setMenu] = useState(false);
   const [sideOff, setSideOff] = useState(false);
-  useEffect(() => { try { setSideOff(localStorage.getItem("nexo-side") === "off"); } catch { /* sin almacenamiento */ } }, []);
+  useEffect(() => { try { setSideOff(localStorage.getItem("somosguafra-side") === "off"); } catch { /* sin almacenamiento */ } }, []);
   const toggleMenu = () => {
     if (window.matchMedia("(max-width: 900px)").matches) { setOpen(!open); return; }
     const v = !sideOff;
     setSideOff(v);
-    try { localStorage.setItem("nexo-side", v ? "off" : "on"); } catch { /* sin almacenamiento */ }
+    try { localStorage.setItem("somosguafra-side", v ? "off" : "on"); } catch { /* sin almacenamiento */ }
   };
   // Esc cierra el menú del celular y el de tu cuenta; al abrir el de tu cuenta, el foco va adentro.
   useEffect(() => {
@@ -90,7 +90,7 @@ export function Shell({ children, modules, overdue, userName, plan, isAdmin, log
     <div className={`app ${sideOff ? "side-off" : ""}`}>
       <header className="top">
         <button className="ibtn menu-btn" aria-label={open || !sideOff ? "Ocultar menú" : "Mostrar menú"} aria-expanded={open || !sideOff} onClick={toggleMenu}><Icon name="menu" /></button>
-        <Link href="/app" className="brand" aria-label="Guafra, ir al inicio"><Mark /><b className="wordmark">guafra</b></Link>
+        <Link href="/app" className="brand" aria-label="Somos Guafra, ir al inicio"><Mark /><b className="wordmark">somos guafra</b></Link>
         <form action="/app/buscar" className="search top-search" role="search"><input name="q" placeholder="Buscar movimientos, cuentas, categorías…" aria-label="Buscar" /></form>
         <span style={{ flex: 1 }} />
         <Link className="ibtn top-search-btn" href="/app/buscar" aria-label="Buscar"><Icon name="search" /></Link>
@@ -102,7 +102,7 @@ export function Shell({ children, modules, overdue, userName, plan, isAdmin, log
         <button className="avatar" style={{ border: 0, cursor: "pointer" }} aria-label="Tu cuenta" aria-haspopup="dialog" aria-expanded={menu} title={userName} onClick={() => setMenu(true)}>{initials}</button>
       </header>
       <aside className={`side ${open ? "open" : ""}`} aria-label="Menú principal">
-        <Link href="/app" className="brand" onClick={() => setOpen(false)}><Mark /><b className="wordmark">guafra</b></Link>
+        <Link href="/app" className="brand" onClick={() => setOpen(false)}><Mark /><b className="wordmark">somos guafra</b></Link>
         {groups(overdue).map(([g, items]) => {
           const links = items.map(link).filter(Boolean);
           return links.length ? <nav className="navg" key={g || "inicio"}>{g && <h6>{g}</h6>}{links}</nav> : null;

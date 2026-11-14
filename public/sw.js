@@ -1,7 +1,7 @@
-// Service worker de Guafra.
+// Service worker de Somos Guafra.
 // Guarda solo lo que no cambia (estilos, código, íconos) y una página "Sin conexión".
 // Nunca guarda páginas de la app ni respuestas con datos: tu información financiera no queda en el teléfono.
-const VERSION = "nexo-v1";
+const VERSION = "somosguafra-v1";
 const STATIC = `${VERSION}-static`;
 const OFFLINE = "/offline";
 
@@ -47,12 +47,12 @@ self.addEventListener("fetch", (event) => {
 // Avisos en el celular: llegan vacíos y se pide a la app qué mostrar (con tu sesión), así ningún dato viaja en el aviso.
 self.addEventListener("push", (event) => {
   event.waitUntil((async () => {
-    let m = { title: "Guafra", body: "Tenés pagos o cobros para revisar.", url: "/app/proximos" };
+    let m = { title: "Somos Guafra", body: "Tenés pagos o cobros para revisar.", url: "/app/proximos" };
     try {
       const r = await fetch("/api/push/aviso", { credentials: "same-origin", cache: "no-store" });
       if (r.ok) m = await r.json();
     } catch (e) { /* sin conexión: se muestra el aviso genérico */ }
-    await self.registration.showNotification(m.title, { body: m.body, icon: "/icons/192", badge: "/icons/192", data: { url: m.url }, tag: "guafra-vencimientos" });
+    await self.registration.showNotification(m.title, { body: m.body, icon: "/icons/192", badge: "/icons/192", data: { url: m.url }, tag: "somosguafra-vencimientos" });
   })());
 });
 

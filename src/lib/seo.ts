@@ -2,8 +2,8 @@ import { BRAND } from "./brand";
 import { GUIDES } from "@/content/guides";
 // Datos del sitio para buscadores y redes sociales.
 export const SITE = {
-  name: "Guafra",
-  title: "Guafra · Finanzas personales en tu moneda",
+  name: "Somos Guafra",
+  title: "Somos Guafra · Finanzas personales en tu moneda",
   description: "Sabé cuánto tenés, cuánto debés y cuánto podés gastar hasta tu próximo cobro. Cuentas, tarjetas en cuotas, deudas y vencimientos en un solo lugar. Gratis.",
   url: (process.env.APP_URL || "http://localhost:3000").replace(/\/$/, ""),
   locale: "es",

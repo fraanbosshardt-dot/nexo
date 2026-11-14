@@ -13,7 +13,7 @@ const fecha = (iso: string) => { const [, m, d] = iso.split("-").map(Number); re
 export function PlanAware({ children }: { children: React.ReactNode }) {
   const [me, setMe] = useState<Me | null>(null);
   useEffect(() => {
-    if (!/(?:^|; )nexo_in=1/.test(document.cookie)) return; // sin sesión: no hace falta preguntar
+    if (!/(?:^|; )somosguafra_in=1/.test(document.cookie)) return; // sin sesión: no hace falta preguntar
     fetch("/api/mi-plan", { cache: "no-store" }).then((r) => r.json()).then(setMe).catch(() => {});
   }, []);
   const state = !me?.logged ? "" : me.plan === "PRO" ? (me.trial ? "trial" : "pro") : "free";

@@ -164,7 +164,7 @@ export function DebtFormFields({ accounts, today, baseCurrency, d: initial = {},
                 <label className="field">Seguro (% por mes del saldo)<input name="insurancePct" inputMode="decimal" placeholder="Ej.: 0,08" defaultValue={d.insurancePct} /></label>
                 <label className="field">Otros cargos por cuota<input name="insuranceFixed" inputMode="decimal" placeholder="0,00" defaultValue={d.insuranceFixed} /></label>
               </div>
-              <p className="sub" style={{ margin: 0 }}>Están en el contrato o en el detalle de la cuota. Si los cargás, la cuota de arriba es la <b>cuota pura</b> (sin IVA ni seguro): Guafra le suma el IVA de cada mes y el seguro sobre lo que te falta pagar, para que dé igual que el banco.</p>
+              <p className="sub" style={{ margin: 0 }}>Están en el contrato o en el detalle de la cuota. Si los cargás, la cuota de arriba es la <b>cuota pura</b> (sin IVA ni seguro): Somos Guafra le suma el IVA de cada mes y el seguro sobre lo que te falta pagar, para que dé igual que el banco.</p>
             </>
           )}
           <div className="frow"><label className="field">Fecha del préstamo<input name="startDate" type="date" defaultValue={d.startDate ?? today} /></label>{!free && <label className="field">Cuotas ya pagadas<input name="paidInstallments" inputMode="numeric" placeholder="0" defaultValue={d.paidInstallments} /></label>}</div>

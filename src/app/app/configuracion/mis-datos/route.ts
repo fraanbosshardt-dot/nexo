@@ -11,6 +11,6 @@ export async function GET() {
   const data = await exportAccountData(getDb(), s.userId);
   await audit("auth.data_downloaded", { userId: s.userId });
   return new Response(JSON.stringify(data, null, 2), {
-    headers: { "content-type": "application/json; charset=utf-8", "content-disposition": `attachment; filename="mis-datos-guafra-${new Date().toISOString().slice(0, 10)}.json"`, "cache-control": "no-store" },
+    headers: { "content-type": "application/json; charset=utf-8", "content-disposition": `attachment; filename="mis-datos-somosguafra-${new Date().toISOString().slice(0, 10)}.json"`, "cache-control": "no-store" },
   });
 }

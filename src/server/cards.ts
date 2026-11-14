@@ -275,7 +275,7 @@ export async function cardPurchase(
         data: { cardId: card.id, description, purchaseDate: input.date, totalAmount: total.toFixed(2), installments: n, installmentAmount: allocate(total, n)[n - 1].toFixed(2), interestFree: input.financedTotal == null, categoryId: input.categoryId ?? null, transactionId: t.id, firstStatementDate: cal.closingFor(input.date) },
       });
     }
-    // Compra olvidada de un resumen que Guafra ya había cerrado solo: ese resumen se actualiza.
+    // Compra olvidada de un resumen que Somos Guafra ya había cerrado solo: ese resumen se actualiza.
     if (closed && !closed.loaded) {
       const add = n > 1 ? allocate(total, n)[0] : total;
       await tx.cardStatement.update({ where: { id: closed.id }, data: { totalAmount: dec(closed.totalAmount).plus(add).toFixed(2) } });
@@ -516,7 +516,7 @@ export type CarryInstallment = { description: string; amount: MoneyValue; remain
 
 // Carga a mano (o desde el PDF, siempre confirmado por la persona) un resumen de la tarjeta.
 // La deuda que trae se registra como AJUSTE en la cuenta de la tarjeta: no es un gasto nuevo
-// (las compras fueron antes de usar Guafra), así no se cuenta dos veces.
+// (las compras fueron antes de usar Somos Guafra), así no se cuenta dos veces.
 export async function loadStatement(db: Db, ws: string, input: { cardId: string; closingDate: Date; dueDate: Date; total: MoneyValue; minimum?: MoneyValue | null; carry?: CarryInstallment[]; userId?: string | null }) {
   const card = await loadCard(db, ws, input.cardId);
   const cal = calendar(card);
@@ -532,7 +532,7 @@ export async function loadStatement(db: Db, ws: string, input: { cardId: string;
     if (!Number.isInteger(c.remaining) || c.remaining < 1 || c.remaining > 60) throw new UserError(`Las cuotas que faltan de "${c.description}" van de 1 a 60.`);
   }
   const existing = card.statements.find((s) => s.closingDate.getTime() === input.closingDate.getTime()) ?? null;
-  // Lo que Guafra ya tenía para ese resumen (compras cargadas acá), para ajustar solo la diferencia.
+  // Lo que Somos Guafra ya tenía para ese resumen (compras cargadas acá), para ajustar solo la diferencia.
   const base = existing ? dec(existing.totalAmount) : (await statementAmount(db, card, input.closingDate)).total;
   const delta = total.minus(base);
   const p = period(input.closingDate);
@@ -554,7 +554,7 @@ export async function loadStatement(db: Db, ws: string, input: { cardId: string;
       // Modo simple: lo que trae el resumen es lo que gastaste ese mes con la tarjeta (una sola vez).
       await tx.transaction.create({ data: { workspaceId: ws, accountId: card.accountId!, type: "EXPENSE", direction: delta.gt(0) ? "OUT" : "IN", amount: delta.abs().toFixed(2), currency: card.currency, description: `Resumen ${card.name} ${p}`, categoryId: cat, effectiveDate: input.closingDate, economicPeriod: p, notes: "Total del resumen (modo simple)", createdById: input.userId ?? null } });
     } else if (!delta.isZero()) {
-      await tx.transaction.create({ data: { workspaceId: ws, accountId: card.accountId!, type: "ADJUSTMENT", direction: delta.gt(0) ? "OUT" : "IN", amount: delta.abs().toFixed(2), currency: card.currency, description: `Resumen ${p} cargado (deuda anterior a Guafra)`, effectiveDate: input.closingDate, economicPeriod: p, createdById: input.userId ?? null } });
+      await tx.transaction.create({ data: { workspaceId: ws, accountId: card.accountId!, type: "ADJUSTMENT", direction: delta.gt(0) ? "OUT" : "IN", amount: delta.abs().toFixed(2), currency: card.currency, description: `Resumen ${p} cargado (deuda anterior a Somos Guafra)`, effectiveDate: input.closingDate, economicPeriod: p, createdById: input.userId ?? null } });
     }
     const next = cal.next(input.closingDate);
     for (const c of carry) {
@@ -572,7 +572,7 @@ async function cardCategory(db: Db, ws: string) {
   return (c ?? (await db.category.create({ data: { workspaceId: ws, kind: "EXPENSE", name: "Tarjeta de crédito" } }))).id;
 }
 
-// Compras del resumen (leídas del PDF) que no están cargadas en Guafra: mismo importe y fecha cercana (±3 días).
+// Compras del resumen (leídas del PDF) que no están cargadas en Somos Guafra: mismo importe y fecha cercana (±3 días).
 export async function missingPurchases(db: Db, ws: string, cardId: string, lines: { date: string; description: string; amount: string; currency?: string | null }[]) {
   const main = await loadCard(db, ws, cardId);
   const all = [main, ...(await db.creditCard.findMany({ where: { workspaceId: ws, parentId: main.id }, include: { plans: true, cycles: true, subscriptions: true, statements: true } }))];
@@ -587,7 +587,7 @@ export async function missingPurchases(db: Db, ws: string, cardId: string, lines
     const amt = round2(l.amount);
     const hit = tx.find((t) => !used.has(t.id) && round2(t.amount).eq(amt) && Math.abs(t.effectiveDate.getTime() - d) <= 3 * 864e5);
     if (hit) { used.add(hit.id); return false; }
-    // Una cuota de una compra que ya está en Guafra tampoco falta.
+    // Una cuota de una compra que ya está en Somos Guafra tampoco falta.
     if (plans.some((p) => round2(p.installmentAmount).eq(amt))) return false;
     return true;
   });

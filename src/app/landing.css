@@ -348,7 +348,7 @@
   .lx-sky .g1{left:-40px;top:8%;opacity:.35}.lx-sky .g2{right:-60px;top:4%;opacity:.35}.lx-sky .g4{right:-80px;bottom:40%;opacity:.3}
 }
 
-/* ---------- Un mes con Guafra ---------- */
+/* ---------- Un mes con Somos Guafra ---------- */
 .lx-month{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(28px,5vw,72px);align-items:start}
 .lx-month-steps{list-style:none;margin:0;padding:0}
 .lx-month-steps li{min-height:58vh;display:flex;flex-direction:column;justify-content:center;gap:10px;opacity:.32;transition:opacity .45s,transform .45s;transform:translateX(-6px)}
@@ -546,7 +546,7 @@
   .lx-mega-row.r2{translate:-20% 0!important}
 }
 
-/* Comparación: la columna de Guafra resaltada en verde, con el logo arriba y respuestas en pastilla */
+/* Comparación: la columna de Somos Guafra resaltada en verde, con el logo arriba y respuestas en pastilla */
 .lx-vs{border-radius:28px;box-shadow:0 24px 60px rgba(11,24,19,.07)}
 .lx-vs table{table-layout:fixed;font-size:14.5px}
 .lx-vs thead th:first-child,.lx-vs tbody th{width:36%}
@@ -652,7 +652,7 @@
   .lx-show-dots{position:absolute;left:0;right:0;bottom:18px;z-index:3;display:flex;justify-content:center;gap:6px}
   .lx-show-dots i{display:block;width:7px;height:7px;border-radius:4px;background:rgba(255,255,255,.35);transition:width .25s,background-color .25s}
   .lx-show-dots i.on{width:20px;background:#8EC4A0}
-  /* Un mes con Guafra: una lista simple, cada día con cuánto te queda */
+  /* Un mes con Somos Guafra: una lista simple, cada día con cuánto te queda */
   .lx-month-vis{display:none}
   .lx-month-steps li{min-height:0;opacity:1;transform:none;padding:18px 0;border-bottom:1px solid var(--line)}
   .lx-month-steps li:last-child{border-bottom:0}
@@ -662,7 +662,7 @@
   .lx-month-steps p{font-size:15px}
   /* Franja gigante: en el celular no aporta y queda quieta */
   .lx-mega{display:none}
-  /* Comparación: en Guafra solo el logo y el tilde (sin palabras que se corten) */
+  /* Comparación: en Somos Guafra solo el logo y el tilde (sin palabras que se corten) */
   .lx-vs-brand>span:not(.lx-vs-mark){display:none}
   .lx-vs .lx-yes{font-size:0;gap:0}
   .lx-vs .lx-yes svg{width:22px;height:22px}

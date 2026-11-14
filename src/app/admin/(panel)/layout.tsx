@@ -6,7 +6,7 @@ import { adminLogoutAction } from "@/app/actions/admin";
 import { AdminNav } from "./nav";
 import { LogoMark } from "@/components/logo-mark";
 
-export const metadata: Metadata = { title: { default: "Panel interno", template: "%s · Panel Guafra" }, robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: { default: "Panel interno", template: "%s · Panel Somos Guafra" }, robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
 
 const SECTIONS: { href: string; label: string; icon: string; perm: Perm }[] = [
@@ -30,7 +30,7 @@ export default async function PanelLayout({ children }: { children: React.ReactN
     <div className="adm">
       <header className="adm-top">
         <div className="adm-bar">
-          <Link href="/admin" className="brand" style={{ textDecoration: "none" }}><LogoMark /><b className="wordmark">guafra</b></Link>
+          <Link href="/admin" className="brand" style={{ textDecoration: "none" }}><LogoMark /><b className="wordmark">somos guafra</b></Link>
           <span className="pill b">Panel interno</span>
           <span style={{ flex: 1 }} />
           <span className="adm-who"><b>{admin.name ?? admin.email}</b><small>{admin.email} · {ROLE_NAMES[admin.role]}</small></span>

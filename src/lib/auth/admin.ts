@@ -1,13 +1,13 @@
 import "server-only";
-// Acceso al panel interno: sesión propia (cookie nexo_admin), solo con Google y lista blanca.
-// No depende de la cuenta de la app: alguien del equipo puede administrar sin tener cuenta en Guafra.
+// Acceso al panel interno: sesión propia (cookie somosguafra_admin), solo con Google y lista blanca.
+// No depende de la cuenta de la app: alguien del equipo puede administrar sin tener cuenta en Somos Guafra.
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getDb } from "@/lib/db";
 import { randomToken, sha256 } from "@/lib/crypto";
 import { roleFor, can, type AdminRole, type Perm } from "@/server/admin-team";
 
-export const ADMIN_COOKIE = "nexo_admin";
+export const ADMIN_COOKIE = "somosguafra_admin";
 const HOURS = 8;
 
 export async function createAdminSession(email: string, name: string | null) {

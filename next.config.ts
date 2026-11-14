@@ -6,11 +6,11 @@ const securityHeaders = [
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
-  // Aísla la ventana: otra página no puede manejar la de Finan ni leer sus recursos.
+  // Aísla la ventana: otra página no puede manejar la de Somos Guafra ni leer sus recursos.
   { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
   { key: "Cross-Origin-Resource-Policy", value: "same-site" },
   { key: "X-DNS-Prefetch-Control", value: "off" },
-  // Solo se cargan recursos de NEXO. Next necesita scripts en línea; en desarrollo, también eval.
+  // Solo se cargan recursos de Somos Guafra. Next necesita scripts en línea; en desarrollo, también eval.
   {
     key: "Content-Security-Policy",
     value: [

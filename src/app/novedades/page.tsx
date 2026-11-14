@@ -5,7 +5,7 @@ import { PublicShell } from "@/components/public-shell";
 
 export const metadata: Metadata = {
   title: "Novedades",
-  description: "Todo lo nuevo de Guafra, mes a mes: funciones que se suman, mejoras en el celular y cambios que nos pidieron quienes la usan todos los días.",
+  description: "Todo lo nuevo de Somos Guafra, mes a mes: funciones que se suman, mejoras en el celular y cambios que nos pidieron quienes la usan todos los días.",
   alternates: { canonical: "/novedades" },
 };
 export const revalidate = 300;
@@ -32,7 +32,7 @@ export default async function News() {
         )) : (
           <div className="news-empty">
             <span className="news-empty-ic" aria-hidden="true">✦</span>
-            <div><b>Todavía no publicamos novedades.</b><p>Cuando sumemos algo nuevo a Guafra, lo vas a ver acá primero.</p></div>
+            <div><b>Todavía no publicamos novedades.</b><p>Cuando sumemos algo nuevo a Somos Guafra, lo vas a ver acá primero.</p></div>
           </div>
         )}
         </div>

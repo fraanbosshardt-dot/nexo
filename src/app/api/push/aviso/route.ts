@@ -7,6 +7,6 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   const s = await getSession();
-  if (!s || (s.user.totpEnabledAt && !s.twoFactorVerified)) return Response.json({ title: "Guafra", body: "Tenés novedades en tus pagos y cobros.", url: "/app" }, { headers: { "cache-control": "no-store" } });
+  if (!s || (s.user.totpEnabledAt && !s.twoFactorVerified)) return Response.json({ title: "Somos Guafra", body: "Tenés novedades en tus pagos y cobros.", url: "/app" }, { headers: { "cache-control": "no-store" } });
   return Response.json(await pushMessage(getDb(), s.userId), { headers: { "cache-control": "no-store" } });
 }

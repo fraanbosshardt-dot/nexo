@@ -8,7 +8,7 @@ export const emailEnabled = () => !!process.env.RESEND_API_KEY;
 
 export async function sendEmail(e: Email): Promise<{ sent: boolean; reason?: string }> {
   const key = process.env.RESEND_API_KEY;
-  const from = process.env.EMAIL_FROM || "Guafra <avisos@guafra.app>";
+  const from = process.env.EMAIL_FROM || "Somos Guafra <avisos@somosguafra.com>";
   if (!key) {
     if (process.env.NODE_ENV !== "production") console.info(`\n[email sin enviar: falta RESEND_API_KEY]\nPara: ${e.to}\nAsunto: ${e.subject}\n${e.text}\n`);
     return { sent: false, reason: "sin-clave" };

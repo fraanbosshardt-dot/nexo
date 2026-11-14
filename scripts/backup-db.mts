@@ -18,6 +18,6 @@ for (const { table_name } of tables) {
 await client.query("COMMIT");
 await client.end();
 mkdirSync(".data/backups", { recursive: true });
-const file = `.data/backups/nexo-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
+const file = `.data/backups/somosguafra-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
 writeFileSync(file, JSON.stringify({ takenAt: new Date().toISOString(), tables: dump }));
 console.log(`Copia guardada: ${file} · ${tables.length} tablas · ${total} filas`);

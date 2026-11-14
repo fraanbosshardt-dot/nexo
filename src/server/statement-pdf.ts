@@ -12,7 +12,7 @@ export type ParsedStatement = {
   minimumUsd: string | null;
   carry: { description: string; amount: string; remaining: number }[];
   purchases: { date: string; description: string; amount: string }[]; // compras del resumen
-  missing?: { date: string; description: string; amount: string }[]; // las que no están cargadas en Guafra
+  missing?: { date: string; description: string; amount: string }[]; // las que no están cargadas en Somos Guafra
   found: string[]; // qué datos encontró, para mostrarlo
 };
 

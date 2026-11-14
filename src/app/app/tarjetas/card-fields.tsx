@@ -15,7 +15,7 @@ export function CardFields({ accounts, base, d = {}, edit = false }: { accounts:
         <div className="field" role="radiogroup" aria-label="¿Cómo querés usar la tarjeta?">
           <span>¿Cómo querés usar la tarjeta?</span>
           <div className="paychs">
-            <label className="paych"><input type="radio" name="mode" value="SIMPLE" required /><span className="grow"><b>Solo el resumen (lo más fácil)</b><span className="sub">Una vez por mes cargás el total del resumen (o subís el PDF). Cuenta como un gasto del mes y Guafra te avisa cuándo vence.</span></span></label>
+            <label className="paych"><input type="radio" name="mode" value="SIMPLE" required /><span className="grow"><b>Solo el resumen (lo más fácil)</b><span className="sub">Una vez por mes cargás el total del resumen (o subís el PDF). Cuenta como un gasto del mes y Somos Guafra te avisa cuándo vence.</span></span></label>
             <label className="paych"><input type="radio" name="mode" value="DETAILED" required /><span className="grow"><b>Cada compra (más detalle)</b><span className="sub">Anotás cada compra con su categoría y cuotas. El resumen se arma solo y ves en qué se fue la plata. Ideal si querés presupuestos por categoría.</span></span></label>
           </div>
           <span className="sub" style={{ fontWeight: 400 }}>Podés cambiarlo cuando quieras desde “Editar tarjeta”.</span>

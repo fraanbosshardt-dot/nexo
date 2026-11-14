@@ -73,7 +73,7 @@ export function QuedaDemo() {
       <div className="lx-queda" aria-hidden="true"><i style={{ width: `${pct}%` }} className={tone} /></div>
       <div className={`lx-verdict ${tone}`} role="status" aria-live="polite">
         <b>{queda < 0 ? `Te faltan ${fmt(-queda)}` : `Te quedan ${fmt(queda)}`}</b>
-        <span>{queda < 0 ? "Lo que vence es más de lo que tenés: conviene mover algún pago o buscar un ingreso antes." : `Son ${fmt(porDia)} por día hasta el cobro. En Guafra este número se actualiza solo con cada gasto.`}</span>
+        <span>{queda < 0 ? "Lo que vence es más de lo que tenés: conviene mover algún pago o buscar un ingreso antes." : `Son ${fmt(porDia)} por día hasta el cobro. En Somos Guafra este número se actualiza solo con cada gasto.`}</span>
       </div>
       <Link className="lx-more" href="/registro">Calcularlo con mis datos reales →</Link>
     </div>

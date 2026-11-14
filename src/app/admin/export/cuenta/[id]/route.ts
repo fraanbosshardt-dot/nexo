@@ -15,6 +15,6 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   const data = await exportAccountData(db, id);
   await adminAudit(admin, "admin.data_exported", { entity: "user", entityId: id });
   return new Response(JSON.stringify(data, (_k, v) => (typeof v === "bigint" ? v.toString() : v), 2), {
-    headers: { "content-type": "application/json; charset=utf-8", "content-disposition": `attachment; filename="nexo-datos-${id}.json"`, "cache-control": "no-store" },
+    headers: { "content-type": "application/json; charset=utf-8", "content-disposition": `attachment; filename="somosguafra-datos-${id}.json"`, "cache-control": "no-store" },
   });
 }

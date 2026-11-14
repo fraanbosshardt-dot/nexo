@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 export function RefCapture() {
   useEffect(() => {
     const ref = new URLSearchParams(window.location.search).get("ref");
-    if (ref && /^[a-z2-9]{8}$/.test(ref)) document.cookie = `nexo_ref=${ref}; max-age=${30 * 86400}; path=/; samesite=lax`;
+    if (ref && /^[a-z2-9]{8}$/.test(ref)) document.cookie = `somosguafra_ref=${ref}; max-age=${30 * 86400}; path=/; samesite=lax`;
   }, []);
   return null;
 }

@@ -83,7 +83,7 @@ async function cleanUnverified(db: ReturnType<typeof getDb>) {
     if (await db.auditLog.count({ where: { action: "account.unverified_warned", entityId: u.id } })) continue;
     const user = await db.user.findUnique({ where: { id: u.id } });
     if (!user) continue;
-    const r = await sendEmail({ to: user.email, subject: "Tu cuenta de Guafra se borra en 7 días", text: `Hola ${user.name.split(" ")[0]}:\n\nCreaste una cuenta en Guafra pero nunca confirmaste tu correo ni la usaste. Si en 7 días sigue así, la borramos con todos sus datos.\n\nSi la querés conservar, entrá a ${appUrl()}/app y confirmá tu correo (te mandamos un código en otro correo).\n\nGuafra` });
+    const r = await sendEmail({ to: user.email, subject: "Tu cuenta de Somos Guafra se borra en 7 días", text: `Hola ${user.name.split(" ")[0]}:\n\nCreaste una cuenta en Somos Guafra pero nunca confirmaste tu correo ni la usaste. Si en 7 días sigue así, la borramos con todos sus datos.\n\nSi la querés conservar, entrá a ${appUrl()}/app y confirmá tu correo (te mandamos un código en otro correo).\n\nGuafra` });
     if (r.sent) { await sendVerifyEmail(user); warned++; }
     await db.auditLog.create({ data: { action: "account.unverified_warned", entity: "user", entityId: u.id } });
   }

@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Icon } from "./icons";
 
 const DAYS = 7;
-const keyOf = (text: string) => { let h = 0; for (let i = 0; i < text.length; i++) h = (h * 31 + text.charCodeAt(i)) | 0; return `nexo-ann-${(h >>> 0).toString(36)}`; };
+const keyOf = (text: string) => { let h = 0; for (let i = 0; i < text.length; i++) h = (h * 31 + text.charCodeAt(i)) | 0; return `somosguafra-ann-${(h >>> 0).toString(36)}`; };
 
 export function AnnouncementBar({ text, tone, link }: { text: string; tone: "info" | "warn"; link: string | null }) {
   const [show, setShow] = useState(false);

@@ -40,7 +40,7 @@ describe("verificación en dos pasos (TOTP)", () => {
     expect(verifyTotp(s, "12345", now)).toBe(false);
   });
   it("arma el enlace para Google Authenticator", () => {
-    expect(otpauthUrl("ABC", "ana@ejemplo.com")).toContain("otpauth://totp/Guafra%3Aana%40ejemplo.com?secret=ABC");
+    expect(otpauthUrl("ABC", "ana@ejemplo.com")).toContain("otpauth://totp/Somos%20Guafra%3Aana%40ejemplo.com?secret=ABC");
   });
   it("cifra el secreto antes de guardarlo", () => {
     const enc = encryptSecret("JBSWY3DPEHPK3PXP");

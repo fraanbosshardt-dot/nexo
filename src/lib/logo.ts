@@ -1,4 +1,4 @@
-// Logo de Guafra: la "g" con la curva que sube y tres barras que crecen. Un solo dibujo para todo:
+// Logo de Somos Guafra: la "g" con la curva que sube y tres barras que crecen. Un solo dibujo para todo:
 // el ícono del sitio, los de la app instalada, el de iPhone, la imagen para compartir y la marca del encabezado.
 export const LOGO = {
   dark: "#16493A",

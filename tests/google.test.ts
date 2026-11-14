@@ -23,10 +23,10 @@ describe("id_token de Google", () => {
   });
   it("arma el pedido con PKCE y guarda el estado", () => {
     process.env.GOOGLE_CLIENT_ID = "cid";
-    const { url, cookie } = startGoogle("https://nexo.app", "registro");
+    const { url, cookie } = startGoogle("https://somosguafra.com", "registro");
     const u = new URL(url);
     const st = readStart(cookie)!;
-    expect(u.searchParams.get("redirect_uri")).toBe("https://nexo.app/api/auth/google/callback");
+    expect(u.searchParams.get("redirect_uri")).toBe("https://somosguafra.com/api/auth/google/callback");
     expect(u.searchParams.get("code_challenge_method")).toBe("S256");
     expect(u.searchParams.get("state")).toBe(st.state);
     expect(u.toString()).not.toContain(st.verifier);

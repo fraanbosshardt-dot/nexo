@@ -1,6 +1,6 @@
 // Nombre de la marca y datos del titular, en un solo lugar: al cambiar el nombre o el dominio, se cambia acá.
 export const BRAND = {
-  name: "Guafra",
+  name: "Somos Guafra",
   tagline: "Finanzas personales en tu moneda",
   owner: "Francisco Jesús Bosshardt",
   cuit: "20-45836722-2",

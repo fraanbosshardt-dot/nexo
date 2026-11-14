@@ -31,5 +31,5 @@ export async function GET(_: Request, { params }: { params: Promise<{ kind: stri
     body = csv([["Fecha", "Cliente", "Correo", "Importe", "Moneda", "Estado", "Referencia"], ...inv.map((i) => [i.paidAt ?? i.createdAt, i.workspace.members[0]?.user.name, i.workspace.members[0]?.user.email, i.amount.toString().replace(".", ","), i.currency, i.status, i.providerRef])]);
   } else return new Response("No existe", { status: 404 });
   await adminAudit(admin, "admin.export", { meta: { kind } });
-  return new Response(body, { headers: { "content-type": "text/csv; charset=utf-8", "content-disposition": `attachment; filename="nexo-${kind}-${new Date().toISOString().slice(0, 10)}.csv"`, "cache-control": "no-store" } });
+  return new Response(body, { headers: { "content-type": "text/csv; charset=utf-8", "content-disposition": `attachment; filename="somosguafra-${kind}-${new Date().toISOString().slice(0, 10)}.csv"`, "cache-control": "no-store" } });
 }

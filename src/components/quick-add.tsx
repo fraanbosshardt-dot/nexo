@@ -1,6 +1,6 @@
 "use client";
 // Carga rápida del celular: una hoja que sube desde abajo con teclado numérico propio y categorías con íconos.
-// Se abre desde el + de la barra de abajo o desde los botones redondos de Inicio (evento "nexo:quick").
+// Se abre desde el + de la barra de abajo o desde los botones redondos de Inicio (evento "somosguafra:quick").
 import Link from "next/link";
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { createMovementAction } from "@/app/actions/app";
@@ -12,7 +12,7 @@ type Kind = "EXPENSE" | "INCOME";
 type Data = Awaited<ReturnType<typeof quickAddData>>;
 
 export function openQuickAdd(kind: Kind = "EXPENSE") {
-  window.dispatchEvent(new CustomEvent("nexo:quick", { detail: { kind } }));
+  window.dispatchEvent(new CustomEvent("somosguafra:quick", { detail: { kind } }));
 }
 
 const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "000", "0", "del"];
@@ -35,8 +35,8 @@ export function QuickAdd() {
       setIdem(crypto.randomUUID?.() ?? String(Date.now()));
       fetch("/api/rapido", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((d: Data | null) => { if (d) { setData(d); setAccount((a) => a || d.defaultAccount); } }).catch(() => setData(null));
     };
-    window.addEventListener("nexo:quick", onOpen);
-    return () => window.removeEventListener("nexo:quick", onOpen);
+    window.addEventListener("somosguafra:quick", onOpen);
+    return () => window.removeEventListener("somosguafra:quick", onOpen);
   }, []);
 
   useEffect(() => {

@@ -14,7 +14,7 @@ const FAQ: [string, string][] = [
   ["¿Qué diferencia hay entre el sistema francés y el alemán?", "En el francés pagás siempre la misma cuota y al principio es casi todo interés. En el alemán devolvés lo mismo de capital cada mes, así que la cuota empieza más alta y va bajando; en total pagás menos intereses."],
   ["¿Qué es la TNA y qué es la TEA?", "La TNA es la tasa anual que informa el banco. La TEA es lo que realmente pagás en un año, porque los intereses se suman mes a mes. Por eso la TEA siempre es igual o mayor que la TNA."],
   ["¿El CFT entra en el cálculo?", "No. El CFT suma seguros, comisiones e impuestos. Sirve para comparar préstamos entre bancos: el que tenga el CFT más bajo es el más barato."],
-  ["¿Conviene cancelar un préstamo antes?", "Generalmente sí: dejás de pagar los intereses futuros. En Guafra ves cuánto capital debés y cuánto te ahorrás si cancelás todo hoy."],
+  ["¿Conviene cancelar un préstamo antes?", "Generalmente sí: dejás de pagar los intereses futuros. En Somos Guafra ves cuánto capital debés y cuánto te ahorrás si cancelás todo hoy."],
 ];
 
 export default function PrestamoPage() {
@@ -31,7 +31,7 @@ export default function PrestamoPage() {
       <section className="lp-band"><div className="lp-w lp-sec">
         <h2>Preguntas frecuentes</h2>
         <div className="lp-faq">{FAQ.map(([q, a]) => <details key={q}><summary>{q}</summary><p>{a}</p></details>)}</div>
-        <div className="acts" style={{ marginTop: 28, display: "flex", flexWrap: "wrap", gap: 12 }}><Link className="ws-btn pri" href="/registro">Seguir mis deudas en Guafra</Link><Link className="ws-btn" href="/glosario">Ver el glosario</Link></div>
+        <div className="acts" style={{ marginTop: 28, display: "flex", flexWrap: "wrap", gap: 12 }}><Link className="ws-btn pri" href="/registro">Seguir mis deudas en Somos Guafra</Link><Link className="ws-btn" href="/glosario">Ver el glosario</Link></div>
       </div></section>
     </PublicShell>
   );
