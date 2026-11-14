@@ -574,8 +574,9 @@
 }
 
 /* Precios con la sesión iniciada: tu plan actual */
-.pa-note{max-width:760px;margin:0 auto 18px;padding:12px 16px;border-radius:14px;background:var(--ink-soft);color:var(--ink-txt);font-size:14.5px;text-align:center}
-.pa-go{display:flex;justify-content:center;margin-top:16px}
+.plan-aware{display:flex;flex-direction:column;align-items:center;gap:28px;width:100%;max-width:940px}
+.pa-note{width:100%;max-width:760px;margin:0;padding:12px 16px;border-radius:14px;background:var(--ink-soft);color:var(--ink-txt);font-size:14.5px;text-align:center}
+.pa-go{display:flex;justify-content:center}
 .plan-aware[data-plan=pro] [data-plan-cta],.plan-aware[data-plan=pro] .lx-plan.pro .lx-link{display:none!important}
 .plan-aware[data-plan] [data-free-cta]{display:none}
 .plan-aware[data-plan=free] .lx-plan.free{position:relative;border-color:var(--ink);box-shadow:0 0 0 3px var(--ink-soft)}
