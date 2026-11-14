@@ -7,7 +7,7 @@ import { PageHead } from "@/components/page";
 import { ActionForm, Submit } from "@/components/forms";
 import { adminSaveContactAction, adminSavePlansAction, adminSaveSystemAction } from "@/app/actions/admin";
 import { contactSettings } from "@/server/contact";
-import { AREAS, SOCIALS } from "@/lib/brand";
+import { SOCIALS } from "@/lib/brand";
 
 export const metadata: Metadata = { title: "Ajustes" };
 
@@ -44,10 +44,7 @@ export default async function AdminSettings() {
         <div><Submit>Guardar</Submit></div>
       </ActionForm>
       <ActionForm action={adminSaveContactAction} className="card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        <div className="chead" id="contacto"><div><h3>Contacto y redes</h3><p className="sub">Cada consulta del sitio avisa al correo de su área (si un área no tiene, va al de Soporte). Las redes aparecen en el pie del sitio solo si cargás el link.</p></div></div>
-        <div className="frow" style={{ flexWrap: "wrap" }}>{AREAS.map((a) => (
-          <label className="field" key={a.key} style={{ minWidth: 240, flex: "1 1 240px" }}>{a.name}<input name={`email_${a.key}`} type="email" defaultValue={contact.emails[a.key] ?? ""} placeholder="correo@tudominio.com" /></label>
-        ))}</div>
+        <div className="chead" id="contacto"><div><h3>Contacto y redes</h3><p className="sub">Las consultas llegan a Consultas del sitio. Las redes aparecen en el pie del sitio solo si cargás el link.</p></div></div>
         <div className="frow" style={{ flexWrap: "wrap" }}>{SOCIALS.map((r) => (
           <label className="field" key={r.key} style={{ minWidth: 240, flex: "1 1 240px" }}>{r.name}<input name={`social_${r.key}`} type="url" defaultValue={contact.socials[r.key] ?? ""} placeholder="https://" /></label>
         ))}</div>

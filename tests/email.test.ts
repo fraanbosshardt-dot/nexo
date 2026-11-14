@@ -17,8 +17,9 @@ describe("correo transaccional de la empresa", () => {
     const fetch = vi.fn().mockResolvedValue(new Response("{}")); vi.stubGlobal("fetch", fetch);
     expect(await sendEmail({ purpose: "support", idempotencyKey: "ticket/1", to: "test@example.com", subject: "Respuesta", text: "Listo" })).toEqual({ sent: true });
     const request = fetch.mock.calls[0][1];
-    expect(JSON.parse(request.body)).toMatchObject({ from: "Somos Guafra <soporte@somosguafra.com>", to: ["test@example.com"] });
+    expect(JSON.parse(request.body)).toMatchObject({ from: "somosguafra <soporte@somosguafra.com>", to: ["test@example.com"] });
     expect(request.headers["Idempotency-Key"]).toBe("ticket/1");
+    expect(JSON.parse(request.body)).toMatchObject({ text: "Listo", html: expect.stringContaining("Escribinos desde Contacto") });
   });
   it("reporta el rechazo del proveedor sin fingir que envió el correo", async () => {
     vi.stubEnv("RESEND_API_KEY", "test-key");

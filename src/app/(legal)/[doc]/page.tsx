@@ -11,7 +11,7 @@ export const generateStaticParams = () => Object.keys(LEGAL).map((doc) => ({ doc
 export async function generateMetadata({ params }: { params: Promise<{ doc: string }> }): Promise<Metadata> {
   const { doc } = await params;
   const d = LEGAL[doc];
-  return d ? { title: d.title, description: `${d.title} de ${BRAND.name}. ${d.intro} Titular: ${BRAND.owner}, CUIT ${BRAND.cuit}.`, alternates: { canonical: `/${doc}` } } : {};
+  return d ? { title: d.title, description: `${d.title} de ${BRAND.name}. ${d.intro}${doc === "terminos" ? ` Titular: ${BRAND.owner}, CUIT ${BRAND.cuit}.` : ""}`, alternates: { canonical: `/${doc}` } } : {};
 }
 
 export default async function LegalPage({ params }: { params: Promise<{ doc: string }> }) {
@@ -26,7 +26,7 @@ export default async function LegalPage({ params }: { params: Promise<{ doc: str
           <p className="ws-eyebrow">Legales</p>
           <h1 className="ws-h1" style={{ fontSize: "clamp(34px,4.6vw,56px)" }}>{d.title}</h1>
           <p className="ws-lead">{d.intro}</p>
-          <div className="ws-meta"><span>Última actualización: {BRAND.legalUpdated}</span><span>Titular: {BRAND.owner} · CUIT {BRAND.cuit}</span></div>
+          <div className="ws-meta"><span>Última actualización: {BRAND.legalUpdated}</span>{doc === "terminos" && <span>Titular: {BRAND.owner} · CUIT {BRAND.cuit}</span>}</div>
         </div>
       </section>
       <section className="ws-w" style={{ paddingBottom: "clamp(64px,8vw,112px)" }}>

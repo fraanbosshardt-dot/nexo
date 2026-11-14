@@ -44,7 +44,7 @@ export function jsonLd(data: object) {
 export function organizationLd() {
   return {
     "@context": "https://schema.org", "@type": "Organization", name: SITE.name, url: SITE.url, logo: `${SITE.url}/icon.svg`,
-    founder: { "@type": "Person", name: BRAND.owner }, taxID: BRAND.cuit, areaServed: "AR",
+    areaServed: "AR",
     contactPoint: { "@type": "ContactPoint", contactType: "customer support", url: `${SITE.url}/contacto`, availableLanguage: "es" },
   };
 }

@@ -398,14 +398,14 @@ export async function adminContactStatusAction(fd: FormData) {
 
 export async function adminSaveContactAction(_: FormState, fd: FormData): Promise<FormState> {
   const a = await requireAdmin("owner");
-  const { AREAS, SOCIALS } = await import("@/lib/brand");
-  const { saveContactSettings } = await import("@/server/contact");
-  const emails = Object.fromEntries(AREAS.map((x) => [x.key, s(fd, `email_${x.key}`)]));
+  const { SOCIALS } = await import("@/lib/brand");
+  const { saveContactSettings, contactSettings } = await import("@/server/contact");
+  const emails = (await contactSettings(getDb())).emails as Record<string, string>;
   const socials = Object.fromEntries(SOCIALS.map((x) => [x.key, s(fd, `social_${x.key}`)]));
   const r = await saveContactSettings(getDb(), { emails, socials });
   if ("error" in r) return { error: r.error };
   await adminAudit(a, "admin.contact_settings", { meta: { emails: Object.keys(emails).filter((k) => emails[k]), socials: Object.keys(socials).filter((k) => socials[k]) } });
   refresh();
   revalidatePath("/", "layout");
-  return { ok: "Guardado. Los correos y redes ya se usan en el sitio." };
+  return { ok: "Guardado. Las redes ya se usan en el sitio. El contacto se atiende desde Consultas." };
 }

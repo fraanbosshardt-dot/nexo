@@ -32,7 +32,7 @@ export const LEGAL: Record<string, LegalDoc> = {
     short: "Privacidad",
     intro: "Qué datos guardamos, para qué, y cómo los cuidamos. La versión corta: tus datos son tuyos, no los vendemos y nunca te pedimos la clave del banco.",
     sections: [
-      ["Responsable de los datos", `El responsable de la base de datos es ${TITULAR}. Para ejercer tus derechos usá ${CONTACTO} con el área Privacidad y datos.`],
+      ["Responsable de los datos", `El responsable de los datos es el titular de ${N}, identificado en los Términos y condiciones (/terminos). Para ejercer tus derechos usá ${CONTACTO} con el área Privacidad y datos.`],
       ["Qué datos guardamos", "Tu nombre, tu correo, la información financiera que cargás (cuentas, movimientos, deudas, objetivos) y datos técnicos básicos de uso, como el dispositivo, la dirección IP y la fecha de ingreso."],
       ["Qué no guardamos", `Nunca te pedimos ni guardamos contraseñas de bancos, billeteras o tarjetas, ni números completos de tarjeta. Tu contraseña de ${N} se guarda como un hash que no se puede revertir. Los pagos los procesa Mercado Pago: nosotros no vemos los datos de tu tarjeta.`],
       ["Para qué los usamos", "Para que la aplicación funcione, calcular tus saldos y proyecciones, mandarte los avisos que activaste, responder tus consultas, prevenir fraudes y mejorar el servicio. No vendemos ni alquilamos tus datos y no los usamos para publicidad de terceros."],

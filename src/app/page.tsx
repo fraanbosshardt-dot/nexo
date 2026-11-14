@@ -161,7 +161,7 @@ export default async function Landing() {
     </div>
   );
   const ld = [
-    { "@context": "https://schema.org", "@type": "Organization", name: N, url: SITE.url, logo: `${SITE.url}/icon.svg`, founder: { "@type": "Person", name: BRAND.owner }, taxID: BRAND.cuit, contactPoint: { "@type": "ContactPoint", contactType: "customer support", url: `${SITE.url}/contacto`, availableLanguage: "es" } },
+    { "@context": "https://schema.org", "@type": "Organization", name: N, url: SITE.url, logo: `${SITE.url}/icon.svg`, contactPoint: { "@type": "ContactPoint", contactType: "customer support", url: `${SITE.url}/contacto`, availableLanguage: "es" } },
     { "@context": "https://schema.org", "@type": "SoftwareApplication", name: N, url: SITE.url, applicationCategory: "FinanceApplication", operatingSystem: "Web, Android, iOS", inLanguage: "es", description: SITE.description,
       offers: [{ "@type": "Offer", name: "Gratis", price: "0", priceCurrency: "USD" }, { "@type": "Offer", name: "Pro", price: String(pm.amount), priceCurrency: pm.currency }] },
     { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: FAQ.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })) },

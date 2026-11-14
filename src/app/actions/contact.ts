@@ -1,12 +1,11 @@
 "use server";
-// Formulario público de Contacto: guarda la consulta, la avisa al correo del área (si está cargado)
-// y le manda a la persona su número de trámite.
+// Las consultas llegan al panel interno. La persona recibe su número de trámite por correo.
 import { headers } from "next/headers";
 import { getDb } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
-import { appUrl, sendEmail } from "@/lib/email";
+import { sendEmail } from "@/lib/email";
 import { BRAND } from "@/lib/brand";
-import { areaName, contactSettings, createContactMessage, validateContact } from "@/server/contact";
+import { areaName, createContactMessage, validateContact } from "@/server/contact";
 
 export type ContactState = { error?: string; code?: string; area?: string } | null;
 const s = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
@@ -29,15 +28,11 @@ export async function contactAction(_: ContactState, fd: FormData): Promise<Cont
   const m = r.message;
 
   const area = areaName(m.area);
-  const { emails } = await contactSettings(db);
-  const to = emails[m.area as keyof typeof emails] ?? emails.soporte;
-  await Promise.all([
-    to ? sendEmail({ purpose: "support", to, subject: `[${area}] ${m.subject} · ${m.code}`, text: `Nueva consulta desde el sitio.\n\nÁrea: ${area}\nDe: ${m.name} <${m.email}>\nTrámite: ${m.code}\n\n${m.body}\n\nRespondela desde el panel: ${appUrl()}/admin/consultas` }) : null,
-    sendEmail({ purpose: "support",
+  await sendEmail({ purpose: "support",
+      action: { label: "Volver a Contacto", path: "/contacto" },
       to: m.email,
       subject: `Recibimos tu consulta (${m.code})`,
-      text: `Hola ${m.name.split(" ")[0]}:\n\nRecibimos tu consulta sobre "${m.subject}" (${area}). Tu número de trámite es ${m.code}.\nTe respondemos a este correo, normalmente en menos de 48 horas hábiles.\n\n${m.area === "arrepentimiento" ? "Guardá este número: es la constancia de tu pedido de arrepentimiento.\n\n" : ""}${BRAND.name}`,
-    }),
-  ]);
+      text: `Hola ${m.name.split(" ")[0]}:\n\nRecibimos tu consulta sobre "${m.subject}" (${area}). Tu número de trámite es ${m.code}.\nLa respuesta del equipo te va a llegar por correo, normalmente en menos de 48 horas hábiles.\n\n${m.area === "arrepentimiento" ? "Guardá este número: es la constancia de tu pedido de arrepentimiento.\n\n" : ""}${BRAND.name}`,
+    });
   return { code: m.code, area };
 }

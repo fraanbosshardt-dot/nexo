@@ -10,7 +10,7 @@ export default function Offline() {
     <div className="nx auth">
       <div className="auth-card" style={{ maxWidth: 480, gridTemplateColumns: "1fr" }}>
         <main className="auth-main" style={{ gap: 16 }}>
-          <span className="lp-brand"><LogoMark /><b className="wordmark">somos guafra</b></span>
+          <span className="lp-brand"><LogoMark /><b className="wordmark">somosguafra</b></span>
           <div className="auth-box">
             <h1>Sin conexión</h1>
             <p className="sub">No hay internet en este momento. Por seguridad, tus datos no se guardan en el teléfono: cuando vuelva la conexión, Somos Guafra se abre con todo al día.</p>

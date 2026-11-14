@@ -30,7 +30,7 @@ export default async function PanelLayout({ children }: { children: React.ReactN
     <div className="adm">
       <header className="adm-top">
         <div className="adm-bar">
-          <Link href="/admin" className="brand" style={{ textDecoration: "none" }}><LogoMark /><b className="wordmark">somos guafra</b></Link>
+          <Link href="/admin" className="brand" style={{ textDecoration: "none" }}><LogoMark /><b className="wordmark">somosguafra</b></Link>
           <span className="pill b">Panel interno</span>
           <span style={{ flex: 1 }} />
           <span className="adm-who"><b>{admin.name ?? admin.email}</b><small>{admin.email} · {ROLE_NAMES[admin.role]}</small></span>

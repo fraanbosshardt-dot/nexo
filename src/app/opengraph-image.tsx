@@ -12,7 +12,7 @@ export default function OgImage() {
       <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between", background: "#FFFFFF", padding: 72, fontFamily: "sans-serif" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
           <img src={logoDataUri({ size: 72 })} width={72} height={72} alt="" />
-          <div style={{ fontSize: 40, color: "#16493A", fontWeight: 700 }}>somos guafra</div>
+          <div style={{ fontSize: 40, color: "#16493A", fontWeight: 700 }}>somosguafra</div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <div style={{ fontSize: 72, color: "#1F1F1F", lineHeight: 1.1, maxWidth: 980 }}>Sabé cuánto podés gastar hasta tu próximo cobro.</div>

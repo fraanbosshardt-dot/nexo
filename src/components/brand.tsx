@@ -7,7 +7,7 @@ export function Brand({ href = "/" }: { inverse?: boolean; href?: string }) {
   return (
     <Link href={href} className="lp-brand" aria-label={`${BRAND.name}, ir al inicio`} style={{ textDecoration: "none" }}>
       <LogoMark />
-      <b className="wordmark">{BRAND.name.toLowerCase()}</b>
+      <b className="wordmark">{BRAND.name.toLowerCase().replace(/\s/g, "")}</b>
     </Link>
   );
 }

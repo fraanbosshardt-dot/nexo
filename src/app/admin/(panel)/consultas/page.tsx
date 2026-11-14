@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import { requireAdmin } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { can } from "@/server/admin-team";
-import { contactSettings } from "@/server/contact";
 import { savedReplies } from "@/server/settings";
 import { emailEnabled } from "@/lib/email";
 import { AREAS } from "@/lib/brand";
@@ -29,13 +28,12 @@ export default async function Inquiries({ searchParams }: { searchParams: Promis
     ...(term ? { OR: [{ code: { contains: term.toUpperCase() } }, { email: { contains: term.toLowerCase() } }, { name: { contains: term, mode: "insensitive" as const } }, { subject: { contains: term, mode: "insensitive" as const } }] } : {}),
   };
   const weekAgo = new Date(Date.now() - 7 * 864e5);
-  const [list, byStatus, byArea, week, replies, cfg] = await Promise.all([
+  const [list, byStatus, byArea, week, replies] = await Promise.all([
     db.contactMessage.findMany({ where, orderBy: { createdAt: ver === "abiertas" ? "asc" : "desc" }, take: 100 }),
     db.contactMessage.groupBy({ by: ["status"], _count: { _all: true } }),
     db.contactMessage.groupBy({ by: ["area"], where: { status: "OPEN" }, _count: { _all: true } }),
     db.contactMessage.count({ where: { createdAt: { gt: weekAgo } } }),
     savedReplies(db),
-    contactSettings(db),
   ]);
   const c = (s: string) => byStatus.find((x) => x.status === s)?._count._all ?? 0;
   const openIn = (a: string) => byArea.find((x) => x.area === a)?._count._all ?? 0;
@@ -44,12 +42,11 @@ export default async function Inquiries({ searchParams }: { searchParams: Promis
     for (const [k, v] of [...u.entries()]) if (!v) u.delete(k);
     return `/admin/consultas?${u}`;
   };
-  const missing = AREAS.filter((a) => !cfg.emails[a.key]).length;
   return (
     <>
       <PageHead title="Consultas del sitio" desc="Lo que escriben desde el formulario de Contacto, por área. Clientes y personas sin cuenta." />
       {!emailEnabled() && <p className="notice a">Las respuestas se guardan, pero no salen por correo hasta cargar la clave de Resend. Mientras tanto, respondé a mano al correo de cada consulta.</p>}
-      {missing > 0 && admin.role === "OWNER" && <p className="notice">Hay {missing} {missing === 1 ? "área" : "áreas"} sin correo. Cargalos en <Link className="lnk" href="/admin/ajustes#contacto">Ajustes → Contacto y redes</Link> para recibir aviso de cada consulta nueva.</p>}
+      <p className="notice">Las consultas del formulario llegan a esta bandeja. Abrí una consulta y respondé desde acá; la persona recibe tu respuesta por correo.</p>
       <Stats items={[["Sin responder", c("OPEN")], ["Respondidas", c("ANSWERED")], ["Cerradas", c("CLOSED")], ["Últimos 7 días", week]]} />
       <div className="seg" style={{ alignSelf: "flex-start", flexWrap: "wrap" }}>
         {[["abiertas", `Sin responder (${c("OPEN")})`], ["respondidas", "Respondidas"], ["cerradas", "Cerradas"], ["todas", "Todas"]].map(([k, l]) => <Link key={k} className={`segl ${ver === k ? "on" : ""}`} href={href({ ver: k })}>{l}</Link>)}
@@ -68,7 +65,7 @@ export default async function Inquiries({ searchParams }: { searchParams: Promis
         return (
           <div className="card" key={m.id}>
             <div className="chead">
-              <div><h3>{m.subject}</h3><p className="sub">{m.name} · <a className="lnk" href={`mailto:${m.email}?subject=${encodeURIComponent(`Re: ${m.subject} (${m.code})`)}`}>{m.email}</a> · {when(m.createdAt)}{m.userId ? <> · <Link className="lnk" href={`/admin/usuarios/${m.userId}`}>tiene cuenta</Link></> : " · sin cuenta"}</p></div>
+              <div><h3>{m.subject}</h3><p className="sub">{m.name} · <span>{m.email}</span> · {when(m.createdAt)}{m.userId ? <> · <Link className="lnk" href={`/admin/usuarios/${m.userId}`}>tiene cuenta</Link></> : " · sin cuenta"}</p></div>
               <span style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}><span className="pill b">{areaName}</span><span className={`pill ${ST[m.status]?.[1] ?? ""}`}>{ST[m.status]?.[0] ?? m.status}</span><span className="pill">{m.code}</span></span>
             </div>
             {m.area === "arrepentimiento" && <p className="notice a" style={{ marginTop: 0 }}>Pedido de arrepentimiento: hay que cancelar y devolver el pago dentro de los plazos de la ley.</p>}
