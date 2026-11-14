@@ -225,8 +225,11 @@ async function applyPayment(db: Db, id: string) {
   if (!Number.isFinite(amount) || amount <= 0 || pay.currency_id !== agreement.currency || (Number(agreement.amount) > 0 && amount !== Number(agreement.amount)) || (payment && (Number(payment.transaction_amount) !== amount || payment.currency_id !== pay.currency_id))) throw new UserError("El pago no coincide con la suscripción.");
   const refunded = Number(payment?.transaction_amount_refunded ?? (status === "refunded" ? amount : 0));
   if (!Number.isFinite(refunded) || refunded < 0 || refunded > amount) throw new UserError("Importe de devolución inválido.");
-  const start = date(pay.debit_date) ?? date(payment?.date_approved) ?? date(pay.date_created);
+  const rawDate = [pay.debit_date, payment?.date_approved, pay.date_created].find((value) => date(value)) ?? "";
+  const start = date(rawDate);
   if (!start) throw new UserError("El pago no tiene fecha válida.");
+  const offset = rawDate.match(/([+-])(\d{2}):(\d{2})$/);
+  const offsetMinutes = offset ? (offset[1] === "+" ? 1 : -1) * (Number(offset[2]) * 60 + Number(offset[3])) : 0;
   const stamp = date(payment?.date_last_updated) ?? date(pay.last_modified);
   await locked(db, ws, async (tx) => {
     const before = await tx.invoice.findUnique({ where: { providerRef: id } });
@@ -234,14 +237,21 @@ async function applyPayment(db: Db, id: string) {
     if (stamp && before?.providerUpdatedAt && stamp < before.providerUpdatedAt) return;
     // Sin versión de proveedor, un estado final no puede volver a "approved" por un evento atrasado.
     if (!stamp && before && ["refunded", "charged_back", "cancelled"].includes(before.status) && status === "approved") return;
-    const end = before?.periodEnd ?? paidUntil(start, agreement!.cycle);
+    const current = await tx.subscription.findUnique({ where: { workspaceId: ws } });
+    const nominalEnd = paidUntil(start, agreement!.cycle, offsetMinutes);
+    const providerEnd = current?.providerRef === pay.preapproval_id ? current.nextPaymentAt : null;
+    const span = providerEnd ? (providerEnd.getTime() - start.getTime()) / 864e5 : 0;
+    const validSpan = agreement!.cycle === "yearly" ? span >= 330 && span <= 400 : span >= 20 && span <= 40;
+    // El próximo débito del proveedor define el límite si pertenece a este ciclo.
+    // No usar la fecha de otro ciclo al reenviar una factura meses después.
+    const fixed = before?.periodEnd && ["approved", "refunded", "charged_back", "cancelled"].includes(before.status);
+    const end = validSpan ? providerEnd! : fixed ? before!.periodEnd! : nominalEnd;
     await tx.invoice.upsert({ where: { providerRef: id }, create: { workspaceId: ws, provider: "mercadopago", providerRef: id, agreementRef: pay.preapproval_id, paymentId, refundedAmount: refunded.toFixed(2), amount: amount.toFixed(2), currency: pay.currency_id, status, periodStart: start, periodEnd: end, paidAt: date(payment?.date_approved) ?? (status === "approved" ? start : null), providerUpdatedAt: stamp }, update: { status, refundedAmount: refunded.toFixed(2), agreementRef: pay.preapproval_id, paymentId, periodStart: start, periodEnd: end, providerUpdatedAt: stamp ?? undefined, paidAt: date(payment?.date_approved) ?? before?.paidAt ?? (status === "approved" ? start : null) } });
     if (["refunded", "charged_back", "cancelled"].includes(status)) {
       // Una devolución total revoca ese período, no otros pagos válidos.
       const sub = await tx.subscription.findUnique({ where: { workspaceId: ws } });
       if (sub?.legacyPaidUntil && sub.legacyPaidUntil <= end && sub.legacyPaidUntil > start) await tx.subscription.update({ where: { workspaceId: ws }, data: { legacyPaidUntil: null } });
     }
-    const current = await tx.subscription.findUnique({ where: { workspaceId: ws } });
     if (status === "approved" && current && current.provider !== "mercadopago") {
       await tx.subscription.update({ where: { workspaceId: ws }, data: { plan: "PRO", provider: "mercadopago", providerRef: pay.preapproval_id, billingCycle: agreement!.cycle, status: agreement!.status === "authorized" ? "ACTIVE" : "PAST_DUE" } });
     }

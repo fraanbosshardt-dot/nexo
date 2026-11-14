@@ -221,6 +221,19 @@ describe("ciclo completo de suscripción", () => {
 });
 
 describe("fechas y límites exactos", () => {
+  it("respeta el día local del proveedor cuando el débito cruza medianoche UTC", () => {
+    expect(paidUntil(new Date("2027-02-28T23:00:00-03:00"), "monthly", -180).toISOString()).toBe("2027-03-29T02:00:00.000Z");
+  });
+  it("usa el próximo débito informado por el proveedor y no lo mueve por un reenvío", async () => {
+    const id = await checkout(); await authorize(id);
+    const start = new Date("2027-02-28T23:00:00-03:00"), next = new Date("2027-03-28T23:00:00-03:00");
+    agreements.get(id)!.next_payment_date = next.toISOString();
+    await pay("provider-period", id, "approved", start);
+    expect((await sub()).currentPeriodEnd).toEqual(next);
+    agreements.get(id)!.next_payment_date = "2027-04-29T02:00:00Z";
+    await applyNotification(t.db, "subscription_authorized_payment", "provider-period");
+    expect((await sub()).currentPeriodEnd).toEqual(next);
+  });
   it.each([["2027-01-31", "monthly", "2027-02-28"], ["2028-01-31", "monthly", "2028-02-29"], ["2028-02-29", "yearly", "2029-02-28"], ["2026-12-31", "monthly", "2027-01-31"]])("%s + %s termina %s", (from, cycle, until) => {
     expect(paidUntil(new Date(`${from}T15:42:00Z`), cycle).toISOString()).toBe(`${until}T15:42:00.000Z`);
   });

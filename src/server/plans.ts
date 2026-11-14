@@ -73,14 +73,14 @@ export function effectivePlan(sub: { plan: string; status: string; trialEndsAt: 
 }
 
 // Hasta cuándo cubre un pago: un mes o un año desde que se pagó.
-export function paidUntil(paidAt: Date, cycle: string | null | undefined) {
-  const d = new Date(paidAt);
+export function paidUntil(paidAt: Date, cycle: string | null | undefined, offsetMinutes = 0) {
+  const d = new Date(paidAt.getTime() + offsetMinutes * 60_000);
   const day = d.getUTCDate();
   d.setUTCDate(1);
   d.setUTCMonth(d.getUTCMonth() + (cycle === "yearly" ? 12 : 1));
   const last = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate();
   d.setUTCDate(Math.min(day, last));
-  return d;
+  return new Date(d.getTime() - offsetMinutes * 60_000);
 }
 
 export async function hasFeature(db: Db, plan: "FREE" | "PRO", key: FeatureKey) {
