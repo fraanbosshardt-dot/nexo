@@ -56,7 +56,7 @@ export async function goalsOverview(db: Db, ws: string, today: Date) {
     const saved = g.contributions.reduce((s, c) => s.plus(dec(c.amount)), ZERO);
     const left = dec(g.targetAmount).minus(saved);
     const monthsLeft = g.targetDate ? Math.max(1, (g.targetDate.getUTCFullYear() - today.getUTCFullYear()) * 12 + g.targetDate.getUTCMonth() - today.getUTCMonth()) : null;
-    const needed = monthsLeft && left.gt(0) ? round2(left.dividedBy(monthsLeft)) : ZERO;
+    const needed = monthsLeft && left.gt(0) ? left.times(100).dividedBy(monthsLeft).ceil().dividedBy(100) : ZERO;
     const planned = g.monthlyContribution ? dec(g.monthlyContribution) : null;
     const eta = planned && planned.gt(0) && left.gt(0) ? addMonths(`${today.getUTCFullYear()}-${String(today.getUTCMonth() + 1).padStart(2, "0")}`, Math.ceil(left.dividedBy(planned).toNumber())) : null;
     return { goal: g, saved, left: left.lt(0) ? ZERO : left, pct: Math.min(100, saved.dividedBy(dec(g.targetAmount)).times(100).toNumber()), monthsLeft, needed, planned, eta, done: left.lte(0), onTrack: !monthsLeft || !planned ? null : planned.gte(needed) };

@@ -25,13 +25,14 @@ export const metadata: Metadata = { title: "Configuración" };
 
 const TABS = [["general", "General"], ["funciones", "Funciones"], ["compartir", "Compartir"], ["seguridad", "Seguridad"], ["plan", "Plan"], ["datos", "Tus datos"]] as const;
 
-export default async function Settings({ searchParams }: { searchParams: Promise<{ tab?: string; pago?: string; cancelado?: string; cupon?: string; soloduenio?: string; yatenes?: string; verificar?: string }> }) {
+export default async function Settings({ searchParams }: { searchParams: Promise<{ tab?: string; pago?: string; pagoerror?: string; prueba?: string; ciclo?: string; cancelado?: string; cupon?: string; soloduenio?: string; yatenes?: string; verificar?: string }> }) {
   const { user, workspace, modules, plan, session, membership } = await requireWorkspace();
   const sp = await searchParams;
   const asked = sp.tab;
   const t = TABS.some(([k]) => k === asked) ? asked! : "general";
   const tabs = <SettingsTabs current={t} rules={modules.reglas} />;
   const now = new Intl.DateTimeFormat("es-AR", { timeZone: workspace.timezone, dateStyle: "full", timeStyle: "short" }).format(new Date());
+  const billDate = (d: Date) => new Intl.DateTimeFormat("es-AR", { timeZone: workspace.timezone, dateStyle: "medium", timeStyle: "short" }).format(d);
 
   const push = pushConfig();
   let body: React.ReactNode = null;
@@ -155,7 +156,7 @@ export default async function Settings({ searchParams }: { searchParams: Promise
         <div className="card">
           <div className="chead"><div><h3>Tus datos</h3><p className="sub">Son tuyos: podés llevártelos o borrarlos cuando quieras.</p></div></div>
           <div className="acts"><a className="btn" href="/app/configuracion/mis-datos">Descargar todos mis datos</a></div>
-          <details className="adm-danger" style={{ marginTop: 12 }}>
+          <details id="eliminar-cuenta" className="adm-danger" style={{ marginTop: 12 }}>
             <summary>Borrar mi cuenta</summary>
             <p className="sub" style={{ margin: 0 }}>Se borran para siempre tus cuentas, movimientos, tarjetas, deudas y todo lo que cargaste. No se puede deshacer. Si pagás Pro, cancelalo antes.</p>
             <ActionForm action={deleteMyAccountAction} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -178,28 +179,31 @@ export default async function Settings({ searchParams }: { searchParams: Promise
     const { ensureReferralCode, referralStats, REFERRAL_DAYS } = await import("@/server/referrals");
     const { SITE } = await import("@/lib/seo");
     const [refCode, refStats] = await Promise.all([ensureReferralCode(getDb(), user.id), referralStats(getDb(), user.id)]);
-    const trial = sub?.status === "TRIALING" && sub.trialEndsAt && sub.trialEndsAt > new Date();
+    const trial = sub?.trialEndsAt && sub.trialEndsAt > new Date();
     const trialLeft = trial ? Math.max(1, Math.ceil((sub!.trialEndsAt!.getTime() - Date.now()) / 864e5)) : 0;
     const savePct = bill.monthly > 0 ? Math.round((1 - bill.yearly / (bill.monthly * 12)) * 100) : 0;
     // Cancelada o con el pago pendiente: Pro sigue hasta el fin de lo ya pagado.
     const endsAt = plan === "PRO" && sub && sub.status !== "ACTIVE" && sub.status !== "TRIALING" ? sub.currentPeriodEnd : null;
     body = (
       <>
+        {sp.pagoerror && <p className="notice r" role="alert">{sp.pagoerror.slice(0, 300)}</p>}
+        {sp.prueba === "usada" && <p className="notice">La prueba ya se usó o tenés una suscripción en curso. Revisá el estado de tu plan.</p>}
         {sp.pago && <div className="notice g">Gracias. En cuanto Mercado Pago confirme el pago, tu plan pasa a Pro.</div>}
         {sp.yatenes && <div className="notice g">Ya tenés Pro activo, no hace falta pagarlo de nuevo.</div>}
-        {sp.cancelado && <div className="notice">{endsAt ? `Cancelaste Pro. No se te cobra más y lo seguís usando hasta el ${fmtDate(endsAt)}; después pasás a Gratis con todos tus datos.` : "Cancelaste Pro. Seguís con todo lo de Gratis y tus datos quedan."}</div>}
+        {sp.cancelado && <div className="notice">{endsAt ? `Cancelaste Pro. No se te cobra más y lo seguís usando hasta el ${billDate(endsAt)}; después pasás a Gratis con todos tus datos.` : "Cancelaste Pro. Seguís con todo lo de Gratis y tus datos quedan."}</div>}
         <div className="card">
-          <div className="chead"><div><h3>Tu plan: {plan === "PRO" ? "Pro" : "Gratis"}</h3><p className="sub">{trial ? `Prueba gratis hasta el ${fmtDate(sub!.trialEndsAt!)}.` : endsAt ? `${sub!.status === "CANCELED" ? "Cancelado" : "Pago pendiente en Mercado Pago"}: tenés Pro hasta el ${fmtDate(endsAt)}.` : paidPro ? `Pagás con Mercado Pago, ${sub!.billingCycle === "yearly" ? "por año" : "por mes"}.` : plan === "PRO" ? "Pro activado por Somos Guafra." : "Tenés casi todo incluido, sin costo."}</p></div></div>
+          <div className="chead"><div><h3>Tu plan: {plan === "PRO" ? "Pro" : "Gratis"}</h3><p className="sub">{trial ? `Prueba gratis hasta el ${billDate(sub!.trialEndsAt!)}.` : endsAt ? `${sub!.status === "CANCELED" ? "Cancelado" : "Pago pendiente en Mercado Pago"}: tenés Pro hasta el ${billDate(endsAt)}.` : paidPro ? `Pagás con Mercado Pago, ${sub!.billingCycle === "yearly" ? "por año" : "por mes"}.` : plan === "PRO" ? "Pro activado por Somos Guafra." : "Tenés casi todo incluido, sin costo."}</p></div></div>
           {paidPro ? (
             <div className="plan-paid">
-              {sub!.billingCycle === "monthly" && bill.enabled ? (
+              {sub!.billingCycle === "monthly" && bill.enabled && plan === "PRO" ? (
                 <form action={checkoutAction} className="plan-upg">
                   <input type="hidden" name="cycle" value="yearly" />
-                  <div><b>Pasate al plan anual{savePct > 0 ? ` y ahorrá ${savePct} %` : ""}</b><p>{formatMoney(String(bill.yearly), bill.currency)} por año (equivale a {formatMoney(String(Math.round(Number(bill.yearly) / 12)), bill.currency)} por mes). Empieza cuando termina el mes que ya pagaste{sub!.currentPeriodEnd ? `, el ${fmtDate(sub!.currentPeriodEnd)}` : ""}: sin cobro doble.</p></div>
+                  <div><b>Pasate al plan anual{savePct > 0 ? ` y ahorrá ${savePct} %` : ""}</b><p>{formatMoney(String(bill.yearly), bill.currency)} por año (equivale a {formatMoney(String(Math.round(Number(bill.yearly) / 12)), bill.currency)} por mes). Empieza cuando termina el mes que ya pagaste{sub!.currentPeriodEnd ? `, el ${billDate(sub!.currentPeriodEnd)}` : ""}: sin cobro doble.</p></div>
                   <button className="btn pri" type="submit">Pasarme al anual</button>
                 </form>
-              ) : sub!.currentPeriodEnd ? <p className="sub" style={{ margin: 0 }}>Se renueva el {fmtDate(sub!.currentPeriodEnd)}.</p> : null}
-            <form action={cancelPlanAction}><ConfirmSubmit className="btn" question={sub!.currentPeriodEnd ? `¿Cancelar Pro? No se te cobra más y lo seguís usando hasta el ${fmtDate(sub!.currentPeriodEnd)}.` : "¿Cancelar Pro? Dejás de pagar y volvés al plan Gratis."} yes="Sí, cancelar">Cancelar Pro</ConfirmSubmit></form>
+              ) : null}
+              <p className="sub">{sub!.nextPaymentAt ? `Próximo cobro programado: ${billDate(sub!.nextPaymentAt)}.` : "La fecha del próximo cobro se confirma en Mercado Pago."} {sub!.currentPeriodEnd ? `Acceso cubierto hasta el ${billDate(sub!.currentPeriodEnd)}.` : "Esperando un pago aprobado para habilitar el período de Pro."}</p>
+            <form action={cancelPlanAction}><ConfirmSubmit className="btn" question={sub!.currentPeriodEnd ? `¿Cancelar Pro? No se te cobra más y lo seguís usando hasta el ${billDate(sub!.currentPeriodEnd)}.` : "¿Cancelar Pro? Dejás de pagar y volvés al plan Gratis."} yes="Sí, cancelar">Cancelar Pro</ConfirmSubmit></form>
             </div>
           ) : bill.enabled && (plan !== "PRO" || trial) ? (
             // En Gratis: a la izquierda qué suma Pro; a la derecha el precio (por mes o por año) y los botones.
@@ -213,15 +217,15 @@ export default async function Settings({ searchParams }: { searchParams: Promise
               <div className="plan-box">
                 <form action={checkoutAction} className="plan-buy">
                   <div className="plan-cycle" role="radiogroup" aria-label="Cómo querés pagar">
-                    <label><input type="radio" name="cycle" value="monthly" defaultChecked /><span>Por mes</span></label>
-                    <label><input type="radio" name="cycle" value="yearly" /><span>Por año{savePct > 0 && <em>−{savePct} %</em>}</span></label>
+                    <label><input type="radio" name="cycle" value="monthly" defaultChecked={sp.ciclo !== "anual"} /><span>Por mes</span></label>
+                    <label><input type="radio" name="cycle" value="yearly" defaultChecked={sp.ciclo === "anual"} /><span>Por año{savePct > 0 && <em>−{savePct} %</em>}</span></label>
                   </div>
-                  <div className="plan-price m"><b>{formatMoney(String(bill.monthly), bill.currency)}</b><span>por mes</span></div>
-                  <div className="plan-price y"><b>{formatMoney(String(bill.yearly), bill.currency)}</b><span>por año</span><small>Equivale a {formatMoney(String(Math.round(Number(bill.yearly) / 12)), bill.currency)} por mes</small></div>
+                  <div className="plan-price m"><b>{formatMoney(String(bill.monthly), bill.currency)}</b><span>ARS por mes</span></div>
+                  <div className="plan-price y"><b>{formatMoney(String(bill.yearly), bill.currency)}</b><span>ARS por año</span><small>Equivale a {formatMoney(String(Math.round(Number(bill.yearly) / 12)), bill.currency)} por mes</small></div>
                   <button className="btn pri plan-cta" type="submit">{trial ? "Suscribirme a Pro" : "Pasar a Pro"}</button>
                 </form>
                 {!sub?.trialEndsAt && <form action={startTrialAction}><button className="btn plan-trial" type="submit">Probar 14 días gratis</button></form>}
-                <p className="plan-fine">{trial ? `No te cobramos nada hasta el ${fmtDate(sub!.trialEndsAt!)}.` : "Cancelás cuando quieras · Pagás con Mercado Pago"}</p>
+                <p className="plan-fine">{trial ? `No te cobramos nada hasta el ${billDate(sub!.trialEndsAt!)}.` : "Cancelás cuando quieras · Pagás con Mercado Pago"}</p>
               </div>
             </div>
           ) : plan !== "PRO" ? (
@@ -251,7 +255,7 @@ export default async function Settings({ searchParams }: { searchParams: Promise
         <div className="li"><div className="grow"><div className="t">Descargar mis movimientos</div><div className="s">Un archivo CSV que abre en Excel o Google Sheets.</div></div><a className="btn sm" href="/app/exportar/movimientos" download>Descargar</a></div>
         <div className="li"><div className="grow"><div className="t">Descargar todos mis datos</div><div className="s">Respaldo completo de tu espacio en un archivo.</div></div><a className="btn sm" href="/app/exportar/respaldo" download>Descargar</a></div>
         <div className="li"><div className="grow"><div className="t">Importar movimientos</div><div className="s">Desde la planilla o el extracto de tu banco.</div></div><a className="btn sm" href="/app/importar">Importar</a></div>
-        <div className="li"><div className="grow"><div className="t neg">Eliminar cuenta y datos</div><div className="s">Escribinos desde Ayuda y la eliminamos en hasta 30 días.</div></div><a className="btn sm" href="/app/ayuda">Escribir</a></div>
+        <div className="li"><div className="grow"><div className="t neg">Eliminar cuenta y datos</div><div className="s">Revisá qué se elimina y confirmá la baja desde Seguridad.</div></div><a className="btn sm" href="/app/configuracion?tab=seguridad#eliminar-cuenta">Revisar baja</a></div>
       </div></div>
     );
   }

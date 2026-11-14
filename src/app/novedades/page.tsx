@@ -11,7 +11,8 @@ export const metadata: Metadata = {
 export const revalidate = 300;
 
 export default async function News() {
-  const news = await getDb().productNews.findMany({ orderBy: { publishedAt: "desc" }, take: 50 });
+  const published = await getDb().productNews.findMany({ orderBy: { publishedAt: "desc" }, take: 50 }).catch(() => []);
+  const news = published.length ? published : [{ id: "informes-escenarios-20261114", publishedAt: new Date("2026-11-14T12:00:00Z"), title: "Informes contra el año pasado y escenarios guardados", body: "En Informes podés comparar el mismo mes con el año anterior cuando tengas ese historial cargado. En Simulador, probá escenarios y guardá tus propios ajustes para volver a consultarlos. Estas herramientas forman parte de Pro." }];
   return (
     <PublicShell>
       <section className="ws-hero">

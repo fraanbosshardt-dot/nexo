@@ -5,7 +5,7 @@ import { ActionForm, OtpInput, Submit } from "@/components/forms";
 import { logoutAction, verifyLoginCodeAction } from "@/app/actions/auth";
 import { getSession } from "@/lib/auth/session";
 
-export const metadata: Metadata = { title: "Verificación" };
+export const metadata: Metadata = { title: "Verificación", robots: { index: false, follow: false } };
 
 export default async function VerifyPage() {
   const s = await getSession();

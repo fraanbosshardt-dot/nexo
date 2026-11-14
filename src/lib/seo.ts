@@ -21,7 +21,6 @@ export const PUBLIC_PAGES: { path: string; priority: number }[] = [
   { path: "/herramientas/presupuesto-50-30-20", priority: 0.8 },
   { path: "/glosario", priority: 0.7 },
   { path: "/novedades", priority: 0.5 },
-  { path: "/registro", priority: 0.6 },
   { path: "/productores", priority: 0.8 },
   { path: "/guias", priority: 0.7 },
   ...GUIDES.map((g) => ({ path: `/guias/${g.slug}`, priority: 0.7 })),

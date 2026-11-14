@@ -4,7 +4,7 @@ import { AuthShell } from "@/components/brand";
 import { ActionForm, Submit } from "@/components/forms";
 import { requestResetAction } from "@/app/actions/auth";
 
-export const metadata: Metadata = { title: "Recuperar contraseña" };
+export const metadata: Metadata = { title: "Recuperar contraseña", robots: { index: false, follow: false } };
 
 export default function ForgotPage() {
   return (

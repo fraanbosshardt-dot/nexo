@@ -19,7 +19,7 @@ const ITEMS: [React.ReactNode, string, string][] = [
   [P("M12 8v4l3 2M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0"), "Sesiones bajo tu control", "Ves dónde iniciaste sesión y podés cerrar todas las sesiones con un toque si perdés el celular."],
   [P("M4 6h16M4 12h16M4 18h10"), "Accesos internos registrados", "Solo unas pocas personas del equipo pueden entrar al panel interno, con su cuenta de Google y permisos por rol. Cada acción queda registrada."],
   [P("M12 3v12M7 10l5 5 5-5M5 21h14"), "Tus datos, cuando quieras", "Descargá toda tu información o borrá tu cuenta desde Configuración. No vendemos datos ni los usamos para publicidad."],
-  [P("M4 7h16v13H4zM8 7V4h8v3"), "Copias de seguridad", "Guardamos copias de la base antes de cada cambio importante, para que ante un problema no se pierda lo que cargaste."],
+  [P("M4 7h16v13H4zM8 7V4h8v3"), "Copias de seguridad", "Podés descargar tus movimientos y un respaldo de tu espacio desde Configuración. Conservá una copia propia antes de realizar cambios importantes."],
 ];
 
 export default function Security() {

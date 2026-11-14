@@ -9,6 +9,7 @@ import { GoogleButton, GoogleNotice } from "@/components/google-button";
 
 export const metadata: Metadata = {
   title: "Crear cuenta gratis",
+  robots: { index: false, follow: false },
   description: "Creá tu cuenta gratis en un minuto, con tu correo o con Google. Sin tarjeta y sin conectar tu banco.",
   alternates: { canonical: "/registro" },
 };

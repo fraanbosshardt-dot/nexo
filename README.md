@@ -8,13 +8,18 @@ La arquitectura, las reglas del motor financiero y el plan por fases están en [
 
 ## Qué funciona hoy
 
-- Registro, inicio de sesión y verificación en dos pasos con Google Authenticator.
-- Introducción que arma el menú según para qué vas a usar la app.
-- Cuentas, ingresos, gastos y transferencias (también entre pesos y dólares).
-- Pendientes, pagos parciales, atrasados que no se borran, conciliación y reversas.
-- Inicio con el disponible del mes, lo que falta cobrar y pagar, y los últimos movimientos.
-- Categorías, configuración, funciones activables, landing y legales.
-- El prototipo completo de todas las pantallas, en `/prototipo.html`.
+- Autenticación con correo o Google, verificación de correo, TOTP, recuperación y revocación de sesiones.
+- Cuentas, transferencias entre monedas, movimientos, pendientes, pagos parciales y conciliación.
+- Tarjetas por resumen o por compra, cuotas, suscripciones, PDF, deudas y préstamos.
+- Recurrentes, calendario, flujo de caja, presupuestos, objetivos y escenarios guardados.
+- Inversiones, patrimonio, ventas y stock de cereal; cotizaciones y tasas manuales.
+- Informes, comparación interanual, importación CSV/Excel/OFX y exportaciones CSV/Excel/PDF/JSON.
+- Espacios compartidos con permisos, soporte, referidos, planes y panel interno.
+- Suscripciones de Mercado Pago con períodos de acceso conciliados y correo transaccional en cola.
+- Landing, herramientas públicas, guías, contacto, novedades y documentos legales.
+
+La demo antigua fue retirada de producción. Sus URLs redirigen a Herramientas.
+El flujo de dinero y sus casos de prueba están documentados en [docs/SUSCRIPCIONES.md](docs/SUSCRIPCIONES.md).
 
 ## Correr en tu computadora (Windows, sin Docker)
 

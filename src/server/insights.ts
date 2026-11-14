@@ -66,7 +66,7 @@ export async function insights(db: Db, ws: string, currency: string, today: Date
   const goals = allGoals.filter((g) => g.onTrack === false);
   if (goals.length) out.push({ level: "info", title: "Objetivos que no llegan a la fecha", detail: goals.map((g) => `${g.goal.name}: necesitás ${formatMoney(g.needed, g.goal.currency)} por mes`).join(" · "), href: "/app/objetivos" });
 
-  if (!out.length) out.push({ level: "good", title: "Todo en orden", detail: "No hay atrasos ni meses en rojo en los próximos 6 meses.", href: "/app/flujo" });
+  if (!out.length) out.push({ level: "good", title: "Todo en orden", detail: "Según lo que cargaste, no hay atrasos ni meses en rojo en los próximos 6 meses. Revisá que estén todos tus ingresos y gastos.", href: "/app/flujo" });
   const surplus = rows.slice(1, 4).reduce((s, r) => s.plus(r.result), ZERO).dividedBy(3);
   if (surplus.gt(0)) out.push({ level: "good", title: "Capacidad de ahorro", detail: `En promedio te quedan ${f(surplus)} por mes en los próximos meses.`, href: "/app/objetivos" });
   return out;

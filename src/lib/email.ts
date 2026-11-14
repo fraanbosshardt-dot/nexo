@@ -8,7 +8,7 @@ export type Email = EmailContent & { idempotencyKey?: string; to: string };
 
 export const emailEnabled = () => !!process.env.RESEND_API_KEY;
 
-export async function sendEmail(e: Email): Promise<{ sent: boolean; reason?: string }> {
+export async function sendEmail(e: Email): Promise<{ sent: boolean; reason?: string; id?: string }> {
   if (!["welcome", "verification", "password", "security", "billing", "support"].includes(e.purpose)) return { sent: false, reason: "not-transactional" };
   e = { ...e, subject: emailBrandText(e.subject), text: emailBrandText(e.text) };
   const key = process.env.RESEND_API_KEY;
@@ -27,7 +27,8 @@ export async function sendEmail(e: Email): Promise<{ sent: boolean; reason?: str
       signal: AbortSignal.timeout(8000),
     });
     if (!r.ok) return { sent: false, reason: `http-${r.status}` };
-    return { sent: true };
+    const data = await r.json().catch(() => ({})) as { id?: string };
+    return { sent: true, id: data.id };
   } catch {
     return { sent: false, reason: "red" };
   }

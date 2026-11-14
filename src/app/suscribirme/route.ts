@@ -29,13 +29,6 @@ export async function GET(req: Request) {
   if (sub?.plan === "PRO" && sub.status === "ACTIVE") redirect("/app/configuracion?tab=plan&yatenes=1");
   const { needsVerifiedEmail } = await import("@/server/email-verify");
   if (needsVerifiedEmail(s.user)) redirect("/app/configuracion?tab=plan&verificar=pro");
-  const { billingConfig, startCheckout } = await import("@/server/billing");
-  const db = getDb();
-  if (!(await billingConfig(db)).enabled) redirect("/app/configuracion?tab=plan");
-  const { appUrl } = await import("@/lib/email");
-  const trialEnd = sub?.status === "TRIALING" && sub.trialEndsAt && sub.trialEndsAt > new Date() ? sub.trialEndsAt : null;
-  const link = await startCheckout(db, m.workspace.id, s.user.email, anual ? "yearly" : "monthly", `${appUrl()}/app/configuracion?tab=plan&pago=1`, undefined, trialEnd);
-  const { audit } = await import("@/lib/auth/session");
-  await audit("billing.checkout_started", { userId: s.user.id, workspaceId: m.workspace.id, meta: { cycle: anual ? "yearly" : "monthly", from: "sitio" } });
-  redirect(link);
+  // Un enlace GET solo muestra el plan; crear una autorización requiere confirmación POST.
+  redirect(`/app/configuracion?tab=plan&ciclo=${anual ? "anual" : "mensual"}`);
 }

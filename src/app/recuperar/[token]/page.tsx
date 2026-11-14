@@ -4,7 +4,7 @@ import { AuthShell } from "@/components/brand";
 import { ActionForm, PasswordStrength, Submit } from "@/components/forms";
 import { resetPasswordAction } from "@/app/actions/auth";
 
-export const metadata: Metadata = { title: "Contraseña nueva" };
+export const metadata: Metadata = { title: "Contraseña nueva", robots: { index: false, follow: false } };
 
 export default async function ResetPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;

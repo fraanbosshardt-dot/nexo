@@ -13,7 +13,8 @@ import { adminCancelSubAction, adminCreateCouponAction, adminToggleCouponAction 
 
 export const metadata: Metadata = { title: "Cobros y cupones" };
 
-export default async function Billing() {
+export default async function Billing({ searchParams }: { searchParams: Promise<{ pagoerror?: string }> }) {
+  const { pagoerror } = await searchParams;
   const admin = await requireAdmin();
   const owner = can(admin.role, "owner");
   const db = getDb();
@@ -25,11 +26,12 @@ export default async function Billing() {
   ]);
   const bill = await billingConfig(db);
   const active = subs.filter((s) => s.status === "ACTIVE"), pastDue = subs.filter((s) => s.status === "PAST_DUE");
-  const renewing = active.filter((s) => s.currentPeriodEnd && s.currentPeriodEnd <= soon).length;
+  const renewing = active.filter((s) => s.nextPaymentAt && s.nextPaymentAt > new Date() && s.nextPaymentAt <= soon).length;
   const rejected = invoices.filter((i) => i.status === "rejected").length;
   const who = (w: { members: { user: { id: string; name?: string; email: string } }[] }) => w.members[0]?.user;
   return (
     <>
+      {pagoerror && <p className="notice r" role="alert">{pagoerror.slice(0, 300)}</p>}
       <PageHead title="Cobros y cupones" desc="Suscripciones de Mercado Pago, pagos y descuentos." actions={owner ? <a className="btn" href="/admin/export/pagos">Descargar pagos (Excel)</a> : undefined} />
       {!bill.enabled && <p className="notice a">Los cobros con Mercado Pago todavía no están activados: faltan MP_ACCESS_TOKEN y MP_WEBHOOK_SECRET en Vercel, o el precio de Pro en pesos en Ajustes. Mientras tanto, podés regalar Pro desde Clientes.</p>}
       <Stats items={[["Suscripciones activas", int(active.length)], ["Con pago pendiente", int(pastDue.length)], ["Renuevan en 7 días", int(renewing)], ["Pagos rechazados", int(rejected), "en los últimos 50"]]} />

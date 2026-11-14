@@ -132,12 +132,10 @@ export async function resetPasswordAction(_: FormState, fd: FormData): Promise<F
   const db = getDb();
   const r = await db.passwordReset.findUnique({ where: { tokenHash: createHash("sha256").update(token).digest("hex") } });
   if (!r || r.usedAt || r.expiresAt < new Date()) return { error: "El enlace venció o ya se usó. Pedí uno nuevo." };
-  await db.$transaction([
-    db.user.update({ where: { id: r.userId }, data: { passwordHash: await hashPassword(password) } }),
-    db.user.updateMany({ where: { id: r.userId, emailVerified: null }, data: { emailVerified: new Date() } }),
-    db.passwordReset.update({ where: { id: r.id }, data: { usedAt: new Date() } }),
-    db.session.deleteMany({ where: { userId: r.userId } }), // cierra todas las sesiones abiertas
-  ]);
+  const hashed = await hashPassword(password);
+  const { consumePasswordReset } = await import("@/server/password-reset");
+  const changed = await consumePasswordReset(db, r.id, r.userId, hashed);
+  if (!changed) return { error: "El enlace venció o ya se usó. Pedí uno nuevo." };
   await audit("auth.password_reset", { userId: r.userId });
   try {
     const { sendPasswordChanged } = await import("@/server/account-mail");

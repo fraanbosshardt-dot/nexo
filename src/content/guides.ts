@@ -70,7 +70,7 @@ export const GUIDES: Guide[] = [
     sections: [
       { h: "Cuánto tiene que cubrir", p: ["Lo más recomendado es entre 3 y 6 meses de tus gastos fijos: vivienda, servicios, comida, transporte, salud y cuotas. No de todo lo que gastás, solo de lo que pagás sí o sí.", "Si trabajás por tu cuenta, tus ingresos cambian mucho o mantenés a otras personas, apuntá a 6 meses o más."] },
       { h: "Empezá con una meta chica", p: ["Juntar 6 meses de golpe es imposible para casi todos. Empezá por un mes: es una meta alcanzable y ya te cubre la mayoría de los imprevistos.", "Apartá un monto fijo el mismo día que cobrás, antes de gastar. Aunque sea poco, lo que importa es que sea todos los meses."] },
-      { h: "Dónde guardarlo", p: ["Tiene que estar disponible enseguida y no perder valor: una cuenta que pague intereses o un plazo fijo corto que se renueva solo.", "Evitá inversiones que pueden bajar justo cuando las necesitás, y no lo mezcles con la cuenta del día a día: si lo ves, lo gastás."] },
+      { h: "Dónde guardarlo", p: ["La parte que necesitás para una urgencia debe estar disponible de inmediato. Un plazo fijo tradicional inmoviliza la plata hasta el vencimiento y no garantiza mantener su poder de compra: no lo confundas con dinero de acceso inmediato.", "Evitá inversiones que pueden bajar justo cuando las necesitás, y no lo mezcles con la cuenta del día a día: si lo ves, lo gastás."] },
       { h: "Cuándo usarlo (y cuándo no)", p: ["Es para urgencias de verdad: algo que no podías prever y que no puede esperar. Unas vacaciones o un celular nuevo no son emergencias: para eso armá un objetivo aparte.", "Si lo usás, la prioridad del mes siguiente es volver a llenarlo."] },
     ],
     cta: { href: "/herramientas/fondo-de-emergencia", label: "Calcular mi fondo de emergencia" },
@@ -84,7 +84,7 @@ export const GUIDES: Guide[] = [
     sections: [
       { h: "Cómo se calcula", p: ["El interés es: monto × TNA × días / 365. Con 100.000 al 36% anual durante 30 días ganás unos 2.959.", "La TNA es la tasa que informa el banco. No es lo que ganás en un año, salvo que dejes la plata 365 días seguidos."] },
       { h: "TEA: lo que ganás si renovás", p: ["Si al vencer volvés a invertir capital más intereses, el siguiente plazo gana sobre un monto más grande. Eso es interés compuesto, y la TEA lo refleja: siempre es un poco mayor que la TNA."] },
-      { h: "Qué mirar antes de hacerlo", p: ["Comparalo con la inflación esperada: si los precios suben más que la tasa, tu plata compra menos al final aunque el número sea más grande.", "Fijate el plazo mínimo y si podés cancelarlo antes. La plata del fondo de emergencia conviene en plazos cortos."] },
+      { h: "Qué mirar antes de hacerlo", p: ["Comparalo con la inflación esperada: si los precios suben más que la tasa, tu plata compra menos al final aunque el número sea más grande.", "Fijate el plazo mínimo y si podés cancelarlo antes. La parte del fondo de emergencia que podés necesitar hoy debe tener disponibilidad inmediata; un plazo fijo tradicional no se puede cancelar antes del vencimiento."] },
     ],
     cta: { href: "/herramientas/plazo-fijo", label: "Calcular cuánto gano" },
   },

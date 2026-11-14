@@ -141,6 +141,8 @@ export default async function Landing() {
   const ps = await planSettings(getDb()).catch(() => ({ prices: PRICES_DEFAULT, pricesArs: null }));
   const pm = priceLabel(ps, "monthly"), py = priceLabel(ps, "yearly");
   const free = PLAN_FEATURES.filter((f) => f.plan === "free");
+  const { pdfMonthlyLimit } = await import("@/server/settings");
+  const pdfLimit = await pdfMonthlyLimit(getDb()).catch(() => 5);
   const pro = PLAN_FEATURES.filter((f) => f.plan === "pro");
   const plans = (price: string, period: string, cycle: "mensual" | "anual") => (
     <div className="lx-plans">
@@ -148,15 +150,15 @@ export default async function Landing() {
         <div><h3>Gratis</h3><p>Para ordenar tu plata del día a día.</p></div>
         <div className="lx-price"><b>$ 0</b><span>para siempre</span></div>
         <Link className="ws-btn" href="/registro" data-free-cta="">Crear cuenta gratis</Link>
-        <ul>{free.map((f) => <li key={f.name}>{CHECK}{f.name}</li>)}</ul>
+        <p className="sub">Incluye hasta 5 cuentas y 3 objetivos de ahorro.</p><ul>{free.map((f) => <li key={f.name}>{CHECK}{f.name}</li>)}</ul>
       </div>
       <div className="lx-plan pro" style={{ "--i": 1 } as React.CSSProperties}>
         <span className="lx-reco">Recomendado</span>
         <div><h3>Pro</h3><p>Para planificar todo el año.</p></div>
-        {pm.amount > 0 ? <div className="lx-price"><b>{price}</b><span>por {period}</span></div> : <div className="lx-price"><b style={{ fontSize: 28 }}>{price}</b></div>}
+        {pm.amount > 0 ? <div className="lx-price"><b>{price}</b><span>ARS por {period}</span></div> : <div className="lx-price"><b style={{ fontSize: 28 }}>{price}</b></div>}
         <a className="ws-btn pri lx-shine" href={`/suscribirme?ciclo=${cycle}`} data-plan-cta="">Suscribirme a Pro{cycle === "anual" ? " por año" : ""}</a>
         {cycle === "mensual" && py.amount > 0 && <a className="lx-link" href="/suscribirme?ciclo=anual" style={{ textAlign: "center", fontSize: 14 }}>o pagá el año: {py.text}</a>}
-        <ul><li>{CHECK}Todo lo de Gratis</li>{pro.map((f) => <li key={f.name}>{CHECK}<span>{f.name}{f.beta && <> <span className="lx-beta">Beta</span></>}</span></li>)}</ul>
+        <ul><li>{CHECK}Todo lo de Gratis</li>{pro.map((f) => <li key={f.name}>{CHECK}<span>{f.name}{f.name.includes("desde el PDF") ? ` (hasta ${pdfLimit} por mes)` : ""}{f.beta && <> <span className="lx-beta">Beta</span></>}</span></li>)}</ul>
       </div>
     </div>
   );
@@ -240,7 +242,7 @@ export default async function Landing() {
           <Reveal className="lx-two-copy"><p className="ws-eyebrow">Por qué {N}</p><h2 className="ws-h2">La planilla te muestra el pasado. {N} te muestra lo que viene.</h2><p className="ws-lead">Una planilla depende de que te acuerdes de todo, y la app del banco solo ve lo suyo. {N} junta todo, repite tus pagos fijos, reparte las cuotas y te avisa antes de que un mes quede en rojo.</p></Reveal>
           <Reveal className="lx-vs">
             <table>
-              <thead><tr><th scope="col"><span className="sr-only">Qué</span></th><th scope="col">Planilla</th><th scope="col">App del banco</th><th scope="col" className="lx-vs-g"><span className="lx-vs-brand"><LogoMark className="lx-vs-mark" /><span>{N.toLowerCase()}</span></span></th></tr></thead>
+              <thead><tr><th scope="col"><span className="sr-only">Qué</span></th><th scope="col">Planilla</th><th scope="col">App del banco</th><th scope="col" className="lx-vs-g"><span className="lx-vs-brand"><LogoMark className="lx-vs-mark" /><span>{N.toLowerCase().replace(/\s/g, "")}</span></span></th></tr></thead>
               <tbody>{VS.map(([t, x, b, g], i) => <tr key={t} style={{ "--r": i } as React.CSSProperties}><th scope="row">{t}</th><td>{x === "No" ? <span className="lx-no">✕<span className="sr-only">No</span></span> : x}</td><td>{b === "No" ? <span className="lx-no">✕<span className="sr-only">No</span></span> : b}</td><td className="lx-vs-g"><span className="lx-yes"><svg viewBox="0 0 24 24" aria-hidden="true"><path pathLength={1} d="M5 12l5 5L20 7" /></svg>{g}</span></td></tr>)}</tbody>
             </table>
           </Reveal>
@@ -285,7 +287,7 @@ export default async function Landing() {
         <Aurora />
         <div className="ws-w ws-sec lx-pricing">
           <Reveal className="ws-head c"><p className="ws-eyebrow">Precios</p><h2 className="ws-h2">Empezá gratis. Pasate a Pro cuando lo necesites.</h2></Reveal>
-          <PlanAware><PriceSwitch monthly={plans(pm.text, "mes", "mensual")} yearly={plans(py.text, "año", "anual")} /></PlanAware>
+          <PlanAware><PriceSwitch saving={pm.amount > 0 ? Math.max(0, Math.round((1 - py.amount / (pm.amount * 12)) * 100)) : 0} monthly={plans(pm.text, "mes", "mensual")} yearly={plans(py.text, "año", "anual")} /></PlanAware>
           <p className="ws-fine" style={{ textAlign: "center" }}>Cancelás cuando quieras y tenés 10 días para arrepentirte con <Link href="/reembolsos">devolución total</Link>.</p>
         </div>
       </section>

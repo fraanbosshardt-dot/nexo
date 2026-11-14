@@ -20,11 +20,14 @@ export async function applyProGrant(db: PrismaClient, email: string, workspaceId
 // Regala Pro por N días a un espacio que ya existe (o sin vencimiento si days es null).
 // No toca una suscripción paga activa: esa sigue como está.
 export async function giftPro(db: PrismaClient, workspaceId: string, days: number | null) {
-  const sub = await db.subscription.findUnique({ where: { workspaceId } });
-  if (sub && sub.provider === "mercadopago" && sub.status === "ACTIVE" && sub.plan === "PRO") return "paga" as const;
+  return db.$transaction(async (tx) => {
+  await tx.$queryRaw`SELECT id FROM "Workspace" WHERE id = ${workspaceId} FOR UPDATE`;
+  const sub = await tx.subscription.findUnique({ where: { workspaceId } });
+  if ((sub?.provider === "mercadopago" && (sub.status === "ACTIVE" || (sub.currentPeriodEnd && sub.currentPeriodEnd > new Date()))) || await tx.billingAgreement.count({ where: { workspaceId, status: { not: "cancelled" } } })) return "paga" as const;
   const base = sub?.status === "TRIALING" && sub.trialEndsAt && sub.trialEndsAt > new Date() ? sub.trialEndsAt : new Date();
   const trialEndsAt = days ? new Date(base.getTime() + days * 864e5) : null;
   const data = { plan: "PRO" as const, status: (days ? "TRIALING" : "ACTIVE") as "TRIALING" | "ACTIVE", provider: "manual", trialEndsAt, canceledAt: null };
-  await db.subscription.upsert({ where: { workspaceId }, create: { workspaceId, ...data }, update: data });
+  await tx.subscription.upsert({ where: { workspaceId }, create: { workspaceId, ...data }, update: data });
   return "ok" as const;
+  });
 }

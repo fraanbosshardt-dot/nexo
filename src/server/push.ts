@@ -7,6 +7,7 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import { formatMoney } from "@/lib/money";
 import { todayIn } from "@/lib/dates";
 import { remaining } from "./ledger";
+import { validPushEndpoint } from "@/lib/push-endpoint";
 
 const b64u = (b: Buffer) => b.toString("base64url");
 
@@ -40,8 +41,9 @@ export async function pushToUser(db: PrismaClient, userId: string) {
   const subs = await db.pushSubscription.findMany({ where: { userId } });
   let sent = 0;
   for (const s of subs) {
+    if (!validPushEndpoint(s.endpoint)) continue;
     try {
-      const r = await fetch(s.endpoint, { method: "POST", headers: { TTL: "86400", Urgency: "normal", Authorization: vapidAuth(s.endpoint, cfg), "Content-Length": "0" }, signal: AbortSignal.timeout(8000) });
+      const r = await fetch(s.endpoint, { method: "POST", redirect: "error", headers: { TTL: "86400", Urgency: "normal", Authorization: vapidAuth(s.endpoint, cfg), "Content-Length": "0" }, signal: AbortSignal.timeout(8000) });
       if (r.status === 404 || r.status === 410) await db.pushSubscription.delete({ where: { id: s.id } });
       else if (r.ok) sent++;
     } catch { /* sin conexión con el servicio de avisos: se reintenta mañana */ }

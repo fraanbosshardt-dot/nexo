@@ -48,8 +48,8 @@ describe("avisos en el celular", () => {
 
   it("manda a cada dispositivo y borra los que ya no existen", async () => {
     await db.pushSubscription.createMany({ data: [
-      { userId, endpoint: "https://push.example.com/vivo", p256dh: "x", auth: "y" },
-      { userId, endpoint: "https://push.example.com/dado-de-baja", p256dh: "x", auth: "y" },
+      { userId, endpoint: "https://fcm.googleapis.com/vivo", p256dh: "x", auth: "y" },
+      { userId, endpoint: "https://fcm.googleapis.com/dado-de-baja", p256dh: "x", auth: "y" },
     ] });
     const calls: { url: string; auth: string }[] = [];
     vi.stubGlobal("fetch", vi.fn(async (url: string, init: RequestInit) => {

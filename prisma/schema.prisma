@@ -81,6 +81,7 @@ model Workspace {
   modules         Json      @default("{}") // funciones activadas: { tarjetas: true, cereal: false, ... }
   onboardedAt     DateTime?
   housekeptAt     DateTime? // última vez que se generaron pendientes recurrentes y resúmenes cerrados
+  billingDisabledAt DateTime? // cierra nuevas autorizaciones durante la eliminación
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -105,6 +106,7 @@ model Workspace {
   importBatches  ImportBatch[]
   auditLogs      AuditLog[]
   invoices       Invoice[]
+  billingAgreements BillingAgreement[]
 }
 
 model Membership {
@@ -142,6 +144,8 @@ model Subscription {
   provider         String? // "mercadopago" | "stripe" (se conecta en la fase comercial)
   providerRef      String?
   currentPeriodEnd DateTime?
+  legacyPaidUntil  DateTime? // período anterior a la conciliación por facturas
+  nextPaymentAt    DateTime?
   trialEndsAt      DateTime?
   canceledAt       DateTime?
   couponCode       String? // cupón usado al pasar a Pro
@@ -807,10 +811,53 @@ model Invoice {
   amount      Decimal   @db.Decimal(18, 2)
   currency    String
   status      String // "approved" | "rejected" | "refunded"
+  refundedAmount Decimal @default(0) @db.Decimal(18, 2)
   paidAt      DateTime?
+  agreementRef String?
+  paymentId   String? @unique
+  periodStart DateTime?
+  periodEnd   DateTime?
+  providerUpdatedAt DateTime?
   createdAt   DateTime  @default(now())
 
   @@index([workspaceId, createdAt])
+}
+
+// Historial de autorizaciones: las anteriores no desaparecen al cambiar de ciclo.
+model BillingAgreement {
+  id String @id @default(cuid())
+  workspaceId String
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  providerRef String? @unique
+  checkoutUrl String?
+  cycle String
+  amount Decimal @db.Decimal(18, 2)
+  currency String @default("ARS")
+  couponCode String?
+  couponCounted Boolean @default(false)
+  status String @default("creating")
+  startsAt DateTime?
+  providerUpdatedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([workspaceId, status])
+}
+
+model EmailOutbox {
+  id String @id @default(cuid())
+  dedupeKey String @unique
+  workspaceId String?
+  to String
+  subject String
+  text String
+  purpose String
+  attempts Int @default(0)
+  nextAttemptAt DateTime @default(now())
+  sentAt DateTime?
+  providerId String?
+  lastError String?
+  createdAt DateTime @default(now())
+  @@index([sentAt, nextAttemptAt])
 }
 
 // ---------- Panel interno ----------

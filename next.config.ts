@@ -46,7 +46,7 @@ const nextConfig: NextConfig = {
     ];
   },
   async redirects() {
-    return [{ source: "/prototipo", destination: "/prototipo.html", permanent: false }];
+    return ["/prototipo", "/prototipo.html"].map((source) => ({ source, destination: "/herramientas", permanent: true }));
   },
 };
 

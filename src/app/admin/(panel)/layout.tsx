@@ -5,6 +5,7 @@ import { can, ROLE_NAMES, type Perm } from "@/server/admin-team";
 import { adminLogoutAction } from "@/app/actions/admin";
 import { AdminNav } from "./nav";
 import { LogoMark } from "@/components/logo-mark";
+import { getDb } from "@/lib/db";
 
 export const metadata: Metadata = { title: { default: "Panel interno", template: "%s · Panel Somos Guafra" }, robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -25,7 +26,9 @@ const SECTIONS: { href: string; label: string; icon: string; perm: Perm }[] = [
 
 export default async function PanelLayout({ children }: { children: React.ReactNode }) {
   const admin = await requireAdmin();
-  const items = SECTIONS.filter((s) => can(admin.role, s.perm)).map(({ href, label, icon }) => ({ href, label, icon }));
+  const db = getDb();
+  const [inquiries, support] = await Promise.all([db.contactMessage.count({ where: { status: "OPEN" } }), db.supportTicket.count({ where: { status: "OPEN" } })]);
+  const items = SECTIONS.filter((s) => can(admin.role, s.perm)).map(({ href, label, icon }) => ({ href, label: `${label}${href === "/admin/consultas" && inquiries ? ` (${inquiries})` : href === "/admin/soporte" && support ? ` (${support})` : ""}`, icon }));
   return (
     <div className="adm">
       <header className="adm-top">

@@ -3,6 +3,8 @@
 export function parseMoneyInput(raw: string): number | null {
   let s = String(raw ?? "").trim();
   if (!s) return null;
+  // Estas calculadoras admiten montos no negativos. Nunca transformar un déficit en ingreso.
+  if (/[-−–—()]/.test(s)) return null;
   s = s.replace(/[^\d.,]/g, "");
   if (!s) return null;
   const i = Math.max(s.lastIndexOf(","), s.lastIndexOf("."));
@@ -13,7 +15,7 @@ export function parseMoneyInput(raw: string): number | null {
   }
   ip = ip.replace(/[.,]/g, "");
   const v = parseInt(ip || "0", 10) * 100 + parseInt((fp + "00").slice(0, 2), 10);
-  return Number.isFinite(v) ? v : null;
+  return Number.isSafeInteger(v) ? v : null;
 }
 
 export const money = (cents: number, symbol = "$") =>

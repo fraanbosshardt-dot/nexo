@@ -90,7 +90,7 @@ export function ofxToCsv(text: string) {
 }
 
 export async function exportBackup(db: Db, ws: string) {
-  const [workspace, accounts, categories, transactions, obligations, rules, debts, cards, budgets, goals, investments, assets, grain] = await Promise.all([
+  const [workspace, accounts, categories, transactions, obligations, rules, debts, cards, budgets, goals, investments, assets, grain, scenarios, grainStocks, manualRates, imports, subscription, invoices] = await Promise.all([
     db.workspace.findUnique({ where: { id: ws } }),
     db.account.findMany({ where: { workspaceId: ws } }),
     db.category.findMany({ where: { workspaceId: ws } }),
@@ -98,14 +98,20 @@ export async function exportBackup(db: Db, ws: string) {
     db.obligation.findMany({ where: { workspaceId: ws } }),
     db.recurringRule.findMany({ where: { workspaceId: ws } }),
     db.debt.findMany({ where: { workspaceId: ws }, include: { schedule: true } }),
-    db.creditCard.findMany({ where: { workspaceId: ws }, include: { statements: true, plans: true } }),
+    db.creditCard.findMany({ where: { workspaceId: ws }, include: { statements: true, plans: true, cycles: true, subscriptions: true } }),
     db.budget.findMany({ where: { workspaceId: ws }, include: { lines: true } }),
     db.goal.findMany({ where: { workspaceId: ws }, include: { contributions: true } }),
     db.investment.findMany({ where: { workspaceId: ws }, include: { movements: true, valuations: true } }),
     db.asset.findMany({ where: { workspaceId: ws }, include: { valuations: true } }),
     db.grainSale.findMany({ where: { workspaceId: ws } }),
+    db.scenario.findMany({ where: { workspaceId: ws } }),
+    db.grainStock.findMany({ where: { workspaceId: ws } }),
+    db.exchangeRate.findMany({ where: { workspaceId: ws } }),
+    db.importBatch.findMany({ where: { workspaceId: ws } }),
+    db.subscription.findUnique({ where: { workspaceId: ws } }),
+    db.invoice.findMany({ where: { workspaceId: ws } }),
   ]);
-  return JSON.stringify({ app: "Somos Guafra", version: 1, exportedAt: new Date().toISOString(), workspace, accounts, categories, transactions, obligations, rules, debts, cards, budgets, goals, investments, assets, grain }, null, 2);
+  return JSON.stringify({ app: "somosguafra", version: 2, exportedAt: new Date().toISOString(), workspace, accounts, categories, transactions, obligations, rules, debts, cards, budgets, goals, investments, assets, grain, scenarios, grainStocks, manualRates, imports, subscription, invoices }, null, 2);
 }
 
 // ---------- Importar CSV ----------

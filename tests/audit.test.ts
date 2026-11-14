@@ -34,7 +34,7 @@ describe("cobros de Pro", () => {
     expect(effectivePlan({ plan: "PRO", status: "ACTIVE", trialEndsAt: null }, now)).toBe("PRO");
   });
   it("un pago cubre un mes o un año", () => {
-    expect(paidUntil(d("2026-01-31"), "monthly").toISOString().slice(0, 10)).toBe("2026-03-03");
+    expect(paidUntil(d("2026-01-31"), "monthly").toISOString().slice(0, 10)).toBe("2026-02-28");
     expect(paidUntil(d("2026-11-11"), "yearly").toISOString().slice(0, 10)).toBe("2027-11-11");
   });
 });

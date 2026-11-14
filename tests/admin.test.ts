@@ -59,7 +59,7 @@ describe("Pro reservado y regalado", () => {
     expect(days).toBeGreaterThan(19.9);
     expect(effectivePlan(sub)).toBe("PRO");
     const { ws: paid } = await mkUser("paga@gmail.com");
-    await db.subscription.update({ where: { workspaceId: paid.id }, data: { plan: "PRO", status: "ACTIVE", provider: "mercadopago" } });
+    await db.subscription.update({ where: { workspaceId: paid.id }, data: { plan: "PRO", status: "ACTIVE", provider: "mercadopago", currentPeriodEnd: new Date(Date.now() + 30 * 864e5) } });
     expect(await giftPro(db, paid.id, 30)).toBe("paga");
   });
 });
@@ -75,8 +75,8 @@ describe("cupones", () => {
     await db.coupon.update({ where: { code: "MITAD" }, data: { uses: 1 } });
     expect((await checkCoupon(db, "MITAD")).ok).toBe(false);
     expect(discounted(4999, 20)).toBe(3999.2);
-    expect(splitRef("ws1|MITAD")).toEqual({ ws: "ws1", coupon: "MITAD" });
-    expect(splitRef("ws1")).toEqual({ ws: "ws1", coupon: null });
+    expect(splitRef("ws1|MITAD")).toEqual({ ws: "ws1", coupon: "MITAD", checkout: null });
+    expect(splitRef("ws1")).toEqual({ ws: "ws1", coupon: null, checkout: null });
   });
 });
 

@@ -30,6 +30,17 @@ export const FREE_INCLUDES = [
 export const PRICES_DEFAULT = { monthly: 5, yearly: 48 };
 export const FREE_LIMITS = { accounts: 5, goals: 3 };
 
+export async function startFreeTrial(db: Db, workspaceId: string) {
+  return db.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM "Workspace" WHERE id = ${workspaceId} FOR UPDATE`;
+    const ws = await tx.workspace.findUniqueOrThrow({ where: { id: workspaceId }, select: { billingDisabledAt: true } });
+    const sub = await tx.subscription.findUnique({ where: { workspaceId } });
+    if (ws.billingDisabledAt || !sub || sub.trialEndsAt || sub.provider === "mercadopago" || sub.plan !== "FREE" || await tx.billingAgreement.count({ where: { workspaceId, status: { not: "cancelled" } } })) return false;
+    await tx.subscription.update({ where: { workspaceId }, data: { plan: "PRO", status: "TRIALING", trialEndsAt: new Date(Date.now() + 14 * 864e5) } });
+    return true;
+  });
+}
+
 // pricesArs: el precio en pesos que se muestra en la web y en la app (si está cargado, reemplaza al de dólares).
 type PlanSettings = { freeAlso: FeatureKey[]; prices: { monthly: number; yearly: number }; pricesArs?: { monthly: number; yearly: number } | null };
 
@@ -52,18 +63,23 @@ export async function savePlanSettings(db: Db, value: PlanSettings) {
 
 // Plan efectivo: Pro pago, o prueba gratis vigente. Si se canceló o el pago quedó pendiente, Pro sigue hasta el fin
 // del período ya pagado.
-export function effectivePlan(sub: { plan: string; status: string; trialEndsAt: Date | null; currentPeriodEnd?: Date | null } | null | undefined, now = new Date()): "FREE" | "PRO" {
+export function effectivePlan(sub: { plan: string; status: string; trialEndsAt: Date | null; currentPeriodEnd?: Date | null; provider?: string | null } | null | undefined, now = new Date()): "FREE" | "PRO" {
   if (!sub) return "FREE";
   if (sub.status === "TRIALING") return sub.trialEndsAt && sub.trialEndsAt > now ? "PRO" : "FREE";
   if (sub.plan !== "PRO") return "FREE";
-  if (sub.status === "ACTIVE") return "PRO";
+  if (sub.trialEndsAt && sub.trialEndsAt > now) return "PRO";
+  if (sub.status === "ACTIVE" && sub.provider !== "mercadopago") return "PRO";
   return sub.currentPeriodEnd && sub.currentPeriodEnd > now ? "PRO" : "FREE";
 }
 
 // Hasta cuándo cubre un pago: un mes o un año desde que se pagó.
 export function paidUntil(paidAt: Date, cycle: string | null | undefined) {
   const d = new Date(paidAt);
+  const day = d.getUTCDate();
+  d.setUTCDate(1);
   d.setUTCMonth(d.getUTCMonth() + (cycle === "yearly" ? 12 : 1));
+  const last = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate();
+  d.setUTCDate(Math.min(day, last));
   return d;
 }
 

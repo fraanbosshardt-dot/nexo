@@ -30,11 +30,11 @@ export async function overview(db: PrismaClient, prices: { monthly: number; year
     db.user.count({ where: { deletedAt: null, createdAt: { gte: new Date(now.getTime() - 30 * DAY) } } }),
     db.user.count({ where: { lastSeenAt: { gte: new Date(now.getTime() - DAY) } } }),
     db.user.count({ where: { lastSeenAt: { gte: new Date(now.getTime() - 30 * DAY) } } }),
-    db.subscription.findMany({ select: { plan: true, status: true, trialEndsAt: true, billingCycle: true, provider: true } }),
+    db.subscription.findMany({ select: { plan: true, status: true, trialEndsAt: true, currentPeriodEnd: true, billingCycle: true, provider: true } }),
     db.supportTicket.count({ where: { status: "OPEN" } }),
     db.subscription.count({ where: { provider: "mercadopago", canceledAt: { gte: new Date(now.getTime() - 30 * DAY) } } }),
   ]);
-  const paid = subs.filter((s) => s.plan === "PRO" && s.status === "ACTIVE" && s.provider === "mercadopago");
+  const paid = subs.filter((s) => s.plan === "PRO" && s.status === "ACTIVE" && s.provider === "mercadopago" && s.currentPeriodEnd && s.currentPeriodEnd > now && (!s.trialEndsAt || s.currentPeriodEnd > s.trialEndsAt));
   const gifted = subs.filter((s) => s.provider === "manual" && effectivePlan(s) === "PRO").length;
   const trials = subs.filter((s) => s.status === "TRIALING" && s.provider !== "manual" && s.trialEndsAt && s.trialEndsAt > now).length;
   const mrr = paid.reduce((t, s) => t + (s.billingCycle === "yearly" ? prices.yearly / 12 : prices.monthly), 0);
@@ -55,14 +55,14 @@ export async function signupsByDay(db: PrismaClient, days = 30, now = new Date()
 // Cobrado por mes (pagos aprobados), en pesos.
 export async function revenueByMonth(db: PrismaClient, months = 6, now = new Date()) {
   const from = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (months - 1), 1));
-  const inv = await db.invoice.findMany({ where: { status: "approved", paidAt: { gte: from } }, select: { amount: true, currency: true, paidAt: true } });
+  const inv = await db.invoice.findMany({ where: { status: "approved", paidAt: { gte: from } }, select: { amount: true, refundedAmount: true, currency: true, paidAt: true } });
   const keys = Array.from({ length: months }, (_, i) => ym(new Date(Date.UTC(from.getUTCFullYear(), from.getUTCMonth() + i, 1))));
   const out = keys.map((key) => ({ key, n: 0, count: 0 }));
   for (const i of inv) {
     const row = out.find((o) => o.key === ym(i.paidAt!));
     if (!row) continue;
     row.count++;
-    const v = await toArs(db, Number(i.amount), i.currency);
+    const v = await toArs(db, Math.max(0, Number(i.amount) - Number(i.refundedAmount)), i.currency);
     if (v !== null) row.n += v;
   }
   return out.map((o) => ({ ...o, n: Math.round(o.n * 100) / 100 }));

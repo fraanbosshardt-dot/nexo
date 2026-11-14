@@ -16,7 +16,7 @@ afterAll(async () => { await t?.stop(); });
 describe("Mercado Pago", () => {
   it("acepta solo notificaciones con la firma correcta", () => {
     process.env.MP_WEBHOOK_SECRET = "secreto-de-prueba";
-    const ts = "1700000000";
+    const ts = String(Math.floor(Date.now() / 1000));
     const v1 = createHmac("sha256", "secreto-de-prueba").update(`id:abc123;request-id:req-1;ts:${ts};`).digest("hex");
     expect(validSignature(`ts=${ts},v1=${v1}`, "req-1", "ABC123")).toBe(true);
     expect(validSignature(`ts=${ts},v1=${v1}`, "req-2", "abc123")).toBe(false); // otro pedido

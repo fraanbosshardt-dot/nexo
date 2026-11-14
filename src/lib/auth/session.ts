@@ -71,16 +71,21 @@ export async function requireUser() {
 }
 
 // Exige usuario y devuelve el espacio que está viendo (el propio o uno compartido). Si no terminó la introducción, lo manda ahí.
-// Quien "solo mira" un espacio compartido no puede cambiar nada: toda acción del servidor (pedido con
-// el encabezado next-action) que pase por acá se corta.
+// La lectura permite VIEWER; toda mutación usa requireWritableWorkspace para exigir rol de escritura.
 export async function requireWorkspace(opts: { allowNotOnboarded?: boolean } = {}) {
   const { session, user } = await requireUser();
   const membership = pickMembership(user.memberships, user.activeWorkspaceId);
   if (!membership) redirect("/ingresar");
   const workspace = membership.workspace;
   if (!workspace.onboardedAt && !opts.allowNotOnboarded) redirect("/bienvenida");
-  if (membership.role === "VIEWER" && (await headers()).get("next-action")) redirect("/app?solomirar=1");
   return { session, user, membership, workspace, modules: readModules(workspace.modules), plan: effectivePlan(workspace.subscription) };
+}
+
+// La autorización depende del rol, también para formularios multipart sin next-action.
+export async function requireWritableWorkspace(opts: { allowNotOnboarded?: boolean } = {}) {
+  const ctx = await requireWorkspace(opts);
+  if (ctx.membership.role !== "OWNER" && ctx.membership.role !== "EDITOR") redirect("/app?solomirar=1");
+  return ctx;
 }
 
 // Después de ingresar: si estaba aceptando una invitación, vuelve a ella; si no, al destino de siempre.

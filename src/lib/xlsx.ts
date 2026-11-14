@@ -36,20 +36,29 @@ function zip(files: { name: string; data: Buffer }[]) {
 }
 
 function unzip(buf: Buffer) {
+  const MAX_EXPANDED = 20_000_000;
+  let expanded = 0;
   const out = new Map<string, Buffer>();
   let eocd = -1;
   for (let i = buf.length - 22; i >= Math.max(0, buf.length - 65557); i--) if (buf.readUInt32LE(i) === 0x06054b50) { eocd = i; break; }
   if (eocd < 0) throw new Error("No es un archivo Excel válido.");
   const count = buf.readUInt16LE(eocd + 10);
+  if (count > 100) throw new Error("El Excel contiene demasiados archivos internos.");
   let p = buf.readUInt32LE(eocd + 16);
   for (let i = 0; i < count; i++) {
     if (buf.readUInt32LE(p) !== 0x02014b50) break;
     const method = buf.readUInt16LE(p + 10), csize = buf.readUInt32LE(p + 20);
+    const usize = buf.readUInt32LE(p + 24);
+    if (![0, 8].includes(method) || usize > MAX_EXPANDED - expanded) throw new Error("El Excel supera el tamaño descomprimido permitido.");
     const nlen = buf.readUInt16LE(p + 28), xlen = buf.readUInt16LE(p + 30), clen = buf.readUInt16LE(p + 32), lofs = buf.readUInt32LE(p + 42);
     const name = buf.subarray(p + 46, p + 46 + nlen).toString("utf8");
     const start = lofs + 30 + buf.readUInt16LE(lofs + 26) + buf.readUInt16LE(lofs + 28);
     const raw = buf.subarray(start, start + csize);
-    out.set(name, method === 8 ? inflateRawSync(raw) : Buffer.from(raw));
+    if (start + csize > buf.length || out.has(name)) throw new Error("El Excel tiene una estructura inválida.");
+    const data = method === 8 ? inflateRawSync(raw, { maxOutputLength: MAX_EXPANDED - expanded }) : Buffer.from(raw);
+    expanded += data.length;
+    if (expanded > MAX_EXPANDED || data.length !== usize) throw new Error("El Excel supera el tamaño descomprimido permitido.");
+    out.set(name, data);
     p += 46 + nlen + xlen + clen;
   }
   return out;
@@ -109,10 +118,12 @@ export function readXlsx(buf: Buffer): string[][] {
   if (!sheet) throw new Error("El archivo no tiene hojas.");
   const rows: string[][] = [];
   for (const r of sheet.matchAll(/<row[^>]*>([\s\S]*?)<\/row>/g)) {
+    if (rows.length >= 10000) throw new Error("El Excel supera las 10.000 filas permitidas.");
     const row: string[] = [];
     for (const c of r[1].matchAll(/<c ([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g)) {
       const attrs = c[1], inner = c[2] ?? "";
       const ref = attrs.match(/r="([A-Z]+\d+)"/)?.[1];
+      if (ref && colIndex(ref) >= 256) throw new Error("El Excel supera las 256 columnas permitidas.");
       const t = attrs.match(/t="(\w+)"/)?.[1];
       const s = Number(attrs.match(/s="(\d+)"/)?.[1] ?? 0);
       const v = inner.match(/<v>([\s\S]*?)<\/v>/)?.[1];

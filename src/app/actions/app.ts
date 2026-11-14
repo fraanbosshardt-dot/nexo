@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import QRCode from "qrcode";
 import { getDb } from "@/lib/db";
-import { audit, canUse, requireUser, requireWorkspace } from "@/lib/auth/session";
+import { audit, canUse, requireUser, requireWritableWorkspace as requireWorkspace } from "@/lib/auth/session";
 import { parseAmount } from "@/lib/money";
 import { parseDate, todayIn } from "@/lib/dates";
 import { MODULES, modulesForUses, readModules, FREE_LIMITS } from "@/lib/modules";

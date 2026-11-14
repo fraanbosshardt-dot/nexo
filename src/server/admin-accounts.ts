@@ -35,18 +35,22 @@ export async function exportAccountData(db: PrismaClient, userId: string) {
       obligations: await db.obligation.findMany({ where, include: { payments: true } }),
       recurringRules: await db.recurringRule.findMany({ where }),
       debts: await db.debt.findMany({ where, include: { schedule: true } }),
-      creditCards: await db.creditCard.findMany({ where, include: { statements: true, plans: true } }),
+      creditCards: await db.creditCard.findMany({ where, include: { statements: true, plans: true, cycles: true, subscriptions: true } }),
       budgets: await db.budget.findMany({ where, include: { lines: true } }),
       goals: await db.goal.findMany({ where, include: { contributions: true } }),
       investments: await db.investment.findMany({ where, include: { movements: true, valuations: true } }),
       assets: await db.asset.findMany({ where, include: { valuations: true } }),
       grainSales: await db.grainSale.findMany({ where }),
       manualRates: await db.exchangeRate.findMany({ where }),
+      scenarios: await db.scenario.findMany({ where }),
+      grainStocks: await db.grainStock.findMany({ where }),
+      importBatches: await db.importBatch.findMany({ where }),
       invoices: await db.invoice.findMany({ where }),
     });
   }
   const tickets = await db.supportTicket.findMany({ where: { userId } });
-  return { exportedAt: new Date().toISOString(), user, spaces, supportTickets: tickets };
+  const contactMessages = await db.contactMessage.findMany({ where: { userId } });
+  return { version: 2, exportedAt: new Date().toISOString(), user, spaces, supportTickets: tickets, contactMessages };
 }
 
 // ---------- Borrar una cuenta ----------
@@ -54,8 +58,13 @@ export async function exportAccountData(db: PrismaClient, userId: string) {
 // con todo su contenido, y después la cuenta. De los espacios de otros solo se va (se borra su membresía).
 // La auditoría queda sin el vínculo a la persona (la relación es SetNull).
 export async function deleteAccount(db: PrismaClient, userId: string) {
+  const account = await db.user.findUniqueOrThrow({ where: { id: userId }, select: { email: true } });
   const ms = await db.membership.findMany({ where: { userId }, include: { workspace: { include: { _count: { select: { members: true } } } } } });
   const solo = ms.filter((m) => m.role === "OWNER" || m.workspace._count.members <= 1).map((m) => m.workspaceId);
+  // Primero impedir nuevas altas y detener TODOS los cobros externos. Ante un fallo no borrar los vínculos.
+  await db.workspace.updateMany({ where: { id: { in: solo } }, data: { billingDisabledAt: new Date() } });
+  const { cancelSubscription } = await import("./billing");
+  for (const ws of solo) await cancelSubscription(db, ws);
   await db.$transaction(async (tx) => {
     for (const ws of solo) {
       const where = { workspaceId: ws };
@@ -77,6 +86,7 @@ export async function deleteAccount(db: PrismaClient, userId: string) {
       await tx.workspace.delete({ where: { id: ws } });
     }
     await tx.user.delete({ where: { id: userId } });
+    await tx.emailOutbox.deleteMany({ where: { to: account.email } });
   });
   return { deletedSpaces: solo.length };
 }

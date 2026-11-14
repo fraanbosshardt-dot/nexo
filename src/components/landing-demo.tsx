@@ -44,13 +44,13 @@ export function CuotasDemo() {
   );
 }
 
-export function PriceSwitch({ monthly, yearly }: { monthly: React.ReactNode; yearly: React.ReactNode }) {
+export function PriceSwitch({ monthly, yearly, saving = 0 }: { monthly: React.ReactNode; yearly: React.ReactNode; saving?: number }) {
   const [y, setY] = useState(false);
   return (
     <>
       <div className="lx-seg" role="group" aria-label="Forma de pago">
         <button type="button" aria-pressed={!y} className={!y ? "on" : ""} onClick={() => setY(false)}>Por mes</button>
-        <button type="button" aria-pressed={y} className={y ? "on" : ""} onClick={() => setY(true)}>Por año <em className="lx-seg-save">2 meses gratis</em></button>
+        <button type="button" aria-pressed={y} className={y ? "on" : ""} onClick={() => setY(true)}>Por año {saving > 0 && <em className="lx-seg-save">Ahorrás {saving}%</em>}</button>
       </div>
       {y ? yearly : monthly}
     </>

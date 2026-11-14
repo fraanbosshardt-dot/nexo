@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getDb } from "@/lib/db";
-import { audit, canUse, requireOwner, requireWorkspace } from "@/lib/auth/session";
+import { audit, canUse, requireOwner, requireWritableWorkspace as requireWorkspace } from "@/lib/auth/session";
 import { parseAmount } from "@/lib/money";
 import { parseDate, todayIn } from "@/lib/dates";
 import { isCurrency } from "@/lib/countries";
@@ -647,19 +647,15 @@ export async function revertImportAction(fd: FormData) {
 
 export async function startTrialAction() {
   const { user, workspace } = await requireOwner();
-  const sub = workspace.subscription;
-  if (sub?.trialEndsAt) redirect("/app/configuracion?tab=plan&prueba=usada");
-  await getDb().subscription.upsert({
-    where: { workspaceId: workspace.id },
-    create: { workspaceId: workspace.id, plan: "PRO", status: "TRIALING", trialEndsAt: new Date(Date.now() + 14 * 864e5) },
-    update: { plan: "PRO", status: "TRIALING", trialEndsAt: new Date(Date.now() + 14 * 864e5) },
-  });
+  const { startFreeTrial } = await import("@/server/plans");
+  if (!await startFreeTrial(getDb(), workspace.id)) redirect("/app/configuracion?tab=plan&prueba=usada");
   await audit("plan.trial_started", { userId: user.id, workspaceId: workspace.id });
   redirect(done("/app/configuracion?tab=plan"));
 }
 
 export async function supportTicketAction(_: FormState, fd: FormData): Promise<FormState> {
-  const { user, plan } = await requireWorkspace();
+  const { requireWorkspace: readWorkspace } = await import("@/lib/auth/session");
+  const { user, plan } = await readWorkspace();
   const subject = str(fd, "subject"), body = str(fd, "body");
   if (!subject || !body) return { error: "Contanos el asunto y el detalle." };
   if (body.length > 4000) return { error: "El mensaje es demasiado largo." };
@@ -698,7 +694,9 @@ export async function checkoutAction(fd: FormData) {
   if (paid && !(sub!.billingCycle === "monthly" && cycle === "yearly")) redirect("/app/configuracion?tab=plan&yatenes=1");
   const trialEnd = sub?.status === "TRIALING" && sub.trialEndsAt && sub.trialEndsAt > now ? sub.trialEndsAt : null;
   const startDate = paid ? (sub!.currentPeriodEnd && sub!.currentPeriodEnd > now ? sub!.currentPeriodEnd : null) : trialEnd;
-  const link = await startCheckout(getDb(), workspace.id, user.email, cycle, `${appUrl()}/app/configuracion?tab=plan&pago=1`, discount, startDate);
+  let link: string;
+  try { link = await startCheckout(getDb(), workspace.id, user.email, cycle, `${appUrl()}/app/configuracion?tab=plan&pago=1`, discount, startDate); }
+  catch (e) { redirect(`/app/configuracion?tab=plan&pagoerror=${encodeURIComponent(e instanceof UserError ? e.message : "No pudimos verificar el estado con Mercado Pago. Reintentá desde esta pantalla; no inicies otro pago por fuera.")}`); }
   await audit("billing.checkout_started", { userId: user.id, workspaceId: workspace.id, meta: { cycle, coupon: discount?.code } });
   redirect(link);
 }
@@ -706,7 +704,8 @@ export async function checkoutAction(fd: FormData) {
 export async function cancelPlanAction() {
   const { user, workspace } = await requireOwner();
   const { cancelSubscription } = await import("@/server/billing");
-  await cancelSubscription(getDb(), workspace.id);
+  try { await cancelSubscription(getDb(), workspace.id); }
+  catch (e) { redirect(`/app/configuracion?tab=plan&pagoerror=${encodeURIComponent(e instanceof UserError ? e.message : "No pudimos confirmar la baja en Mercado Pago. La suscripción no se marcó como cancelada; reintentá o contactá a soporte.")}`); }
   await audit("billing.canceled", { userId: user.id, workspaceId: workspace.id });
   redirect(done("/app/configuracion?tab=plan&cancelado=1"));
 }

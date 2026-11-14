@@ -7,7 +7,7 @@ import { COUNTRIES } from "@/lib/countries";
 import { Onboarding } from "./onboarding";
 import { switchWorkspaceAction } from "@/app/actions/sharing";
 
-export const metadata: Metadata = { title: "Bienvenida" };
+export const metadata: Metadata = { title: "Bienvenida", robots: { index: false, follow: false } };
 
 export default async function WelcomePage() {
   const { user, workspace } = await requireWorkspace({ allowNotOnboarded: true });

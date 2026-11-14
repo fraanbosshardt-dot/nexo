@@ -12,6 +12,7 @@ import { giftPro } from "@/server/grants";
 import { deleteAccount, normCode } from "@/server/admin-accounts";
 import { appUrl, sendEmail } from "@/lib/email";
 import type { FormState } from "./auth";
+import { UserError } from "@/server/ledger";
 
 const s = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
 const n = (fd: FormData, k: string) => Number(s(fd, k).replace(",", "."));
@@ -41,11 +42,9 @@ export async function adminSetPlanAction(fd: FormData) {
   const a = await requireAdmin("owner");
   const workspaceId = s(fd, "workspaceId");
   const plan = s(fd, "plan") === "PRO" ? "PRO" : "FREE";
-  await getDb().subscription.upsert({
-    where: { workspaceId },
-    create: { workspaceId, plan, status: "ACTIVE", provider: "manual" },
-    update: { plan, status: "ACTIVE", trialEndsAt: null, provider: "manual" },
-  });
+  const { setManualPlan } = await import("@/server/billing");
+  try { await setManualPlan(getDb(), workspaceId, plan); }
+  catch (e) { redirect(`/admin/cobros?pagoerror=${encodeURIComponent(e instanceof UserError ? e.message : "No se pudo cambiar el plan. Reintentá sin modificar los cobros por fuera.")}`); }
   await adminAudit(a, "admin.plan_changed", { workspaceId, meta: { plan } });
   refresh();
 }
@@ -96,7 +95,9 @@ export async function adminDeleteAccountAction(_: FormState, fd: FormData): Prom
   const u = await db.user.findUnique({ where: { id } });
   if (!u) return { error: "La cuenta ya no existe." };
   if (s(fd, "confirm").toLowerCase() !== u.email) return { error: `Para borrar, escribí el correo exacto: ${u.email}` };
-  const r = await deleteAccount(db, id);
+  let r: { deletedSpaces: number };
+  try { r = await deleteAccount(db, id); }
+  catch (e) { return { error: e instanceof UserError ? e.message : "No se pudo confirmar la baja de los cobros. La cuenta se conserva para poder reintentar." }; }
   await adminAudit(a, "admin.account_deleted", { entity: "user", entityId: id, meta: { email: u.email, spaces: r.deletedSpaces } });
   refresh();
   redirect("/admin/usuarios?borrada=1");
@@ -162,11 +163,9 @@ export async function adminCancelSubAction(fd: FormData) {
   const a = await requireAdmin("owner");
   const workspaceId = s(fd, "workspaceId");
   const { cancelSubscription } = await import("@/server/billing");
-  try {
-    await cancelSubscription(getDb(), workspaceId);
-  } catch {
-    await getDb().subscription.update({ where: { workspaceId }, data: { status: "CANCELED", canceledAt: new Date() } });
-  }
+  // Un fallo externo no es una cancelación: conservar el vínculo y permitir reintentar.
+  try { await cancelSubscription(getDb(), workspaceId); }
+  catch (e) { redirect(`/admin/cobros?pagoerror=${encodeURIComponent(e instanceof UserError ? e.message : "Mercado Pago no confirmó la cancelación. Conservamos la suscripción para reintentar.")}`); }
   await adminAudit(a, "admin.subscription_canceled", { workspaceId });
   refresh();
 }

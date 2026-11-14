@@ -21,12 +21,16 @@ export async function GET(req: Request) {
 }
 
 async function run(db: ReturnType<typeof getDb>) {
+  const { reconcileBilling } = await import("@/server/billing");
+  const { drainEmailOutbox } = await import("@/server/billing-mail");
+  const billing = await reconcileBilling(db, 10);
+  const delivered = await drainEmailOutbox(db);
   const fx = await refreshRates(db).catch(() => 0);
   const sent = 0, skipped = 0; // No se envían recordatorios de finanzas personales por correo.
   const pushes = await pushDueTomorrow(db);
   const unverified = await cleanUnverified(db);
   await db.auditLog.create({ data: { action: "cron.diario", meta: { rates: fx, emails: sent, notSent: skipped, pushes, ...unverified } } });
-  return Response.json({ ok: true, rates: fx, emails: sent, notSent: skipped, pushes, ...unverified });
+  return Response.json({ ok: true, rates: fx, emails: sent, billing, delivered, notSent: skipped, pushes, ...unverified });
 }
 
 // Personas con avisos en el celular y algo que vence mañana en alguno de sus espacios.

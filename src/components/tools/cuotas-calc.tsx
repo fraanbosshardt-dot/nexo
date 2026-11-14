@@ -7,7 +7,8 @@ export function CuotasCalc({ compact = false }: { compact?: boolean }) {
   const [v, setV] = useState({ now: "", free: "", price: "", n: "6", total: "", cushion: "" });
   const set = (k: keyof typeof v) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setV({ ...v, [k]: e.target.value });
   const now = parseMoneyInput(v.now), free = parseMoneyInput(v.free), price = parseMoneyInput(v.price);
-  const r = now != null && free != null && price ? canAffordSimple({ now, monthlyFree: free, price, installments: Number(v.n), total: parseMoneyInput(v.total), cushion: parseMoneyInput(v.cushion) ?? 0 }) : null;
+  const invalid = [v.now, v.free, v.price, v.total, v.cushion].some((x) => x.trim() && parseMoneyInput(x) == null);
+  const r = !invalid && now != null && free != null && price ? canAffordSimple({ now, monthlyFree: free, price, installments: Number(v.n), total: parseMoneyInput(v.total), cushion: parseMoneyInput(v.cushion) ?? 0 }) : null;
   const max = r ? Math.max(1, ...r.rows.map((x) => Math.abs(x.end))) : 1;
   return (
     <form className="calc-card" onSubmit={(e) => e.preventDefault()} aria-label="¿Puedo comprarlo en cuotas?">
@@ -27,6 +28,7 @@ export function CuotasCalc({ compact = false }: { compact?: boolean }) {
         </div>
       )}
       <div className={`calc-out ${r ? (r.ok ? "yes" : "no") : ""}`} aria-live="polite">
+        {invalid && <p role="alert">Usá montos válidos, sin valores negativos. Si tus gastos superan tus ingresos, esta compra necesita otra fuente de dinero.</p>}
         {!r ? <span className="sub">Completá los tres primeros montos y te decimos si te alcanza y cómo queda tu dinero mes a mes.</span> : (
           <>
             <b className="calc-v">{r.ok ? "Sí, te alcanza" : "No te alcanza"}</b>

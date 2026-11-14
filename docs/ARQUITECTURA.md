@@ -77,18 +77,18 @@ Todas las tablas financieras tienen `workspaceId`.
 |---|---|---|
 | 1 | Base técnica, autenticación con dos pasos, modelo de datos, diseño, introducción, landing y legales | **Hecha** |
 | 2 | Cuentas, ingresos, gastos, transferencias, pendientes, pagos parciales, conciliación y reversas | **Hecha (núcleo)** |
-| 3 | Reglas recurrentes, calendario y flujo de caja | Siguiente |
-| 4 | Deudas y préstamos, tarjetas, cuotas y cancelación anticipada | |
-| 5 | Presupuestos, objetivos y simulador | |
-| 6 | Inversiones, bienes, patrimonio y ventas de granos | |
-| 7 | Informes, exportaciones, importación, alertas y asistente con IA | |
-| 8 | Cobros (Mercado Pago / Stripe), panel interno y funciones comerciales | |
+| 3 | Reglas recurrentes, calendario y flujo de caja | Implementada |
+| 4 | Deudas y préstamos, tarjetas, cuotas y cancelación anticipada | Implementada |
+| 5 | Presupuestos, objetivos y simulador | Implementada |
+| 6 | Inversiones, bienes, patrimonio y ventas de granos | Implementada |
+| 7 | Informes, exportaciones, importación y alertas (sin asistente con IA) | Implementadas |
+| 8 | Cobros con Mercado Pago, panel interno y funciones comerciales (sin Stripe) | Implementados; ver SUSCRIPCIONES.md |
 
 ## 8. Pruebas de aceptación
 
 Cubiertas hoy en `tests/ledger.test.ts`: 1 (transferencia no es ingreso), 2 (previsto no cambia el saldo), 3 (lo vencido sigue pendiente), 4 (octubre pagado en noviembre), 8 (saldo = suma cronológica), 9 (pago parcial), 10 (monedas y cotización), 11 (inversiones separadas del disponible) y 12 (aislamiento entre usuarios). Además: reversas, importe final distinto del previsto, conciliación e idempotencia.
 
-Pendientes para sus fases: 5 (editar una recurrencia no toca el pasado, Fase 3), 6 (cuotas de tarjeta sin doble gasto, Fase 4) y 7 (cancelación anticipada, Fase 4).
+Las pruebas de recurrencias, tarjetas y cancelación anticipada están en tests/rules.test.ts, tests/statements.test.ts y la familia tests/debts-*.test.ts. La suite completa, incluidas suscripciones y límites de seguridad, se ejecuta con npm test.
 
 ## 9. Despliegue
 
