@@ -62,7 +62,7 @@ export default async function Settings({ searchParams }: { searchParams: Promise
     body = (
       <div className="card">
         <p className="sub" style={{ marginBottom: 8 }}>Activá solo lo que usás. Lo que apagues desaparece del menú; tus datos no se borran.</p>
-        <ActionForm action={saveModulesAction}>
+        <ActionForm action={saveModulesAction} className="settings-functions">
           <div className="list">{MODULES.map((m) => (
             <div className="li" key={m.key}>
               <div className="grow"><div className="t" style={{ whiteSpace: "normal" }}>{m.name} {m.pro && <span className="pill">Pro</span>}</div><div className="s">{m.description}</div></div>

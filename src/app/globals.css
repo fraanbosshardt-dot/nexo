@@ -1040,6 +1040,7 @@ html[data-big] body{zoom:1.15}
 .bud-add select{max-width:360px}
 @media (max-width:640px){.bud-row{grid-template-columns:minmax(0,1fr) 130px 36px;padding:10px}}
 .form-msg{flex-basis:100%;width:100%;margin:0}
+.settings-functions>.form-msg{margin-top:16px}
 /* Objetivos: simulador y acciones ordenadas */
 .goal-sim{display:flex;flex-direction:column;gap:10px;margin-top:14px;padding:14px;border-radius:12px;background:var(--surface-2);font-size:14px}
 .goal-sim input[type=range]{width:100%}
