@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import { requireWorkspace } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
@@ -23,6 +24,16 @@ const FAQ: [string, string][] = [
   ["¿Puedo compartir mis cuentas con mi pareja o mi familia?", "Sí, con Pro. En Configuración → Compartir generás un enlace de invitación para hasta 3 personas, que pueden cargar y editar o solo mirar. Cada una entra con su propia cuenta."],
   ["¿Cómo recibo avisos de vencimientos?", "Podés activar los avisos en el celular desde Configuración → General; en iPhone, primero instalá la app en la pantalla de inicio."],
   ["¿Cómo apago una función que no uso?", "En Configuración, pestaña Funciones. Lo que apagás desaparece del menú y tus datos quedan guardados."],
+  ["¿Cómo confirmo mi correo?", "Tocá «Confirmar correo» en el aviso de la app. Se abre una pantalla aparte donde ingresás el código de 6 números o pedís uno nuevo. Revisá también spam. Confirmalo antes de pagar Pro o invitar a otra persona a tu espacio."],
+  ["¿Cómo paso a Pro?", "Desde la web, con la sesión iniciada, elegí por mes o por año y tocá «Suscribirme a Pro»: te llevamos a Mercado Pago para autorizar el pago. También podés hacerlo desde Configuración → Plan. Solo el dueño del espacio puede contratarlo y el correo debe estar confirmado. Pro se habilita cuando Mercado Pago confirma un pago aprobado; volver a la app por sí solo no confirma el cobro."],
+  ["¿La prueba de 14 días me cobra al terminar?", "La prueba es gratis, se activa una sola vez desde Configuración → Plan y no te pide tarjeta. Si no contratás Pro, al vencer volvés a Gratis. Si autorizás una suscripción durante la prueba, los cobros se programan para cuando termine; la fecha se informa antes de confirmar en Mercado Pago."],
+  ["¿Cuándo se renueva Pro?", "Según lo que elijas, por mes o por año. En Configuración → Plan podés ver el próximo cobro programado y hasta cuándo tenés acceso cubierto por tus pagos. Si Mercado Pago rechaza un cobro, el intento no agrega un período pagado."],
+  ["¿Cómo cancelo Pro?", "En Configuración → Plan, tocá «Cancelar Pro». La baja se confirma con Mercado Pago: si hay un error, reintentá o contactanos. Una vez cancelado no se programan nuevos cobros y conservás Pro hasta el final del período ya pagado. Cancelar la renovación no pide automáticamente un reembolso."],
+  ["Pagué y todavía no aparece Pro", "Esperá la confirmación de Mercado Pago y revisá Configuración → Plan. No repitas el pago si ya figura aprobado: escribinos desde Ayuda o Contacto → Planes y pagos para que podamos revisarlo."],
+  ["¿Cómo pido un reembolso?", "Tenés 10 días corridos desde la contratación para pedir la devolución total según nuestra política. Usá el Botón de arrepentimiento del sitio o Contacto → Arrepentimiento, indicando el correo de tu cuenta. Recibís un número de trámite. La acreditación depende de Mercado Pago y del banco o tarjeta."],
+  ["¿Qué correos me mandan?", "Enviamos correos de bienvenida y confirmación de cuenta, recuperación y seguridad del acceso, pagos y respuestas a consultas. No enviamos campañas de marketing ni resúmenes de tus finanzas por correo. Los avisos de vencimientos se consultan en la app o se activan como notificaciones en el dispositivo."],
+  ["¿Dónde veo la respuesta a mi consulta?", "Si escribiste desde Ayuda, aparece en «Tus consultas», en esta misma pantalla. Si usaste el formulario público de Contacto, te respondemos al correo que indicaste y recibís un número de trámite."],
+  ["¿Cómo descargo mis datos o borro mi cuenta?", "En Configuración → Importar y exportar descargás tus movimientos; el respaldo completo está en Configuración → Tus datos. Para borrar la cuenta, entrá a Configuración → Seguridad. Si tenés una suscripción paga activa, primero cancelala para detener los cobros. La eliminación es definitiva."],
   ["¿Se conecta con mi banco?", "No. Cargás tus movimientos o importás el extracto del banco o de Mercado Pago (CSV; con Pro también Excel y OFX), desde Configuración → Importar y exportar. Nunca te pedimos la clave del banco."],
 ];
 
@@ -40,6 +51,7 @@ export default async function Help() {
         <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
           <div className="card">
             <div className="chead"><h3>Escribinos</h3></div>
+            <p className="sub" style={{ marginBottom: 12 }}>Para reembolsos, bajas o privacidad también podés usar <Link className="lnk" href="/contacto">Contacto</Link>. Consultá <Link className="lnk" href="/terminos">Términos</Link>, <Link className="lnk" href="/privacidad">Privacidad</Link>, <Link className="lnk" href="/reembolsos">Reembolsos</Link> y <Link className="lnk" href="/cookies">Cookies</Link>.</p>
             <ActionForm action={supportTicketAction} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <label className="field">Asunto<input name="subject" maxLength={140} required /></label>
               <label className="field">Contanos qué pasó<textarea name="body" rows={5} maxLength={4000} required /></label>

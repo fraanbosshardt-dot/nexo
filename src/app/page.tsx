@@ -10,7 +10,7 @@ import { LogoMark } from "@/components/logo-mark";
 import { PlanAware } from "@/components/plan-aware";
 import { Aurora, ScrollFx } from "@/components/landing-scrollfx";
 import { PublicShell } from "@/components/public-shell";
-import { AppCta } from "@/components/app-cta";
+import { AppCta, SubscribeCta } from "@/components/app-cta";
 import { PLAN_FEATURES } from "@/lib/modules";
 import { getDb } from "@/lib/db";
 import { planSettings, priceLabel, PRICES_DEFAULT } from "@/server/plans";
@@ -156,8 +156,8 @@ export default async function Landing() {
         <span className="lx-reco">Recomendado</span>
         <div><h3>Pro</h3><p>Para planificar todo el año.</p></div>
         {pm.amount > 0 ? <div className="lx-price"><b>{price}</b><span>ARS por {period}</span></div> : <div className="lx-price"><b style={{ fontSize: 28 }}>{price}</b></div>}
-        <a className="ws-btn pri lx-shine" href={`/suscribirme?ciclo=${cycle}`} data-plan-cta="">Suscribirme a Pro{cycle === "anual" ? " por año" : ""}</a>
-        {cycle === "mensual" && py.amount > 0 && <a className="lx-link" href="/suscribirme?ciclo=anual" style={{ textAlign: "center", fontSize: 14 }}>o pagá el año: {py.text}</a>}
+        <SubscribeCta className="ws-btn pri lx-shine" cycle={cycle === "anual" ? "yearly" : "monthly"}>Suscribirme a Pro{cycle === "anual" ? " por año" : ""}</SubscribeCta>
+        {cycle === "mensual" && py.amount > 0 && <SubscribeCta className="lx-link checkout-yearly" cycle="yearly">o pagá el año: {py.text}</SubscribeCta>}
         <ul><li>{CHECK}Todo lo de Gratis</li>{pro.map((f) => <li key={f.name}>{CHECK}<span>{f.name}{f.name.includes("desde el PDF") ? ` (hasta ${pdfLimit} por mes)` : ""}{f.beta && <> <span className="lx-beta">Beta</span></>}</span></li>)}</ul>
       </div>
     </div>

@@ -725,3 +725,7 @@
     .site .rv,.lx-month-steps li,.lx-faq-item,.lx-vs tbody tr,.lx-grain-r,.lx-plan{animation:lx-up linear both!important;animation-timeline:view()!important;animation-range:entry 0% entry 45%!important}
   }
 }
+
+.checkout-cta{display:contents}
+.checkout-cta>button:disabled{opacity:.65;cursor:wait}
+.checkout-yearly{background:none;border:0;padding:0;text-align:center;font:inherit;font-size:14px;cursor:pointer}
