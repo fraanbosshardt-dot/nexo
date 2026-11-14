@@ -15,14 +15,16 @@ import { OnceButton } from "@/components/forms";
 import { Help } from "@/components/help";
 import { QuickButtons } from "@/components/quick-buttons";
 import { categoryIcon, ICON_TONE } from "@/lib/category-icon";
+import { BillingReturnNotice } from "@/components/billing-return-notice";
 import { Icon, type IconName } from "@/components/icons";
 
 export const metadata: Metadata = { title: "Inicio" };
 const MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 
-export default async function Home({ searchParams }: { searchParams: Promise<{ listo?: string; solomirar?: string; compartido?: string }> }) {
-  const { listo, solomirar, compartido } = await searchParams;
+export default async function Home({ searchParams }: { searchParams: Promise<{ listo?: string; solomirar?: string; compartido?: string; pago?: string }> }) {
+  const { listo, solomirar, compartido, pago } = await searchParams;
   const { workspace, user, modules, plan } = await requireWorkspace();
+  const paymentNotice = pago === "recibido" ? <BillingReturnNotice workspaceId={workspace.id} /> : null;
   const grainOn = !!modules.cereal && (await canUse(plan, "cereal"));
   const db = getDb();
   const today = todayIn(workspace.timezone);
@@ -57,6 +59,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ l
     return (
       <>
         <PageHead crumb={dateLine} title={`${hello}, ${first}`} />
+        {paymentNotice}
         <div className="card hero"><div><div className="lbl">Primer paso</div><h2 style={{ fontSize: 26, margin: "6px 0 8px" }}>Cargá tu primera cuenta</h2>
           <p className="sub">Tu banco, una billetera virtual o el efectivo, con lo que tenés hoy. Con eso ya ves cuánto podés gastar.</p>
           <div className="acts" style={{ marginTop: 14 }}><Link className="btn pri" href="/app/cuentas?nueva=1">+ Agregar una cuenta</Link></div></div>
@@ -91,6 +94,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ l
   return (
     <>
       <PageHead crumb={dateLine} title={`${hello}, ${first}`} />
+      {paymentNotice}
       <div className="card hero">
         <div className="hero-main">
           <div className="lbl">{nextIn ? `Te queda hasta tu próximo cobro, el ${fmtDayMonth(nextIn.dueDate)}` : "Te queda hasta fin de mes"}</div>

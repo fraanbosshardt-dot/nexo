@@ -9,7 +9,7 @@ import { queueBillingNotice, drainEmailOutbox } from "./billing-mail";
 const API = "https://api.mercadopago.com";
 type Tx = Prisma.TransactionClient;
 type Cycle = "monthly" | "yearly";
-type Preapproval = { id: string; status: string; init_point?: string; external_reference?: string; last_modified?: string; next_payment_date?: string; auto_recurring?: { frequency: number; frequency_type?: string; start_date?: string; transaction_amount: number | string; currency_id: string } };
+type Preapproval = { back_url?: string; id: string; status: string; init_point?: string; external_reference?: string; last_modified?: string; next_payment_date?: string; auto_recurring?: { frequency: number; frequency_type?: string; start_date?: string; transaction_amount: number | string; currency_id: string } };
 type AuthorizedPayment = { id: number | string; preapproval_id: string; transaction_amount: number | string; currency_id: string; status: string; date_created?: string; debit_date?: string; last_modified?: string; payment?: { id?: number | string; status?: string } };
 const date = (v?: string | null) => v && Number.isFinite(Date.parse(v)) ? new Date(v) : null;
 const latest = (...ds: (Date | null | undefined)[]) => ds.reduce<Date | null>((a, d) => d && (!a || d > a) ? d : a, null);
@@ -41,7 +41,17 @@ export const splitRef = (ref: string | undefined) => { const [ws, coupon, checko
 
 async function stopAgreement(id: string) {
   const p = await mp<Preapproval>(`/preapproval/${identifier(id)}`);
-  if (p.status !== "cancelled") await mp(`/preapproval/${identifier(id)}`, { method: "PUT", body: JSON.stringify({ status: "cancelled" }) });
+  if (p.id !== id) throw new UserError("Suscripción inválida.");
+  if (p.status !== "cancelled") {
+    const stopped = await mp<Preapproval>(`/preapproval/${identifier(id)}`, { method: "PUT", body: JSON.stringify({ status: "cancelled" }) });
+    if (stopped.id !== id || stopped.status !== "cancelled") throw new UserError("Mercado Pago todavía no confirmó la cancelación. Reintentá desde Tu plan.");
+  }
+}
+
+function checkoutUrl(value: string) {
+  const url = new URL(value);
+  if (url.protocol !== "https:" || !/(^|\.)mercadopago\.com(\.ar)?$/.test(url.hostname) || url.username || url.password) throw new UserError("El enlace de pago no es válido.");
+  return url.href;
 }
 
 export async function startCheckout(db: Db, ws: string, payerEmail: string, cycle: Cycle, backUrl: string, discount?: { code: string; percentOff: number }, startDate?: Date | null) {
@@ -50,6 +60,7 @@ export async function startCheckout(db: Db, ws: string, payerEmail: string, cycl
   await recoverPendingCheckout(db, ws, payerEmail);
   if (discount && (!Number.isFinite(discount.percentOff) || discount.percentOff <= 0 || discount.percentOff >= 100)) throw new UserError("El descuento no permite una suscripción recurrente. Consultá al equipo.");
   const amount = Math.round((cycle === "yearly" ? cfg.yearly : cfg.monthly) * (100 - (discount?.percentOff ?? 0))) / 100;
+  if (!Number.isFinite(amount) || amount <= 0) throw new UserError("El importe de la suscripción no es válido.");
   const reservation = await locked(db, ws, async (tx) => {
     const workspace = await tx.workspace.findUniqueOrThrow({ where: { id: ws } });
     if (workspace.billingDisabledAt) throw new UserError("La cuenta está en proceso de baja. No se pueden iniciar nuevos cobros.");
@@ -61,7 +72,11 @@ export async function startCheckout(db: Db, ws: string, payerEmail: string, cycl
       if (pending.status !== "pending") throw new UserError("Estamos verificando una solicitud anterior. No se iniciará otro cobro mientras esté pendiente.");
       const remote = pending.providerRef ? await mp<Preapproval>(`/preapproval/${identifier(pending.providerRef)}`) : null;
       if (remote?.status === "authorized") throw new UserError("Mercado Pago ya autorizó la solicitud. Esperá su confirmación antes de iniciar otra.");
-      if (remote?.status === "pending" && pending.cycle === cycle && Number(pending.amount) === amount && pending.couponCode === (discount?.code ?? null) && pending.checkoutUrl) return pending;
+      if (remote?.status === "pending" && pending.cycle === cycle && Number(pending.amount) === amount && pending.couponCode === (discount?.code ?? null) && pending.checkoutUrl) {
+        checkoutUrl(pending.checkoutUrl);
+        if (remote.back_url !== backUrl) await mp(`/preapproval/${identifier(pending.providerRef!)}`, { method: "PUT", body: JSON.stringify({ back_url: backUrl }) });
+        return pending;
+      }
       if (pending.providerRef) await stopAgreement(pending.providerRef);
       await tx.billingAgreement.update({ where: { id: pending.id }, data: { status: "cancelled" } });
     }
@@ -69,7 +84,7 @@ export async function startCheckout(db: Db, ws: string, payerEmail: string, cycl
     const coveredUntil = latest(startDate, sub?.trialEndsAt, sub?.currentPeriodEnd);
     return tx.billingAgreement.create({ data: { workspaceId: ws, cycle, amount, couponCode: discount?.code, startsAt: coveredUntil && coveredUntil > new Date() ? coveredUntil : null } });
   });
-  if (reservation.checkoutUrl) return reservation.checkoutUrl;
+  if (reservation.checkoutUrl) return checkoutUrl(reservation.checkoutUrl);
   try {
     const p = await mp<Preapproval>("/preapproval", { method: "POST", headers: { "X-Idempotency-Key": reservation.id }, body: JSON.stringify({
       reason: `somosguafra Pro · ${cycle === "yearly" ? "anual" : "mensual"}`,
@@ -78,13 +93,14 @@ export async function startCheckout(db: Db, ws: string, payerEmail: string, cycl
     }) });
     if (!p.id || !p.init_point) throw new UserError("Mercado Pago no devolvió el enlace de pago.");
     identifier(p.id);
-    const url = new URL(p.init_point);
-    if (url.protocol !== "https:" || !/(^|\.)mercadopago\.com(\.ar)?$/.test(url.hostname) || url.username || url.password) throw new UserError("El enlace de pago no es válido.");
-    await db.billingAgreement.update({ where: { id: reservation.id }, data: { providerRef: p.id, checkoutUrl: url.href, status: "pending" } });
-    return url.href;
+    const url = checkoutUrl(p.init_point);
+    await db.billingAgreement.updateMany({ where: { id: reservation.id, status: { in: ["creating", "uncertain"] } }, data: { providerRef: p.id, checkoutUrl: url, status: "pending" } });
+    // Un webhook puede haberse adelantado a la respuesta del POST: no volver de authorized a pending.
+    await db.billingAgreement.update({ where: { id: reservation.id }, data: { providerRef: p.id, checkoutUrl: url } });
+    return url;
   } catch (e) {
     // Ante un timeout puede haberse creado en MP: no crear otra autorización a ciegas.
-    await db.billingAgreement.update({ where: { id: reservation.id }, data: { status: "uncertain" } });
+    await db.billingAgreement.updateMany({ where: { id: reservation.id, status: "creating" }, data: { status: "uncertain" } });
     throw e;
   }
 }
@@ -110,7 +126,7 @@ async function recoverPendingCheckout(db: Db, ws: string, email: string) {
   }
   if (matches.length === 1) {
     const p = matches[0];
-    await db.billingAgreement.updateMany({ where: { id: pending.id, providerRef: null }, data: { providerRef: p.id, status: "pending", checkoutUrl: p.init_point } });
+    await db.billingAgreement.updateMany({ where: { id: pending.id, providerRef: null }, data: { providerRef: p.id, status: "pending", checkoutUrl: p.init_point ? checkoutUrl(p.init_point) : null } });
     await applyPreapproval(db, p.id);
   } else if (pending.createdAt < new Date(Date.now() - 30 * 60_000)) {
     await db.billingAgreement.updateMany({ where: { id: pending.id, providerRef: null }, data: { status: "cancelled" } });
@@ -171,6 +187,7 @@ async function applyPreapproval(db: Db, id: string) {
     if (!agreement && ref.checkout) agreement = await tx.billingAgreement.findFirst({ where: { id: ref.checkout, workspaceId: ws, providerRef: null } });
     if (!agreement && sub?.providerRef === id) agreement = await tx.billingAgreement.create({ data: { workspaceId: ws, providerRef: id, cycle: sub.billingCycle ?? "monthly", amount: 0, status: "pending" } });
     if (!agreement || agreement.workspaceId !== ws) throw new UserError("Suscripción no reconocida.");
+    if (ref.checkout && (ref.checkout !== agreement.id || (ref.coupon ?? "") !== (agreement.couponCode ?? ""))) throw new UserError("La referencia no coincide con la suscripción.");
     if ((await tx.workspace.findUniqueOrThrow({ where: { id: ws } })).billingDisabledAt && p.status !== "cancelled") { await stopAgreement(id); await tx.billingAgreement.update({ where: { id: agreement.id }, data: { status: "cancelled", providerRef: id } }); return; }
     const stamp = date(p.last_modified);
     if (stamp && agreement.providerUpdatedAt && stamp < agreement.providerUpdatedAt) return;
@@ -197,6 +214,8 @@ async function applyPreapproval(db: Db, id: string) {
       if (!claimed.count) throw new UserError("El cupón se está usando en otra solicitud. Reintentá en un momento.");
     }
     await tx.billingAgreement.update({ where: { id: agreement.id }, data: { providerRef: id, status: p.status, providerUpdatedAt: stamp ?? undefined, couponCounted: agreement.couponCounted || p.status === "authorized", checkoutUrl: p.init_point ?? undefined } });
+    // Las notificaciones tardías de acuerdos cancelados no revocan una concesión manual.
+    if (sub?.provider === "manual" && effectivePlan(sub) === "PRO" && p.status !== "authorized") return;
     // Un acuerdo viejo no puede reemplazar la suscripción actual al llegar tarde su webhook.
     if (sub?.providerRef && sub.providerRef !== id && p.status !== "authorized") return;
     if (p.status === "pending") return;
@@ -220,11 +239,12 @@ async function applyPayment(db: Db, id: string) {
   const paymentId = pay.payment?.id ? String(pay.payment.id) : null;
   const payment = paymentId ? await mp<{ id: number | string; status: string; transaction_amount: number; transaction_amount_refunded?: number; currency_id: string; date_approved?: string; date_last_updated?: string }>(`/v1/payments/${identifier(paymentId)}`) : null;
   if (payment && String(payment.id) !== paymentId) throw new UserError("Pago inválido.");
-  const status = payment?.status ?? pay.payment?.status ?? pay.status;
+  let status = payment?.status ?? pay.payment?.status ?? pay.status;
   const amount = Number(pay.transaction_amount);
   if (!Number.isFinite(amount) || amount <= 0 || pay.currency_id !== agreement.currency || (Number(agreement.amount) > 0 && amount !== Number(agreement.amount)) || (payment && (Number(payment.transaction_amount) !== amount || payment.currency_id !== pay.currency_id))) throw new UserError("El pago no coincide con la suscripción.");
   const refunded = Number(payment?.transaction_amount_refunded ?? (status === "refunded" ? amount : 0));
   if (!Number.isFinite(refunded) || refunded < 0 || refunded > amount) throw new UserError("Importe de devolución inválido.");
+  if (refunded === amount && status === "approved") status = "refunded";
   const rawDate = [pay.debit_date, payment?.date_approved, pay.date_created].find((value) => date(value)) ?? "";
   const start = date(rawDate);
   if (!start) throw new UserError("El pago no tiene fecha válida.");
@@ -245,14 +265,14 @@ async function applyPayment(db: Db, id: string) {
     // El próximo débito del proveedor define el límite si pertenece a este ciclo.
     // No usar la fecha de otro ciclo al reenviar una factura meses después.
     const fixed = before?.periodEnd && ["approved", "refunded", "charged_back", "cancelled"].includes(before.status);
-    const end = validSpan ? providerEnd! : fixed ? before!.periodEnd! : nominalEnd;
+    const end = fixed ? before!.periodEnd! : validSpan ? providerEnd! : nominalEnd;
     await tx.invoice.upsert({ where: { providerRef: id }, create: { workspaceId: ws, provider: "mercadopago", providerRef: id, agreementRef: pay.preapproval_id, paymentId, refundedAmount: refunded.toFixed(2), amount: amount.toFixed(2), currency: pay.currency_id, status, periodStart: start, periodEnd: end, paidAt: date(payment?.date_approved) ?? (status === "approved" ? start : null), providerUpdatedAt: stamp }, update: { status, refundedAmount: refunded.toFixed(2), agreementRef: pay.preapproval_id, paymentId, periodStart: start, periodEnd: end, providerUpdatedAt: stamp ?? undefined, paidAt: date(payment?.date_approved) ?? before?.paidAt ?? (status === "approved" ? start : null) } });
     if (["refunded", "charged_back", "cancelled"].includes(status)) {
       // Una devolución total revoca ese período, no otros pagos válidos.
       const sub = await tx.subscription.findUnique({ where: { workspaceId: ws } });
       if (sub?.legacyPaidUntil && sub.legacyPaidUntil <= end && sub.legacyPaidUntil > start) await tx.subscription.update({ where: { workspaceId: ws }, data: { legacyPaidUntil: null } });
     }
-    if (status === "approved" && current && current.provider !== "mercadopago") {
+    if (status === "approved" && current && current.provider !== "mercadopago" && effectivePlan(current) !== "PRO") {
       await tx.subscription.update({ where: { workspaceId: ws }, data: { plan: "PRO", provider: "mercadopago", providerRef: pay.preapproval_id, billingCycle: agreement!.cycle, status: agreement!.status === "authorized" ? "ACTIVE" : "PAST_DUE" } });
     }
     await recalculateAccess(tx, ws);
@@ -279,23 +299,43 @@ export async function applyNotification(db: Db, type: string, id: string) {
   await drainEmailOutbox(db).catch((e) => console.error("[email outbox]", e));
 }
 
+// Consulta todas las páginas: un reembolso puede corresponder a un pago antiguo.
+async function reconcileAgreement(db: Db, id: string) {
+  await applyPreapproval(db, id);
+  for (let offset = 0; offset < 10000; offset += 100) {
+    const page = await mp<{ paging?: { total: number }; results: AuthorizedPayment[] }>(`/authorized_payments/search?preapproval_id=${identifier(id)}&offset=${offset}&limit=100`);
+    if (!Array.isArray(page.results)) throw new UserError("No se pudieron consultar los pagos.");
+    for (const p of page.results) await applyPayment(db, String(p.id));
+    if (page.results.length < 100 || (page.paging && offset + 100 >= page.paging.total)) return;
+  }
+  throw new UserError("El historial de pagos necesita revisión del equipo.");
+}
+
+// Conciliación del regreso de checkout: solo acuerdos del espacio validado, nunca crea cobros.
+export async function reconcileWorkspaceBilling(db: Db, workspaceId: string) {
+  if (!process.env.MP_ACCESS_TOKEN) return;
+  const agreements = await db.billingAgreement.findMany({ where: { workspaceId, providerRef: { not: null } }, orderBy: { createdAt: "desc" }, take: 2 });
+  for (const a of agreements) await reconcileAgreement(db, a.providerRef!);
+  await drainEmailOutbox(db).catch((e) => console.error("[email outbox]", e));
+}
+
 // Recupera eventos perdidos consultando el estado actual; nunca genera pagos.
 export async function reconcileBilling(db: Db, limit = 20) {
   if (!process.env.MP_ACCESS_TOKEN) return 0;
-  const unresolved = await db.billingAgreement.findMany({ where: { providerRef: null, status: { in: ["creating", "uncertain"] } }, take: 3 });
+  const unresolved = await db.billingAgreement.findMany({ where: { providerRef: null, status: { in: ["creating", "uncertain"] } }, orderBy: { updatedAt: "asc" }, take: 3 });
   for (const a of unresolved) {
-    const owner = await db.membership.findFirst({ where: { workspaceId: a.workspaceId, role: "OWNER" }, include: { user: { select: { email: true } } } });
-    if (owner) await recoverPendingCheckout(db, a.workspaceId, owner.user.email).catch((e) => console.error("[billing checkout recovery]", e));
+    try {
+      const owner = await db.membership.findFirst({ where: { workspaceId: a.workspaceId, role: "OWNER" }, include: { user: { select: { email: true } } } });
+      if (owner) await recoverPendingCheckout(db, a.workspaceId, owner.user.email);
+    } catch (e) { console.error("[billing checkout recovery]", e); }
+    finally { await db.billingAgreement.updateMany({ where: { id: a.id }, data: { updatedAt: new Date() } }); }
   }
   const agreements = await db.billingAgreement.findMany({ where: { providerRef: { not: null } }, orderBy: { updatedAt: "asc" }, take: limit });
   let n = 0;
   for (const a of agreements) {
-    try {
-      await applyPreapproval(db, a.providerRef!);
-      const payments = await mp<{ results: AuthorizedPayment[] }>(`/authorized_payments/search?preapproval_id=${identifier(a.providerRef!)}&limit=100`);
-      for (const p of payments.results ?? []) await applyPayment(db, String(p.id));
-      n++;
-    } catch (e) { await db.auditLog.create({ data: { workspaceId: a.workspaceId, action: "billing.reconcile_failed", entityId: a.providerRef, meta: { error: String(e).slice(0, 300) } } }); }
+    try { await reconcileAgreement(db, a.providerRef!); n++; }
+    catch (e) { await db.auditLog.create({ data: { workspaceId: a.workspaceId, action: "billing.reconcile_failed", entityId: a.providerRef, meta: { error: String(e).slice(0, 300) } } }); }
+    finally { await db.billingAgreement.updateMany({ where: { id: a.id }, data: { updatedAt: new Date() } }); }
   }
   return n;
 }

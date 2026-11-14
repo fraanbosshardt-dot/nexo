@@ -695,7 +695,7 @@ export async function checkoutAction(fd: FormData) {
   const trialEnd = sub?.status === "TRIALING" && sub.trialEndsAt && sub.trialEndsAt > now ? sub.trialEndsAt : null;
   const startDate = paid ? (sub!.currentPeriodEnd && sub!.currentPeriodEnd > now ? sub!.currentPeriodEnd : null) : trialEnd;
   let link: string;
-  try { link = await startCheckout(getDb(), workspace.id, user.email, cycle, `${appUrl()}/app/configuracion?tab=plan&pago=1`, discount, startDate); }
+  try { link = await startCheckout(getDb(), workspace.id, user.email, cycle, `${appUrl()}/pagos/volver?espacio=${encodeURIComponent(workspace.id)}`, discount, startDate); }
   catch (e) { redirect(`/app/configuracion?tab=plan&pagoerror=${encodeURIComponent(e instanceof UserError ? e.message : "No pudimos verificar el estado con Mercado Pago. Reintentá desde esta pantalla; no inicies otro pago por fuera.")}`); }
   await audit("billing.checkout_started", { userId: user.id, workspaceId: workspace.id, meta: { cycle, coupon: discount?.code } });
   redirect(link);

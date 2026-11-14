@@ -95,7 +95,7 @@ export async function landingPath(fallback: string) {
   if (t && /^[\w-]{20,64}$/.test(t)) return `/invitacion/${t}`;
   // Venía a comprar Pro desde el sitio: después de crear la cuenta o ingresar, sigue a pagar.
   const after = jar.get("somosguafra_after")?.value;
-  if (after && /^\/suscribirme\?ciclo=(mensual|anual)$/.test(after)) {
+  if (after && (/^\/suscribirme\?ciclo=(mensual|anual)$/.test(after) || /^\/pagos\/volver\?espacio=[a-zA-Z0-9_-]{1,100}$/.test(after))) {
     try { jar.delete("somosguafra_after"); } catch { /* en una página no se puede borrar: vence sola */ }
     return after;
   }
