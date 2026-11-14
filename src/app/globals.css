@@ -1153,7 +1153,7 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):focus,select:focu
 @media (max-width:760px){.bdg-grid{grid-template-columns:minmax(0,1fr)}.bdg-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 /* Tu plan (en Gratis): qué suma Pro a la izquierda, precio y botones a la derecha */
-.plan-up{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,340px);gap:28px;align-items:start;margin-top:6px}
+.plan-up{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,340px);gap:28px;align-items:start;margin-top:0}
 .plan-why h4{margin:0 0 12px;font-size:17px;font-weight:600}
 .plan-why ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
 .plan-why li{display:flex;align-items:flex-start;gap:10px;font-size:14px;line-height:1.4}

@@ -185,6 +185,8 @@ export default async function Settings({ searchParams }: { searchParams: Promise
     const savePct = bill.monthly > 0 ? Math.round((1 - bill.yearly / (bill.monthly * 12)) * 100) : 0;
     // Cancelada o con el pago pendiente: Pro sigue hasta el fin de lo ya pagado.
     const endsAt = plan === "PRO" && sub && sub.status !== "ACTIVE" && sub.status !== "TRIALING" ? sub.currentPeriodEnd : null;
+    const showUpgrade = !paidPro && bill.enabled && (plan !== "PRO" || !!trial);
+    const planHeader = (<div className="chead"><div><h3>Tu plan: {plan === "PRO" ? "Pro" : "Gratis"}</h3><p className="sub">{trial ? `Prueba gratis hasta el ${billDate(sub!.trialEndsAt!)}.` : endsAt ? `${sub!.status === "CANCELED" ? "Cancelado" : "Pago pendiente en Mercado Pago"}: tenés Pro hasta el ${billDate(endsAt)}.` : paidPro ? `Pagás con Mercado Pago, ${sub!.billingCycle === "yearly" ? "por año" : "por mes"}.` : plan === "PRO" ? "Pro activado por Somos Guafra." : "Tenés casi todo incluido, sin costo."}</p></div></div>);
     body = (
       <>
         {sp.pagoerror && <p className="notice r" role="alert">{sp.pagoerror.slice(0, 300)}</p>}
@@ -193,7 +195,7 @@ export default async function Settings({ searchParams }: { searchParams: Promise
         {sp.yatenes && <div className="notice g">Ya tenés Pro activo, no hace falta pagarlo de nuevo.</div>}
         {sp.cancelado && <div className="notice">{endsAt ? `Cancelaste Pro. No se te cobra más y lo seguís usando hasta el ${billDate(endsAt)}; después pasás a Gratis con todos tus datos.` : "Cancelaste Pro. Seguís con todo lo de Gratis y tus datos quedan."}</div>}
         <div className="card">
-          <div className="chead"><div><h3>Tu plan: {plan === "PRO" ? "Pro" : "Gratis"}</h3><p className="sub">{trial ? `Prueba gratis hasta el ${billDate(sub!.trialEndsAt!)}.` : endsAt ? `${sub!.status === "CANCELED" ? "Cancelado" : "Pago pendiente en Mercado Pago"}: tenés Pro hasta el ${billDate(endsAt)}.` : paidPro ? `Pagás con Mercado Pago, ${sub!.billingCycle === "yearly" ? "por año" : "por mes"}.` : plan === "PRO" ? "Pro activado por Somos Guafra." : "Tenés casi todo incluido, sin costo."}</p></div></div>
+          {!showUpgrade && planHeader}
           {paidPro ? (
             <div className="plan-paid">
               {sub!.billingCycle === "monthly" && bill.enabled && plan === "PRO" ? (
@@ -210,12 +212,13 @@ export default async function Settings({ searchParams }: { searchParams: Promise
             // En Gratis: a la izquierda qué suma Pro; a la derecha el precio (por mes o por año) y los botones.
             <div className="plan-up">
               <div className="plan-why">
+                {planHeader}
                 <h4>{trial ? "Seguí con Pro cuando termine la prueba" : "Pasate a Pro"}</h4>
                 {trial && <div className="plan-trialbar"><span>Te {trialLeft === 1 ? "queda 1 día" : `quedan ${trialLeft} días`} de prueba</span><i><i style={{ width: `${Math.min(100, (trialLeft / 14) * 100)}%` }} /></i></div>}
                 {trial && <p className="plan-note">Si te suscribís, no perdés nada de esto:</p>}
                 <ul>{PLAN_FEATURES.filter((f) => f.plan === "pro").slice(0, 5).map((f) => <li key={f.name}><Icon name="check" />{f.name}</li>)}</ul>
               </div>
-              <div className="plan-box">
+              <div className="plan-box" id="pagar-pro">
                 <form action={checkoutAction} className="plan-buy">
                   <div className="plan-cycle" role="radiogroup" aria-label="Cómo querés pagar">
                     <label><input type="radio" name="cycle" value="monthly" defaultChecked={sp.ciclo !== "anual"} /><span>Por mes</span></label>

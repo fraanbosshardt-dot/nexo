@@ -68,7 +68,7 @@ async function SiteFooter() {
           <a href={BRAND.consumerUrl} target="_blank" rel="noopener noreferrer">Defensa del Consumidor · Reclamos</a>
         </div>
         <div className="ws-foot-bot">
-          <span>© {new Date().getFullYear()} {BRAND.name}</span>
+          <span>© {new Date().getFullYear()} {BRAND.name}. Todos los derechos reservados.</span>
           <span>{BRAND.name} no es un banco ni da asesoramiento financiero.</span>
         </div>
       </div>

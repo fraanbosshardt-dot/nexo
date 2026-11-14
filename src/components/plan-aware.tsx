@@ -3,19 +3,14 @@
 // - Pro (pago o regalado): "Tu plan actual: Pro" y, en vez de suscribirte, "Ir a la app".
 // - Prueba de Pro: avisa hasta cuándo y deja suscribirse.
 // - Gratis: marca la tarjeta Gratis como tu plan.
-import { useEffect, useState } from "react";
 import Link from "next/link";
 
-type Me = { logged: boolean; plan?: "FREE" | "PRO"; trial?: string | null; paid?: boolean };
+import { usePublicPlan } from "./app-cta";
 const MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 const fecha = (iso: string) => { const [, m, d] = iso.split("-").map(Number); return `${d} de ${MES[m - 1]}`; };
 
 export function PlanAware({ children }: { children: React.ReactNode }) {
-  const [me, setMe] = useState<Me | null>(null);
-  useEffect(() => {
-    if (!/(?:^|; )somosguafra_in=1/.test(document.cookie)) return; // sin sesión: no hace falta preguntar
-    fetch("/api/mi-plan", { cache: "no-store" }).then((r) => r.json()).then(setMe).catch(() => {});
-  }, []);
+  const me = usePublicPlan();
   const state = !me?.logged ? "" : me.plan === "PRO" ? (me.trial ? "trial" : "pro") : "free";
   return (
     <div className="plan-aware" data-plan={state || undefined}>

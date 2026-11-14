@@ -549,6 +549,7 @@
 /* Comparación: la columna de Somos Guafra resaltada en verde, con el logo arriba y respuestas en pastilla */
 .lx-vs{border-radius:28px;box-shadow:0 24px 60px rgba(11,24,19,.07)}
 .lx-vs table{table-layout:fixed;font-size:14.5px}
+.lx-vs thead th:last-child,.lx-vs td:last-child{width:30%}
 .lx-vs thead th:first-child,.lx-vs tbody th{width:36%}
 .lx-vs th,.lx-vs td{padding:16px 14px;vertical-align:middle;line-height:1.35}
 .lx-vs tbody th{padding-left:24px;font-size:15px;font-weight:500;color:var(--fg)}
@@ -558,7 +559,7 @@
 .lx-vs thead th{padding-block:18px;font-size:13.5px}
 .lx-vs .lx-vs-g{background:var(--ink-soft);border-top-color:color-mix(in srgb,var(--ink) 12%,transparent)}
 .lx-vs thead th.lx-vs-g{background:var(--ink-soft);color:var(--ink-txt)}
-.lx-vs-brand{display:inline-flex;align-items:center;gap:8px;font-family:var(--font-brand),"Fredoka",sans-serif;font-size:18px;font-weight:600;letter-spacing:-.01em;--logo-dark:var(--ink-txt)}
+.lx-vs-brand{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-brand),"Fredoka",sans-serif;font-size:16px;white-space:nowrap;font-weight:600;letter-spacing:-.01em;--logo-dark:var(--ink-txt)}
 .lx-vs-mark{width:24px;height:24px;display:inline-block;flex:none}
 .lx-vs-mark svg{width:100%;height:100%;display:block}
 .lx-vs td.lx-vs-g{color:inherit}
@@ -663,8 +664,8 @@
   .lx-month-steps p{font-size:15px}
   /* Franja gigante: en el celular no aporta y queda quieta */
   .lx-mega{display:none}
-  /* Comparación: en Somos Guafra solo el logo y el tilde (sin palabras que se corten) */
-  .lx-vs-brand>span:not(.lx-vs-mark){display:none}
+  /* Comparación: la marca completa, con el símbolo encima en pantallas chicas. */
+  .lx-vs-brand{flex-direction:column;font-size:clamp(10px,2.7vw,14px);gap:4px}
   .lx-vs .lx-yes{font-size:0;gap:0}
   .lx-vs .lx-yes svg{width:22px;height:22px}
   .lx-vs thead th:first-child,.lx-vs tbody th{width:40%}
@@ -675,7 +676,7 @@
 }
 @media (max-width:900px),(pointer:coarse){
   .lx-vs thead th:first-child,.lx-vs tbody th{width:36%}
-  .lx-vs thead th:last-child,.lx-vs td:last-child{width:15%}
+  .lx-vs thead th:last-child,.lx-vs td:last-child{width:30%}
   .lx-vs td{font-size:12px;overflow-wrap:normal;word-break:normal;hyphens:auto}
   .lx-vs thead th{font-size:12px}
 }

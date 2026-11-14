@@ -30,5 +30,5 @@ export async function GET(req: Request) {
   const { needsVerifiedEmail } = await import("@/server/email-verify");
   if (needsVerifiedEmail(s.user)) redirect("/app/configuracion?tab=plan&verificar=pro");
   // Un enlace GET solo muestra el plan; crear una autorización requiere confirmación POST.
-  redirect(`/app/configuracion?tab=plan&ciclo=${anual ? "anual" : "mensual"}`);
+  redirect(`/app/configuracion?tab=plan&ciclo=${anual ? "anual" : "mensual"}#pagar-pro`);
 }
