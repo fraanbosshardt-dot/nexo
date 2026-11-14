@@ -18,7 +18,7 @@ export async function inviteAction(_: FormState, fd: FormData): Promise<FormStat
   try {
     if (!(await canUse(plan, "compartido"))) throw new UserError("Compartir tu espacio es parte de Pro.");
     const { needsVerifiedEmail } = await import("@/server/email-verify");
-    if (needsVerifiedEmail(user)) throw new UserError("Antes de invitar a alguien, confirmá tu correo con el código del aviso de arriba.");
+    if (needsVerifiedEmail(user)) throw new UserError("Antes de invitar a alguien, abrí «Confirmar correo» desde el aviso de la app e ingresá el código.");
     const email = String(fd.get("email") ?? "");
     const { invite, token } = await createInvite(getDb(), workspace.id, { email, role: String(fd.get("role")) as GuestRole, invitedById: user.id });
     const { appUrl } = await import("@/lib/email");
