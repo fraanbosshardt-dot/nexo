@@ -524,12 +524,12 @@ export async function setBigTextAction(on: boolean) {
   await getDb().user.update({ where: { id: user.id }, data: { bigText: !!on } });
 }
 
-// Reenviar el enlace para confirmar el correo: hasta 3 por hora.
+// Reenviar el código para confirmar el correo: hasta 3 por hora.
 export async function resendVerifyAction(_: FormState, __?: FormData): Promise<FormState> {
   const { user } = await requireUser();
   if (user.emailVerified) return { ok: "Tu correo ya está confirmado." };
   const db = getDb();
-  if ((await db.auditLog.count({ where: { action: "auth.verify_sent", userId: user.id, createdAt: { gte: new Date(Date.now() - 3600_000) } } })) >= 3) return { error: "Ya te mandamos varios enlaces. Revisá también en spam o probá en una hora." };
+  if ((await db.auditLog.count({ where: { action: "auth.verify_sent", userId: user.id, createdAt: { gte: new Date(Date.now() - 3600_000) } } })) >= 3) return { error: "Ya te mandamos varios códigos. Revisá también en spam o probá en una hora." };
   const { sendVerifyEmail } = await import("@/server/account-mail");
   await sendVerifyEmail(user);
   await audit("auth.verify_sent", { userId: user.id });
@@ -550,6 +550,7 @@ export async function verifyEmailCodeAction(_: FormState, fd: FormData): Promise
   await db.user.update({ where: { id: user.id }, data: { emailVerified: new Date() } });
   await audit("auth.email_verified", { userId: user.id, meta: { via: "code" } });
   revalidatePath("/app", "layout");
+  revalidatePath("/confirmar-correo");
   return { ok: "Listo, tu correo quedó confirmado." };
 }
 

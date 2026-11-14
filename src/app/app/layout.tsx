@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Shell } from "@/components/shell";
 import { requireWorkspace } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
@@ -11,10 +12,8 @@ import { MATERIALIZE_DAYS } from "@/server/forecast";
 import { roleFor } from "@/server/admin-team";
 import { announcement, announcementFor, systemSettings } from "@/server/settings";
 import { Icon } from "@/components/icons";
-import { ActionForm, Submit } from "@/components/forms";
 import { BigTextSync } from "@/components/big-text";
 import { switchWorkspaceAction } from "@/app/actions/sharing";
-import { resendVerifyAction, verifyEmailCodeAction } from "@/app/actions/app";
 import { emailEnabled } from "@/server/email-verify";
 import { LogoMark } from "@/components/logo-mark";
 import { AnnouncementBar } from "@/components/announcement-bar";
@@ -86,15 +85,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <div className="vbanner-body">
               <span className="vbanner-txt">
                 <b>{late ? `Hace ${days} días que no confirmás tu correo` : "Confirmá tu correo"}</b>
-                <span>{late ? "Sin confirmarlo no vas a poder pagar Pro, invitar a alguien ni recibir avisos por correo. " : "Así podés pagar Pro, invitar a alguien y recuperar la contraseña. "}Te mandamos un código a <b className="vbanner-mail">{user.email}</b>.</span>
+                <span>Confirmalo para proteger tu cuenta y habilitar todas sus opciones.</span>
               </span>
-              <div className="vbanner-acts">
-                <ActionForm action={verifyEmailCodeAction} className="vbanner-code">
-                  <input name="code" inputMode="numeric" autoComplete="one-time-code" maxLength={7} placeholder="000000" aria-label="Código de 6 números" />
-                  <Submit className="btn sm pri" pending="Confirmando…">Confirmar</Submit>
-                </ActionForm>
-                <ActionForm action={resendVerifyAction}><Submit className="btn sm ghost" pending="Enviando…">Mandame otro código</Submit></ActionForm>
-              </div>
+              <Link href="/confirmar-correo" className="btn sm pri">Confirmar correo</Link>
             </div>
           </div>
         );

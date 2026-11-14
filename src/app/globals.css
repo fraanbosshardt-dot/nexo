@@ -1084,7 +1084,6 @@ html[data-big] body{zoom:1.15}
 .vbanner-ic{flex:none;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--ink-soft);color:var(--ink-txt)}.vbanner-ic svg{width:18px;height:18px}
 .vbanner-body{flex:1;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;min-width:0}
 .vbanner-txt{display:flex;flex-direction:column;gap:2px;font-size:14px;min-width:0;flex:1 1 280px}.vbanner-txt>b{font-weight:500}.vbanner-txt>span{color:var(--muted);line-height:1.4}
-.vbanner-mail{font-weight:500;color:var(--fg);word-break:break-all}
 @media (max-width:640px){.vbanner-body .btn{width:100%;justify-content:center}}
 /* Selector "+ Agregar una categoría": como un botón */
 .bud-add select{appearance:none;-webkit-appearance:none;max-width:100%;min-height:42px;padding:0 40px 0 16px;border:1px dashed var(--line-2);border-radius:999px;background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a8f98' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 14px center;color:var(--blue);font:inherit;font-size:14px;font-weight:500;cursor:pointer}
@@ -1197,10 +1196,6 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):focus,select:focu
 /* Confirmar el correo: código de 6 números en el aviso de arriba; a los 3 días, más visible */
 .vbanner.late{border-color:color-mix(in srgb,var(--amber) 45%,var(--line));background:color-mix(in srgb,var(--amber-soft) 55%,var(--surface))}
 .vbanner.late .vbanner-ic{background:var(--amber-soft);color:var(--amber)}
-.vbanner-acts{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
-.vbanner-code{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.vbanner-code input{width:120px;min-height:36px;border:1px solid var(--line-2);border-radius:10px;padding:0 12px;background:var(--surface);color:var(--fg);font:inherit;font-size:16px;font-weight:600;letter-spacing:.18em;text-align:center;font-variant-numeric:tabular-nums}
-@media (max-width:640px){.vbanner-acts,.vbanner-code{width:100%}.vbanner-code input{flex:1}}
 
 .plan-note{margin:-4px 0 12px;font-size:13.5px;color:var(--muted)}
 .plan-box{gap:12px}
@@ -1345,3 +1340,4 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):focus,select:focu
 /* Campos con sugerencias: sin la flechita del navegador (las sugerencias aparecen igual al escribir) */
 input[list]::-webkit-calendar-picker-indicator{display:none!important;opacity:0}
 input[list]{appearance:none;-webkit-appearance:none}
+.email-confirm-address{overflow-wrap:anywhere}

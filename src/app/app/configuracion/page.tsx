@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import { requireWorkspace } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
@@ -259,5 +260,5 @@ export default async function Settings({ searchParams }: { searchParams: Promise
       </div></div>
     );
   }
-  return (<div className="narrow wide"><PageHead crumb="Ajustes" title="Configuración" />{tabs}{sp.verificar && <p className="notice a">{sp.verificar === "avisos" ? "Para recibir avisos por correo" : "Para pagar Pro"}, primero confirmá tu correo: escribí el código que te mandamos en el aviso de arriba (o pedí otro).</p>}{sp.soloduenio && <p className="notice a">Eso lo puede hacer solo el dueño del espacio.</p>}{t === "general" && <><ThemeChoice /><BigTextToggle />{push.enabled && <PushToggle publicKey={push.publicKey} />}<InstallApp /></>}{body}</div>);
+  return (<div className="narrow wide"><PageHead crumb="Ajustes" title="Configuración" />{tabs}{sp.verificar && <p className="notice a">{sp.verificar === "avisos" ? "Para recibir avisos por correo" : "Para pagar Pro"}, primero <Link className="lnk" href="/confirmar-correo">confirmá tu correo</Link>. En esa pantalla podés ingresar el código o pedir uno nuevo.</p>}{sp.soloduenio && <p className="notice a">Eso lo puede hacer solo el dueño del espacio.</p>}{t === "general" && <><ThemeChoice /><BigTextToggle />{push.enabled && <PushToggle publicKey={push.publicKey} />}<InstallApp /></>}{body}</div>);
 }

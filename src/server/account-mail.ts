@@ -34,7 +34,7 @@ export async function sendVerifyEmail(user: { id: string; email: string; name: s
     purpose: welcome ? "welcome" : "verification",
     to: user.email,
     subject: welcome ? "Bienvenido a Somos Guafra · Confirmá tu correo" : "Confirmá tu correo en Somos Guafra",
-    text: `Hola ${user.name.split(" ")[0]}:\n\nTu código para confirmar el correo es: ${verifyCode(user.id, user.email)}\nEscribilo en el aviso de arriba de la app (vence en 30 minutos).\n\nO entrá a este enlace (vence en ${DAYS} días):\n${appUrl()}/verificar-correo/${verifyToken(user.id, user.email)}\n\nSi no creaste una cuenta en Somos Guafra, ignorá este correo.\n\nSomos Guafra`,
+    text: `Hola ${user.name.split(" ")[0]}:\n\nTu código para confirmar el correo es: ${verifyCode(user.id, user.email)}\nEscribilo en la pantalla Confirmar correo de la app (vence en 30 minutos).\n\nO entrá a este enlace (vence en ${DAYS} días):\n${appUrl()}/verificar-correo/${verifyToken(user.id, user.email)}\n\nSi no creaste una cuenta en Somos Guafra, ignorá este correo.\n\nSomos Guafra`,
   });
 }
 

@@ -26,7 +26,7 @@ export function renderEmail(content: EmailContent, base: string): string {
   let actionUrl: URL | null = null;
   if (content.action?.path.startsWith("/") && !content.action.path.startsWith("//")) actionUrl = firstParty(new URL(content.action.path, origin).href);
   if (!actionUrl) actionUrl = urls.map(firstParty).find((u) => u !== null) ?? null;
-  const defaults: Record<EmailPurpose, string> = { welcome: "/bienvenida", verification: "/app", password: "/recuperar", security: "/app/configuracion?tab=seguridad", billing: "/app/configuracion?tab=plan", support: "/contacto" };
+  const defaults: Record<EmailPurpose, string> = { welcome: "/bienvenida", verification: "/confirmar-correo", password: "/recuperar", security: "/app/configuracion?tab=seguridad", billing: "/app/configuracion?tab=plan", support: "/contacto" };
   if (!actionUrl) actionUrl = new URL(defaults[content.purpose], origin);
   let label = content.action?.label || theme.action;
   if (!content.action && actionUrl.pathname.startsWith("/verificar-correo/")) label = "Confirmar mi correo";
