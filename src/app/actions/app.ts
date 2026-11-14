@@ -553,13 +553,10 @@ export async function verifyEmailCodeAction(_: FormState, fd: FormData): Promise
   return { ok: "Listo, tu correo quedó confirmado." };
 }
 
-export async function emailRemindersAction(fd: FormData) {
+// Conservado para formularios antiguos: los recordatorios por email ya no se ofrecen.
+export async function emailRemindersAction(_fd: FormData) {
   const { user } = await requireUser();
-  const on = fd.get("on") === "1";
-  // Los avisos por correo se prenden solo con el correo confirmado (si no, irían a una dirección que quizás no es tuya).
-  const { needsVerifiedEmail } = await import("@/server/email-verify");
-  if (on && needsVerifiedEmail(user)) redirect("/app/configuracion?verificar=avisos");
-  await getDb().user.update({ where: { id: user.id }, data: { emailReminders: on } });
+  await getDb().user.update({ where: { id: user.id }, data: { emailReminders: false } });
   revalidatePath("/app/configuracion");
 }
 

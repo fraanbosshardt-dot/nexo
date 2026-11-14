@@ -42,7 +42,7 @@ export async function signupAction(_: FormState, fd: FormData): Promise<FormStat
   const { applyProGrant } = await import("@/server/grants");
   await applyProGrant(db, user.email, ws.id);
   await createSession(user.id, { twoFactorVerified: true, remember: true });
-  try { const { sendVerifyEmail } = await import("@/server/account-mail"); await sendVerifyEmail(user); } catch (e) { console.error("confirmar correo", e); }
+  try { const { sendVerifyEmail } = await import("@/server/account-mail"); await sendVerifyEmail(user, true); } catch (e) { console.error("confirmar correo", e); }
   redirect(await landingPath("/bienvenida"));
 }
 
@@ -115,9 +115,10 @@ export async function requestResetAction(_: FormState, fd: FormData): Promise<Fo
   await db.passwordReset.create({ data: { userId: user.id, tokenHash: createHash("sha256").update(token).digest("hex"), expiresAt: new Date(Date.now() + 60 * 60 * 1000) } });
   const { sendEmail, appUrl } = await import("@/lib/email");
   await sendEmail({
+    purpose: "password",
     to: user.email,
     subject: "Elegí una contraseña nueva para Somos Guafra",
-    text: `Hola ${user.name.split(" ")[0]}:\n\nPara elegir una contraseña nueva, entrá a este enlace (vence en 1 hora):\n${appUrl()}/recuperar/${token}\n\nSi no lo pediste vos, ignorá este correo: tu contraseña no cambia.\n\nGuafra`,
+    text: `Hola ${user.name.split(" ")[0]}:\n\nPara elegir una contraseña nueva, entrá a este enlace (vence en 1 hora):\n${appUrl()}/recuperar/${token}\n\nSi no lo pediste vos, ignorá este correo: tu contraseña no cambia.\n\nSomos Guafra`,
   });
   return ok;
 }

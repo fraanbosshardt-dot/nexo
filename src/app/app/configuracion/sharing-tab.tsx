@@ -36,7 +36,7 @@ export async function SharingTab({ workspaceId, role, plan, userId }: { workspac
       </div>
       {owner && (
         <div className="card">
-          <div className="chead"><div><h3>Invitar a alguien</h3><p className="sub">Hasta {MAX_GUESTS} personas: tu pareja, tu familia o quien te ayuda con las cuentas. Le llega un correo con un enlace que vence en 7 días.</p></div>{allowed && <span className="pill">{left} {left === 1 ? "lugar libre" : "lugares libres"}</span>}</div>
+          <div className="chead"><div><h3>Invitar a alguien</h3><p className="sub">Hasta {MAX_GUESTS} personas: tu pareja, tu familia o quien te ayuda con las cuentas. Generás un enlace que vence en 7 días y se lo compartís vos.</p></div>{allowed && <span className="pill">{left} {left === 1 ? "lugar libre" : "lugares libres"}</span>}</div>
           {!allowed ? (
             <p className="sub">Compartir tu espacio es parte de Pro. <Link className="lnk" href="/app/configuracion?tab=plan">Ver Pro</Link></p>
           ) : left > 0 ? (

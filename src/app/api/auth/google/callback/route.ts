@@ -70,6 +70,9 @@ export async function GET(req: NextRequest) {
   if (r.linked) await audit("auth.google_linked", { userId: r.userId, meta: { passwordCleared: r.passwordCleared } });
 
   const user = await db.user.findUniqueOrThrow({ where: { id: r.userId } });
+  if (r.created) {
+    try { const { sendWelcomeEmail } = await import("@/server/account-mail"); await sendWelcomeEmail(user); } catch (e) { console.error("bienvenida", e); }
+  }
   if (!r.created) {
     try {
       const h = await headers();

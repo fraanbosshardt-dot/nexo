@@ -14,7 +14,7 @@ import { InstallApp } from "@/components/pwa";
 import { BigTextToggle } from "@/components/big-text";
 import { ThemeChoice } from "@/components/theme";
 import { ActionForm, OtpInput, Submit } from "@/components/forms";
-import { deleteMyAccountAction, emailRemindersAction, confirm2faAction, disable2faAction, revokeOtherSessionsAction, saveModulesAction, start2faAction, twoFactorQr, updateProfileAction } from "@/app/actions/app";
+import { deleteMyAccountAction, confirm2faAction, disable2faAction, revokeOtherSessionsAction, saveModulesAction, start2faAction, twoFactorQr, updateProfileAction } from "@/app/actions/app";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { ShareLink } from "@/components/referral";
 import { SharingTab } from "./sharing-tab";
@@ -144,11 +144,6 @@ export default async function Settings({ searchParams }: { searchParams: Promise
               </div>
             </div>
           )}
-        </div>
-        <div className="card">
-          <div className="chead"><div><h3>Avisos por email</h3><p className="sub">Un día antes de cada vencimiento te mandamos lo que tenés que pagar o cobrar.</p></div>
-            <form action={emailRemindersAction}><input type="hidden" name="on" value={user.emailReminders ? "0" : "1"} /><button className={`btn sm ${user.emailReminders ? "" : "pri"}`} type="submit">{user.emailReminders ? "Apagar" : "Prender"}</button></form></div>
-          <p className="sub" style={{ margin: 0 }}>{user.emailReminders ? `Prendidos. Llegan a ${user.email}.` : "Apagados."}</p>
         </div>
         <div className="card">
           <div className="chead"><h3>Sesiones abiertas</h3>{sessions.length > 1 && <form action={revokeOtherSessionsAction}><button className="btn sm" type="submit">Cerrar las demás</button></form>}</div>

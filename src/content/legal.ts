@@ -23,7 +23,7 @@ export const LEGAL: Record<string, LegalDoc> = {
       ["Uso aceptable", `No podés usar ${N} para actividades ilegales, intentar acceder a cuentas de otras personas, copiar el servicio de forma automatizada ni afectar su funcionamiento. Si eso pasa, podemos suspender la cuenta.`],
       ["Propiedad intelectual", `La marca, el diseño y el software de ${N} pertenecen a su titular. Tus datos son tuyos: podés descargarlos o borrarlos cuando quieras.`],
       ["Responsabilidad", "Hacemos lo posible para que el servicio funcione sin interrupciones y con información correcta, y hacemos copias de seguridad. No respondemos por decisiones tomadas en base a las proyecciones, por datos cargados con errores ni por cortes de proveedores externos, en la medida en que lo permita la ley."],
-      ["Cambios en estos términos", "Si los cambiamos de forma importante, te avisamos con anticipación por correo o dentro de la app. Si no estás de acuerdo, podés dar de baja tu cuenta."],
+      ["Cambios en estos términos", "Si los cambiamos de forma importante, te avisamos con anticipación dentro de la app. Si no estás de acuerdo, podés dar de baja tu cuenta."],
       ["Ley aplicable y reclamos", `Rigen las leyes de la ${BRAND.country}. Si tenés un problema, escribinos primero desde ${CONTACTO} eligiendo el área Reclamos. También podés hacer tu reclamo ante Defensa del Consumidor, en la Ventanilla Única Federal. Para cualquier conflicto son competentes los tribunales que correspondan según la Ley 24.240.`],
     ],
   },

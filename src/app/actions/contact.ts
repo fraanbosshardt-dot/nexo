@@ -32,8 +32,8 @@ export async function contactAction(_: ContactState, fd: FormData): Promise<Cont
   const { emails } = await contactSettings(db);
   const to = emails[m.area as keyof typeof emails] ?? emails.soporte;
   await Promise.all([
-    to ? sendEmail({ to, subject: `[${area}] ${m.subject} · ${m.code}`, text: `Nueva consulta desde el sitio.\n\nÁrea: ${area}\nDe: ${m.name} <${m.email}>\nTrámite: ${m.code}\n\n${m.body}\n\nRespondela desde el panel: ${appUrl()}/admin/consultas` }) : null,
-    sendEmail({
+    to ? sendEmail({ purpose: "support", to, subject: `[${area}] ${m.subject} · ${m.code}`, text: `Nueva consulta desde el sitio.\n\nÁrea: ${area}\nDe: ${m.name} <${m.email}>\nTrámite: ${m.code}\n\n${m.body}\n\nRespondela desde el panel: ${appUrl()}/admin/consultas` }) : null,
+    sendEmail({ purpose: "support",
       to: m.email,
       subject: `Recibimos tu consulta (${m.code})`,
       text: `Hola ${m.name.split(" ")[0]}:\n\nRecibimos tu consulta sobre "${m.subject}" (${area}). Tu número de trámite es ${m.code}.\nTe respondemos a este correo, normalmente en menos de 48 horas hábiles.\n\n${m.area === "arrepentimiento" ? "Guardá este número: es la constancia de tu pedido de arrepentimiento.\n\n" : ""}${BRAND.name}`,

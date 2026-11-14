@@ -664,7 +664,11 @@ export async function supportTicketAction(_: FormState, fd: FormData): Promise<F
   if (!subject || !body) return { error: "Contanos el asunto y el detalle." };
   if (body.length > 4000) return { error: "El mensaje es demasiado largo." };
   // Soporte prioritario: las consultas de Pro entran con prioridad alta.
-  await getDb().supportTicket.create({ data: { userId: user.id, subject: subject.slice(0, 140), body, priority: plan === "PRO" ? "HIGH" : "NORMAL" } });
+  const ticket = await getDb().supportTicket.create({ data: { userId: user.id, subject: subject.slice(0, 140), body, priority: plan === "PRO" ? "HIGH" : "NORMAL" } });
+  const { sendEmail, appUrl } = await import("@/lib/email");
+  await sendEmail({ purpose: "support", idempotencyKey: `support/${ticket.id}/received`, to: user.email,
+    subject: `Recibimos tu consulta: ${ticket.subject}`,
+    text: `Hola ${user.name.split(" ")[0]}:\n\nRecibimos tu consulta. Podés seguirla en ${appUrl()}/app/ayuda. Te avisaremos por correo cuando respondamos.\n\nSomos Guafra` });
   revalidatePath("/app/ayuda");
   return { ok: plan === "PRO" ? "Recibimos tu consulta. Con Pro va primero: te respondemos acá mismo dentro de 1 día hábil." : "Recibimos tu consulta. Te respondemos acá mismo." };
 }

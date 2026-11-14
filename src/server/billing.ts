@@ -5,6 +5,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import type { Db } from "./ledger";
 import { UserError } from "./ledger";
 import { paidUntil, planSettings } from "./plans";
+import { sendBillingNotice } from "./billing-mail";
 
 const API = "https://api.mercadopago.com";
 
@@ -53,6 +54,7 @@ export async function cancelSubscription(db: Db, ws: string) {
   if (sub?.provider === "mercadopago" && sub.providerRef) await mp(`/preapproval/${sub.providerRef}`, { method: "PUT", body: JSON.stringify({ status: "cancelled" }) });
   // Pro sigue hasta el fin del período pagado (effectivePlan mira currentPeriodEnd).
   await db.subscription.update({ where: { workspaceId: ws }, data: { status: "CANCELED", canceledAt: new Date() } });
+  await sendBillingNotice(db, ws, `cancel-${sub?.providerRef ?? sub?.id}`, "Cancelaste tu suscripción a Somos Guafra Pro", "Tu suscripción quedó cancelada. Conservás Pro hasta que termine el período ya cubierto.");
 }
 
 // Firma de las notificaciones: x-signature "ts=...,v1=..." sobre "id:<data.id>;request-id:<x-request-id>;ts:<ts>;".
@@ -93,6 +95,11 @@ export async function applyNotification(db: Db, type: string, id: string) {
       // Cancelada o pausada: el plan queda en Pro y effectivePlan lo corta al terminar el período pagado.
       update: { plan: active ? "PRO" : undefined, status: active ? "ACTIVE" : p.status === "cancelled" ? "CANCELED" : "PAST_DUE", provider: "mercadopago", providerRef: p.id, billingCycle: cycle, trialEndsAt: active ? null : undefined, currentPeriodEnd: keepUntil, couponCode: coupon ?? undefined, canceledAt: p.status === "cancelled" ? new Date() : undefined },
     });
+    if (active || p.status === "cancelled" || p.status === "paused") {
+      const subject = active ? "Tu suscripción a Somos Guafra Pro está activa" : p.status === "cancelled" ? "Cancelaste tu suscripción a Somos Guafra Pro" : "Tu suscripción a Somos Guafra Pro está pausada";
+      await sendBillingNotice(db, ws, p.status === "cancelled" ? `cancel-${p.id}` : `subscription-${p.id}-${p.status}`, subject,
+        active ? "Mercado Pago autorizó tu suscripción. Los cobros se realizan según el ciclo contratado; recibirás un aviso por cada resultado de pago." : "Los cobros de esta suscripción se detuvieron. Conservás Pro durante el período ya cubierto, si corresponde.");
+    }
   }
   if (type === "subscription_authorized_payment") {
     const pay = await mp<{ id: number | string; preapproval_id: string; transaction_amount: number; currency_id: string; status: string; date_created?: string; payment?: { status?: string } }>(`/authorized_payments/${id}`);
@@ -107,6 +114,12 @@ export async function applyNotification(db: Db, type: string, id: string) {
     if (status === "approved") {
       const until = paidUntil(new Date(pay.date_created ?? Date.now()), sub.billingCycle);
       if (!sub.currentPeriodEnd || sub.currentPeriodEnd < until) await db.subscription.update({ where: { id: sub.id }, data: { currentPeriodEnd: until } });
+    }
+    if (["approved", "rejected", "refunded", "cancelled"].includes(status)) {
+      const labels: Record<string, string> = { approved: "Pago aprobado", rejected: "Pago rechazado", refunded: "Pago reembolsado", cancelled: "Pago cancelado" };
+      const amount = new Intl.NumberFormat("es-AR", { style: "currency", currency: pay.currency_id }).format(pay.transaction_amount);
+      await sendBillingNotice(db, sub.workspaceId, `payment-${pay.id}-${status}`, `${labels[status]} · Somos Guafra Pro`,
+        `${labels[status]} por ${amount} para tu suscripción Pro.${status === "approved" ? " Si es una renovación, tu período de acceso ya quedó actualizado." : status === "rejected" ? " Revisá el medio de pago en Mercado Pago para regularizar la suscripción." : " Podés revisar el detalle en Mercado Pago."}`);
     }
   }
 }

@@ -179,9 +179,10 @@ export async function adminReplyTicketAction(_: FormState, fd: FormData): Promis
   const db = getDb();
   const t = await db.supportTicket.update({ where: { id }, data: { reply: reply.slice(0, 4000), status: "ANSWERED" }, include: { user: true } });
   const mail = await sendEmail({
+    purpose: "support",
     to: t.user.email,
     subject: `Respuesta a tu consulta: ${t.subject}`,
-    text: `Hola ${t.user.name.split(" ")[0]}:\n\n${reply}\n\nTu consulta: "${t.subject}"\nPodés verla en ${appUrl()}/app/ayuda\n\nGuafra`,
+    text: `Hola ${t.user.name.split(" ")[0]}:\n\n${reply}\n\nTu consulta: "${t.subject}"\nPodés verla en ${appUrl()}/app/ayuda\n\nSomos Guafra`,
   });
   await adminAudit(a, "admin.ticket_answered", { entity: "ticket", entityId: id, meta: { emailed: mail.sent } });
   refresh();
@@ -248,28 +249,9 @@ export async function adminClearAnnouncementAction() {
   refresh();
 }
 
-export async function adminSendCampaignAction(_: FormState, fd: FormData): Promise<FormState> {
-  const a = await requireAdmin("owner");
-  const subject = s(fd, "subject").slice(0, 120), body = s(fd, "body").slice(0, 6000), audience = s(fd, "audience") || "all";
-  if (!subject || !body) return { error: "Falta el asunto o el texto." };
-  const db = getDb();
-  const { audienceUsers } = await import("@/server/admin-comms");
-  const users = await audienceUsers(db, audience);
-  if (s(fd, "test") === "1") {
-    const r = await sendEmail({ to: a.email, subject: `[Prueba] ${subject}`, text: body });
-    return r.sent ? { ok: `Te mandamos una prueba a ${a.email}. Iría a ${users.length} personas.` } : { error: `No salió la prueba (falta la clave de Resend). Iría a ${users.length} personas.` };
-  }
-  if (!users.length) return { error: "No hay nadie en ese grupo que acepte correos." };
-  if (users.length > 500) return { error: `Son ${users.length} personas: por ahora el máximo por envío es 500. Elegí un grupo más chico.` };
-  let sent = 0, failed = 0;
-  for (const u of users) {
-    const r = await sendEmail({ to: u.email, subject, text: `Hola ${u.name.split(" ")[0]}:\n\n${body}\n\n—\nGuafra · Si no querés recibir correos, apagalos en ${appUrl()}/app/configuracion` });
-    if (r.sent) sent++; else failed++;
-  }
-  await db.emailCampaign.create({ data: { subject, body, audience, sent, failed, createdBy: a.email } });
-  await adminAudit(a, "admin.campaign_sent", { meta: { subject, audience, sent, failed } });
-  refresh();
-  return sent ? { ok: `Enviado a ${sent} ${sent === 1 ? "persona" : "personas"}${failed ? ` (${failed} no salieron)` : ""}.` } : { error: "No salió ningún correo. Revisá la clave de Resend." };
+export async function adminSendCampaignAction(_: FormState, _fd: FormData): Promise<FormState> {
+  await requireAdmin("owner");
+  return { error: "Los correos de Somos Guafra son exclusivamente transaccionales. Las campañas están deshabilitadas." };
 }
 
 export async function adminAddNewsAction(_: FormState, fd: FormData): Promise<FormState> {
@@ -394,6 +376,7 @@ export async function adminReplyContactAction(_: FormState, fd: FormData): Promi
   const db = getDb();
   const m = await db.contactMessage.update({ where: { id }, data: { reply: reply.slice(0, 5000), status: "ANSWERED" } });
   const mail = await sendEmail({
+    purpose: "support",
     to: m.email,
     subject: `Re: ${m.subject} (${m.code})`,
     text: `Hola ${m.name.split(" ")[0]}:\n\n${reply}\n\n—\nTu consulta (${m.code}): "${m.subject}"\nSi necesitás algo más, respondé desde ${appUrl()}/contacto indicando este número.`,

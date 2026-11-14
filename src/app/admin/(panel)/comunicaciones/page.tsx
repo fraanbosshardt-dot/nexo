@@ -3,14 +3,11 @@ import { requireAdmin } from "@/lib/auth/admin";
 import { getDb } from "@/lib/db";
 import { can } from "@/server/admin-team";
 import { announcement } from "@/server/settings";
-import { AUDIENCES, audienceUsers } from "@/server/admin-comms";
-import { emailEnabled } from "@/lib/email";
-import { COUNTRIES } from "@/lib/countries";
+import { AUDIENCES } from "@/server/admin-comms";
 import { fmtDate } from "@/lib/dates";
 import { PageHead } from "@/components/page";
 import { ActionForm, Submit } from "@/components/forms";
-import { int, when } from "@/components/admin-ui";
-import { adminAddNewsAction, adminClearAnnouncementAction, adminDeleteNewsAction, adminSaveAnnouncementAction, adminSendCampaignAction } from "@/app/actions/admin";
+import { adminAddNewsAction, adminClearAnnouncementAction, adminDeleteNewsAction, adminSaveAnnouncementAction } from "@/app/actions/admin";
 
 export const metadata: Metadata = { title: "Comunicaciones" };
 
@@ -18,17 +15,13 @@ export default async function Comms() {
   const admin = await requireAdmin();
   const owner = can(admin.role, "owner");
   const db = getDb();
-  const [ann, campaigns, news, sizes] = await Promise.all([
+  const [ann, news] = await Promise.all([
     announcement(db),
-    db.emailCampaign.findMany({ orderBy: { createdAt: "desc" }, take: 20 }),
     db.productNews.findMany({ orderBy: { publishedAt: "desc" }, take: 30 }),
-    Promise.all(AUDIENCES.map(async ([k]) => [k, (await audienceUsers(db, k)).length] as const)),
   ]);
-  const size = Object.fromEntries(sizes);
-  const countries = (await db.workspace.groupBy({ by: ["country"], _count: { _all: true } })).sort((a, b) => b._count._all - a._count._all);
   return (
     <>
-      <PageHead title="Comunicaciones" desc="Avisos dentro de la app, correos a tus clientes y la página de novedades." />
+      <PageHead title="Comunicaciones" desc="Avisos dentro de la app y la página de novedades. Sin campañas por correo." />
       {!owner && <p className="notice a">Tu rol solo puede mirar esta sección.</p>}
 
       <div className="card">
@@ -51,31 +44,6 @@ export default async function Comms() {
           </ActionForm>
         )}
         {owner && ann && <form action={adminClearAnnouncementAction} style={{ marginTop: 8 }}><button className="btn ghost sm" type="submit">Sacar el aviso</button></form>}
-      </div>
-
-      <div className="card">
-        <div className="chead"><h3>Correo a tus clientes</h3><span className="sub">Solo a quienes aceptan correos de Somos Guafra</span></div>
-        {!emailEnabled() && <p className="notice a" style={{ marginBottom: 12 }}>Para que salgan los correos falta cargar RESEND_API_KEY y EMAIL_FROM en Vercel.</p>}
-        {owner && (
-          <ActionForm action={adminSendCampaignAction} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <label className="field" style={{ maxWidth: 360 }}>Para<select name="audience" defaultValue="all">
-              {AUDIENCES.map(([k, l]) => <option key={k} value={k}>{l} ({int(size[k] ?? 0)})</option>)}
-              {countries.map((c) => <option key={c.country} value={`country:${c.country}`}>Solo {COUNTRIES.find((x) => x.code === c.country)?.name ?? c.country}</option>)}
-            </select></label>
-            <label className="field">Asunto<input name="subject" maxLength={120} placeholder="Novedades de noviembre en Somos Guafra" /></label>
-            <label className="field">Texto<textarea name="body" rows={6} placeholder={"Te contamos lo nuevo de este mes:\n\n• …"} /></label>
-            <p className="adm-hint">Cada correo empieza con "Hola" y el nombre, y termina con cómo dejar de recibirlos.</p>
-            <div className="acts">
-              <button className="btn" type="submit" name="test" value="1">Mandarme una prueba</button>
-              <Submit pending="Enviando…">Enviar a todos</Submit>
-            </div>
-          </ActionForm>
-        )}
-        {campaigns.length > 0 && (
-          <div className="list" style={{ marginTop: 14 }}>{campaigns.map((c) => (
-            <div className="li" key={c.id}><div className="grow"><div className="t">{c.subject}</div><div className="s">{when(c.createdAt)} · {AUDIENCES.find(([k]) => k === c.audience)?.[1] ?? c.audience} · por {c.createdBy}</div></div><span className="num">{int(c.sent)} enviados{c.failed ? ` · ${int(c.failed)} fallaron` : ""}</span></div>
-          ))}</div>
-        )}
       </div>
 
       <div className="card">

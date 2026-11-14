@@ -21,16 +21,10 @@ export async function inviteAction(_: FormState, fd: FormData): Promise<FormStat
     if (needsVerifiedEmail(user)) throw new UserError("Antes de invitar a alguien, confirmá tu correo con el código del aviso de arriba.");
     const email = String(fd.get("email") ?? "");
     const { invite, token } = await createInvite(getDb(), workspace.id, { email, role: String(fd.get("role")) as GuestRole, invitedById: user.id });
-    const { appUrl, sendEmail } = await import("@/lib/email");
-    const { BRAND } = await import("@/lib/brand");
-    const r = await sendEmail({
-      to: invite.email,
-      subject: `${user.name.split(" ")[0]} te invitó a su espacio en ${BRAND.name}`,
-      text: `Hola:\n\n${user.name} te invitó a ver ${invite.role === "VIEWER" ? "" : "y cargar "}sus cuentas y pagos en ${BRAND.name}.\n\nPara aceptar, entrá a este enlace (vence en 7 días) con este mismo correo (${invite.email}):\n${appUrl()}/invitacion/${token}\n\nSi no tenés cuenta, la creás gratis en un minuto. Si no esperabas esta invitación, ignorá este correo.\n\n${BRAND.name}`,
-    });
+    const { appUrl } = await import("@/lib/email");
     await audit("sharing.invited", { userId: user.id, workspaceId: workspace.id, meta: { role: invite.role } });
     revalidatePath("/app/configuracion");
-    return { ok: r.sent ? `Listo, le mandamos la invitación a ${invite.email}.` : `Invitación creada. El correo todavía no está activado: pasale este enlace a ${invite.email}: ${appUrl()}/invitacion/${token}` };
+    return { ok: `Invitación creada. Compartí este enlace con ${invite.email}: ${appUrl()}/invitacion/${token}` };
   } catch (e) { return fail(e); }
 }
 
